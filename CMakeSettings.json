@@ -1,0 +1,27 @@
+﻿{
+  "configurations": [
+    {
+      "name": "VulkanDebug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "GRAPHIC_VULKAN",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "GRAPHIC_OPENGL",
+          "value": "False",
+          "type": "BOOL"
+        }
+      ]
+    }
+  ]
+}
