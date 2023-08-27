@@ -6,24 +6,6 @@
 
 namespace app {
 
-
-
-// All these will depend on renderer interface.
-// .geo   -> File holding raw batch geometry
-// .mat   -> File holding material data
-// .batch -> File holding reference to geo & mat
-// .mesh  -> File holding reference to a mesh containing multiple batches.
-// .smesh -> File holding reference to multiple mesh depending on lod count 
-// .skel  -> File holding animation & bones data
-// .dmesh -> Same as smesh but with animation data (bones, rigging...)
-
-/*struct ArchiveDynamicMesh : Archive {
-	std::vector<ArchiveBatch> batches;
-	ArchiveLoadResult load(const ArchivePath& path) override {}
-	ArchiveSaveResult save(const ArchivePath& path) override {}
-};*/
-
-// This could be directly component for ECS
 struct StaticMesh : Resource {
 public:
 	void create(gfx::GraphicDevice* _device, const ArchiveStaticMesh& _archive);

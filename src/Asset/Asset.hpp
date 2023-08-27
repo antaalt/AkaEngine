@@ -33,11 +33,12 @@ struct AssetInfo {
 };
 
 // Strict type generated from path ideally & storing asset type.
-enum class AssetID {}; // A single resource might use multiple assets.
+enum class AssetID : uint64_t {}; // A single resource might use multiple assets.
 
 inline AssetID generateAssetIDFromAssetPath(const AssetPath& path)
 {
-	return AssetID(0);
+	size_t hash = aka::hash(path.path.cstr(), path.path.length());
+	return AssetID(hash);
 }
 
 

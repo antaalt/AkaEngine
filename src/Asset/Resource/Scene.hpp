@@ -4,18 +4,11 @@
 
 #include "StaticMesh.hpp"
 #include "Resource.hpp"
-#include "../Archive/Archive.hpp"
+#include "../Archive/ArchiveScene.hpp"
 
 namespace app {
 
 using namespace aka;
-
-struct ArchiveScene : Archive {
-	std::vector<ArchiveStaticMesh> meshes;
-
-	ArchiveLoadResult load(const ArchivePath& path) override;
-	ArchiveSaveResult save(const ArchivePath& path) override;
-};
 
 struct Scene : Resource {
 public:

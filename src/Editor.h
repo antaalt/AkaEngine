@@ -37,6 +37,7 @@ private:
 	CameraPerspective m_cameraProjection = {};
 
 private:
+	app::AssetLibrary m_library;
 	app::ResourceID m_resourceID;
 	app::ResourceHandle<app::StaticMesh> m_resource;
 };

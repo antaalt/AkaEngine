@@ -2,11 +2,12 @@
 
 #include <type_traits>
 #include <memory>
+#include <atomic>
 
 
 namespace app {
 
-enum class ResourceID {};
+enum class ResourceID : uint32_t {};
 
 // A resource is something we can drop in engine, aka a component. we plug it gameplay component, and we have an actor
 enum class ResourceType {
@@ -54,7 +55,7 @@ public:
 	}
 	bool isValid() const { return m_resource != nullptr; }
 	bool isLoaded() const { return isValid() && m_resource->state == ResourceState::Loaded; }
-	ResourceState getState() const { return !isValid() ? ResourceState::Unknown : m_resource->state; }
+	ResourceState getState() const { return !isValid() ? ResourceState::Unknown : m_resource->state.load(); }
 
 	const T& get() const { return m_resource->resource; }
 	T& get() { return m_resource->resource; }

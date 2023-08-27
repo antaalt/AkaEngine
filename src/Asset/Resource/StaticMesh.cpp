@@ -30,7 +30,7 @@ void StaticMesh::create(gfx::GraphicDevice* _device, const ArchiveStaticMesh& _a
 	{
 		// TODO should retrieve this from shader somehow...
 		gfx::ShaderBindingState bindings{};
-		bindings.add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::Vertex, 1);
+		bindings.add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::Vertex | gfx::ShaderMask::Fragment, 1);
 		bindings.add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment, 1);
 		bindings.add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment, 1);
 		// Material
@@ -72,6 +72,8 @@ void StaticMesh::create(gfx::GraphicDevice* _device, const ArchiveStaticMesh& _a
 
 void StaticMesh::destroy(gfx::GraphicDevice* _device)
 {
+	_device->destroy(this->gfxAlbedoSampler);
+	_device->destroy(this->gfxNormalSampler);
 	_device->destroy(this->gfxIndexBuffer);
 	_device->destroy(this->gfxVertexBuffer);
 	for (const DrawCallIndexed& batch : batches)

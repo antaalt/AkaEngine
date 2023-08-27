@@ -18,6 +18,7 @@ struct CameraUniformBuffer
 struct InstanceUniformBuffer
 {
 	mat4f model;
+	mat3f normal;
 };
 
 struct MaterialUniformBuffer
@@ -123,14 +124,17 @@ void Editor::onCreate(int argc, char* argv[])
 	{
 		// Camera
 		bindings[0].add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::Vertex, 1);
+		AKA_ASSERT(device->get(program)->sets[0] == bindings[0], "Invalid bindings");
 
 		// Instance
 		bindings[1].add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::Vertex, 1);
+		AKA_ASSERT(device->get(program)->sets[1] == bindings[1], "Invalid bindings");
 
 		// Material
-		bindings[2].add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::Vertex, 1);
+		bindings[2].add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::Vertex | gfx::ShaderMask::Fragment, 1);
 		bindings[2].add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment, 1);
 		bindings[2].add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment, 1);
+		AKA_ASSERT(device->get(program)->sets[2] == bindings[2], "Invalid bindings");
 	}
 
 	{ // CAMERA UBO
@@ -156,6 +160,7 @@ void Editor::onCreate(int argc, char* argv[])
 
 		InstanceUniformBuffer ubo;
 		ubo.model = mat4f::rotate(vec3f(0, 0, 1), m_rotation);
+		ubo.normal = mat3f(mat4f::transpose(mat4f::inverse(ubo.model)));
 		m_instanceUniformBuffer = device->createBuffer("InstanceBuffer", gfx::BufferType::Uniform, sizeof(InstanceUniformBuffer), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, &ubo);
 
 		gfx::DescriptorSetData data{};
@@ -166,12 +171,15 @@ void Editor::onCreate(int argc, char* argv[])
 
 	{ // Create a static mesh & archive it
 		using namespace app;
-		ArchivePath smeshPath = ArchivePath("../../../asset/library/mesh.smesh");
+		ArchivePath smeshPath		= ArchivePath("../../../asset/library/mesh.smesh");
+		ArchivePath batchPath		= ArchivePath("../../../asset/library/mesh.batch");
+		ArchivePath geoPath			= ArchivePath("../../../asset/library/mesh.geo");
+		ArchivePath materialPath	= ArchivePath("../../../asset/library/mesh.mat");
 		{ // Hardcoded import for now
-			app::ArchiveStaticMesh mesh(ArchivePath("../../../asset/library/mesh.smesh"));
+			app::ArchiveStaticMesh mesh(smeshPath);
 			{
-				app::ArchiveBatch batch(ArchivePath("../../../asset/library/mesh.batch"));
-				batch.geometry = ArchiveGeometry(ArchivePath("../../../asset/library/mesh.geo"));
+				app::ArchiveBatch batch(batchPath);
+				batch.geometry = ArchiveGeometry(geoPath);
 				// indices
 				batch.geometry.indices.resize(s_vertexCount);
 				for (uint32_t i = 0; i < s_vertexCount; i++)
@@ -183,7 +191,7 @@ void Editor::onCreate(int argc, char* argv[])
 
 
 				// Material
-				batch.material = ArchiveMaterial(ArchivePath("../../../asset/library/mesh.mat"));
+				batch.material = ArchiveMaterial(materialPath);
 				batch.material.color = color4f(0.0, 0.0, 1.0, 1.0);
 
 				Image img = Image::load("../../../asset/textures/skyscraper.jpg");
@@ -205,14 +213,16 @@ void Editor::onCreate(int argc, char* argv[])
 			ArchiveSaveResult res = mesh.save(mesh.getPath());
 		}
 		{ // Test if everything went well
-			app::ArchiveStaticMesh mesh(ArchivePath("../../../asset/library/mesh.smesh"));
+			app::ArchiveStaticMesh mesh(smeshPath);
 			ArchiveLoadResult res = mesh.load(mesh.getPath());
 			mesh.batches;
 		}
 		// Add to library & load it.
-		AssetLibrary library;
-		m_resourceID = library.registerStaticMesh(smeshPath);
-		m_resource = library.getStaticMesh(m_resourceID);
+		m_resourceID = m_library.registerAsset(smeshPath, AssetType::StaticMesh);
+		m_library.registerAsset(batchPath, AssetType::MeshBatch);
+		m_library.registerAsset(geoPath, AssetType::MeshGeometry);
+		m_library.registerAsset(materialPath, AssetType::MeshMaterial);
+		m_resource = m_library.getStaticMesh(m_resourceID);
 		if (m_resource.isLoaded())
 		{
 			app::StaticMesh mesh = m_resource.get();
@@ -299,8 +309,55 @@ void Editor::onRender(gfx::Frame* _frame)
 
 
 	{
-		if (ImGui::Begin("Window"))
+		if (ImGui::Begin("ArchiveEditor"))
 		{
+			// We should list all archive from library here.
+			// We could open them in separate tab to edit their content & save them.
+			ImGui::TextColored(ImVec4(0.0, 0.0, 1.0, 1.0), "Assets");
+			for (auto asset : m_library.getAssetRange()) // TODO sort them by type ?
+			{
+				//asset.second.type
+				ImGui::Text("AssetID: %3u | Path: %s", (uint32_t)asset.first, asset.second.path.path.cstr());
+			}
+			ImGui::Separator();
+			ImGui::TextColored(ImVec4(0.0, 0.0, 1.0, 1.0), "Resources");
+			ImGui::TextColored(ImVec4(0.0, 1.0, 0.0, 1.0), "Meshes");
+			for (auto resPair : m_library.getStaticMeshRange())
+			{
+				app::ResourceID resID = resPair.first;
+				app::ResourceHandle<app::StaticMesh>& resHandle = resPair.second;
+				uint32_t batchCount;
+				String status;
+				auto getStatusString = [](app::ResourceState state) -> String {
+					switch (state)
+					{
+					case app::ResourceState::Disk: return "Disk";
+					case app::ResourceState::Loaded: return "Loaded";
+					case app::ResourceState::Pending: return "Pending";
+					case app::ResourceState::Unknown: return "Unknown";
+					default:
+						break;
+					}
+				};
+				if (resHandle.isLoaded())
+				{
+					const app::StaticMesh& mesh = resHandle.get();
+					batchCount = mesh.batches.size();
+					mesh.attributes;
+					status = getStatusString(resHandle.getState());
+				}
+				else
+				{
+					batchCount = 0;
+					status = getStatusString(app::ResourceState::Unknown);
+				}
+				ImGui::Text("ResourceID: %3u | Batches: %2u | Status: %s", (uint32_t)resID, batchCount, status.cstr());
+			}
+			ImGui::TextColored(ImVec4(0.0, 1.0, 0.0, 1.0), "Scenes");
+			for (auto res : m_library.getSceneRange())
+			{
+				ImGui::Text("%u", (uint32_t)res.first);
+			}
 		}
 		ImGui::End();
 	}
