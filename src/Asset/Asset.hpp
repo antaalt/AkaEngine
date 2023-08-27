@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Aka/Aka.h>
-#include <Aka/Aka.h>
 
 #include <map>
 
@@ -36,6 +35,10 @@ struct AssetInfo {
 // Strict type generated from path ideally & storing asset type.
 enum class AssetID {}; // A single resource might use multiple assets.
 
+inline AssetID generateAssetIDFromAssetPath(const AssetPath& path)
+{
+	return AssetID(0);
+}
 
 
 }

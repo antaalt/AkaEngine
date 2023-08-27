@@ -6,11 +6,6 @@
 
 #include <imgui.h>
 
-#include "Asset/Asset.hpp"
-#include "Asset/Archive/ArchiveStaticMesh.hpp"
-#include "Asset/Resource/StaticMesh.hpp"
-#include "Asset/AssetLibrary.hpp"
-
 using namespace aka;
 
 struct UniformBuffer
@@ -166,6 +161,7 @@ void Editor::onCreate(int argc, char* argv[])
 
 	{ // Create a static mesh & archive it
 		using namespace app;
+		ArchivePath smeshPath = ArchivePath("../../../asset/library/mesh.smesh");
 		{
 			app::ArchiveStaticMesh mesh(ArchivePath("../../../asset/library/mesh.smesh"));
 			{
@@ -192,13 +188,13 @@ void Editor::onCreate(int argc, char* argv[])
 			mesh.batches;
 		}
 
-		/*AssetLibrary library;
-		ResourceID id = library.addStaticMesh("");
-		ResourceHandle<app::StaticMesh> smesh = library.getStaticMesh(id);
-		if (smesh.isLoaded())
+		AssetLibrary library;
+		m_resourceID = library.registerStaticMesh(smeshPath);
+		m_resource = library.getStaticMesh(m_resourceID);
+		if (m_resource.isLoaded())
 		{
-			app::StaticMesh mesh = smesh.get();
-		}*/
+			app::StaticMesh mesh = m_resource.get();
+		}
 	}
 }
 
@@ -213,6 +209,8 @@ void Editor::onDestroy()
 	device->destroy(m_renderPipeline);
 	device->destroy(m_renderPass);
 	device->destroy(m_backbuffer);
+
+	m_resource.get().destroy(device);
 }
 
 void Editor::onFixedUpdate(aka::Time time)
@@ -253,13 +251,24 @@ void Editor::onRender(gfx::Frame* _frame)
 
 	gfx::FramebufferHandle backbuffer = device->get(m_backbuffer, _frame);
 
+
 	cmd->bindPipeline(m_renderPipeline);
 	cmd->bindDescriptorSet(0, m_descriptorSet);
-	cmd->bindVertexBuffer(m_vertices, 0);
 
-	cmd->beginRenderPass(m_renderPass, backbuffer, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f }, 1.f, 0 });
-	cmd->draw(s_vertexCount, 0);
-	cmd->endRenderPass();
+	if (m_resource.isLoaded())
+	{
+		app::StaticMesh& mesh = m_resource.get();
+		cmd->bindVertexBuffer(mesh.gfxVertexBuffer, 0);
+		cmd->bindIndexBuffer(mesh.gfxIndexBuffer, gfx::IndexFormat::UnsignedInt, 0);
+
+		cmd->beginRenderPass(m_renderPass, backbuffer, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f }, 1.f, 0 });
+		for (auto batch : mesh.batches)
+		{
+			cmd->drawIndexed(batch.indexCount, batch.indexOffset, batch.vertexOffset, 1);
+		}
+		cmd->endRenderPass();
+	}
+
 
 	{
 		if (ImGui::Begin("Window"))

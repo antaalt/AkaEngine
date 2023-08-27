@@ -15,7 +15,7 @@ add_executable(AkaEditor
 	"src/Asset/Archive/ArchiveMaterial.cpp" 
 	"src/Asset/Archive/ArchiveBatch.cpp" 
 	"src/Asset/Archive/ArchiveStaticMesh.cpp"
- )
+  "src/Asset/Resource/StaticMesh.cpp")
 #add_definitions(AKA_USE_IMGUI_LAYER)
 
 target_link_libraries(AkaEditor Aka)

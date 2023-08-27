@@ -4,6 +4,11 @@
 #include <Aka/Scene/Camera.h>
 #include <Aka/Graphic/GraphicDevice.h>
 
+#include "Asset/Asset.hpp"
+#include "Asset/Archive/ArchiveStaticMesh.hpp"
+#include "Asset/Resource/StaticMesh.hpp"
+#include "Asset/AssetLibrary.hpp"
+
 using namespace aka;
 
 class Editor : public aka::Application
@@ -30,4 +35,8 @@ private:
 	anglef m_rotation = anglef::radian(0.f);
 	CameraArcball m_cameraController = {};
 	CameraPerspective m_cameraProjection = {};
+
+private:
+	app::ResourceID m_resourceID;
+	app::ResourceHandle<app::StaticMesh> m_resource;
 };
