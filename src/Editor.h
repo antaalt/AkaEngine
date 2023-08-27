@@ -25,10 +25,10 @@ private:
 	gfx::BackbufferHandle m_backbuffer;
 	gfx::GraphicPipelineHandle m_renderPipeline;
 	gfx::BufferHandle m_vertices;
-	gfx::BufferHandle m_uniformBuffer;
-	gfx::TextureHandle m_texture;
-	gfx::SamplerHandle m_sampler;
-	gfx::DescriptorSetHandle m_descriptorSet;
+	gfx::BufferHandle m_cameraUniformBuffer;
+	gfx::BufferHandle m_instanceUniformBuffer;
+	gfx::DescriptorSetHandle m_cameraDescriptorSet;
+	gfx::DescriptorSetHandle m_instanceDescriptorSet;
 
 private:
 	bool m_dirty = false;

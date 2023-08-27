@@ -18,7 +18,13 @@ ArchiveLoadResult ArchiveMaterial::load(const ArchivePath& path)
 	if (version > ArchiveMaterialVersion::Latest)
 		return ArchiveLoadResult::IncompatibleVersion;
 
-	// TODO implement material
+	archive.read(this->color);
+
+	ArchivePath albedoPath = ArchivePath::read(archive);
+	this->albedo.load(albedoPath);
+
+	ArchivePath normalPath = ArchivePath::read(archive);
+	this->normal.load(normalPath);
 
 	return ArchiveLoadResult::Success;
 }
@@ -33,7 +39,13 @@ ArchiveSaveResult ArchiveMaterial::save(const ArchivePath& path)
 	archive.write<char>(signature, 4);
 	archive.write<ArchiveMaterialVersion>(ArchiveMaterialVersion::Latest);
 
-	// TODO implement material
+	archive.write(this->color);
+
+	ArchivePath::write(archive, this->albedo.getPath());
+	this->albedo.save(this->albedo.getPath());
+
+	ArchivePath::write(archive, this->normal.getPath());
+	this->normal.save(this->normal.getPath());
 
 	return ArchiveSaveResult::Success;
 }

@@ -8,34 +8,23 @@
 
 using namespace aka;
 
-struct UniformBuffer
+// ------------ RENDERER ----------------
+struct CameraUniformBuffer
 {
-	mat4f model;
 	mat4f view;
 	mat4f projection;
 };
 
-mat3f getTransform(uint32_t width, uint32_t height, anglef rotation)
+struct InstanceUniformBuffer
 {
-	aka::vec2f size = aka::vec2f(300.f);
-	aka::vec2f position = aka::vec2f(
-		width / 2.f - size.x / 2.f,
-		height / 2.f - size.y / 2.f
-	);
-	aka::mat3f transform = aka::mat3f::identity();
-	transform *= aka::mat3f::translate(position);
-	transform *= aka::mat3f::translate(0.5f * size);
-	transform *= aka::mat3f::rotate(rotation);
-	transform *= aka::mat3f::translate(-0.5f * size);
-	transform *= aka::mat3f::scale(size);
-	return transform;
-}
-
-struct Vertex
-{
-	float position[3];
-	float texcoord[2];
+	mat4f model;
 };
+
+struct MaterialUniformBuffer
+{
+	color4f color;
+};
+// ------------ / RENDERER ----------------
 
 static const uint32_t s_vertexCount = 36;
 
@@ -115,54 +104,70 @@ void Editor::onCreate(int argc, char* argv[])
 
 	m_renderPipeline = device->createGraphicPipeline(
 		"RenderPipeline",
-		program,
+		program, 
 		gfx::PrimitiveType::Triangles,
 		device->get(m_renderPass)->state,
 		gfx::VertexAttributeState {}.add(gfx::VertexSemantic::Position, gfx::VertexFormat::Float, gfx::VertexType::Vec3).add(gfx::VertexSemantic::Normal, gfx::VertexFormat::Float, gfx::VertexType::Vec2),
 		gfx::ViewportState{}.size(width(), height()),
-		gfx::DepthStateDisabled,
+		gfx::DepthStateLessEqual,
 		gfx::StencilStateDisabled,
 		gfx::CullStateDisabled,
 		gfx::BlendStateDisabled,
 		gfx::FillStateFill
 	);
-
 	m_vertices = getCubeVertices(device);
-	m_descriptorSet = device->createDescriptorSet("DescriptorSet", device->get(program)->sets[0]);
 
-	m_cameraController.set(aabbox(point3(-1.f), point3(1.f)));
-	m_cameraProjection.hFov = anglef::degree(60.f);
-	m_cameraProjection.ratio = width() / (float)height();
-	m_cameraProjection.nearZ = 0.1f;
-	m_cameraProjection.farZ = 100.f;
+	// TODO retrieve this from somewhere generated from shader ?
+	// Or pass it as input of program instead
+	gfx::ShaderBindingState bindings[3]{}; // camera, instance, material
+	{
+		// Camera
+		bindings[0].add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::Vertex, 1);
 
-	UniformBuffer ubo;
-	ubo.model = mat4f::identity();
-	ubo.view = m_cameraController.view();
-	ubo.projection = m_cameraProjection.projection();
-	m_uniformBuffer = device->createBuffer("CameraBuffer", gfx::BufferType::Uniform, sizeof(UniformBuffer), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, &ubo);
+		// Instance
+		bindings[1].add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::Vertex, 1);
 
-	const uint8_t dataTexture[4] = { 0,255,0,255 };
-	const void* dataVoid = dataTexture;
-	m_texture = device->createTexture("Texture", 1, 1, 1, gfx::TextureType::Texture2D, 1, 1, gfx::TextureFormat::RGBA8, gfx::TextureUsage::ShaderResource, &dataVoid);
-	m_sampler = device->createSampler(
-		"Sampler",
-		gfx::Filter::Linear, gfx::Filter::Linear,
-		gfx::SamplerMipMapMode::Linear,
-		gfx::SamplerAddressMode::Repeat, gfx::SamplerAddressMode::Repeat, gfx::SamplerAddressMode::Repeat,
-		1.0
-	);
+		// Material
+		bindings[2].add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::Vertex, 1);
+		bindings[2].add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment, 1);
+		bindings[2].add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment, 1);
+	}
 
-	gfx::DescriptorSetData data{};
-	data.addUniformBuffer(m_uniformBuffer);
-	data.addSampledImage(m_texture, m_sampler);
-	device->update(m_descriptorSet, data);
+	{ // CAMERA UBO
+		m_cameraDescriptorSet = device->createDescriptorSet("CameraDescriptorSet", bindings[0]);
+
+		m_cameraController.set(aabbox(point3(-1.f), point3(1.f)));
+		m_cameraProjection.hFov = anglef::degree(60.f);
+		m_cameraProjection.ratio = width() / (float)height();
+		m_cameraProjection.nearZ = 0.1f;
+		m_cameraProjection.farZ = 100.f;
+
+		CameraUniformBuffer ubo;
+		ubo.view = m_cameraController.view();
+		ubo.projection = m_cameraProjection.projection();
+		m_cameraUniformBuffer = device->createBuffer("CameraBuffer", gfx::BufferType::Uniform, sizeof(CameraUniformBuffer), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, &ubo);
+		
+		gfx::DescriptorSetData data{};
+		data.addUniformBuffer(m_cameraUniformBuffer);
+		device->update(m_cameraDescriptorSet, data);
+	}
+	{ // INSTANCE UBO
+		m_instanceDescriptorSet = device->createDescriptorSet("InstanceDescriptorSet", bindings[1]);
+
+		InstanceUniformBuffer ubo;
+		ubo.model = mat4f::rotate(vec3f(0, 0, 1), m_rotation);
+		m_instanceUniformBuffer = device->createBuffer("InstanceBuffer", gfx::BufferType::Uniform, sizeof(InstanceUniformBuffer), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, &ubo);
+
+		gfx::DescriptorSetData data{};
+		data.addUniformBuffer(m_instanceUniformBuffer);
+		device->update(m_instanceDescriptorSet, data);
+	}
 
 
 	{ // Create a static mesh & archive it
 		using namespace app;
 		ArchivePath smeshPath = ArchivePath("../../../asset/library/mesh.smesh");
-		{
+		{ // Hardcoded import for now
 			app::ArchiveStaticMesh mesh(ArchivePath("../../../asset/library/mesh.smesh"));
 			{
 				app::ArchiveBatch batch(ArchivePath("../../../asset/library/mesh.batch"));
@@ -175,19 +180,36 @@ void Editor::onCreate(int argc, char* argv[])
 				batch.geometry.vertices.resize(s_vertexCount);
 				Memory::copy(batch.geometry.vertices.data(), s_vertices, sizeof(s_vertices));
 				batch.geometry.bounds = aabbox(point3f(-1.f), point3f(1.f));
+
+
 				// Material
 				batch.material = ArchiveMaterial(ArchivePath("../../../asset/library/mesh.mat"));
+				batch.material.color = color4f(0.0, 0.0, 1.0, 1.0);
+
+				Image img = Image::load("../../../asset/textures/skyscraper.jpg");
+				batch.material.albedo = ArchiveImage(ArchivePath("../../../asset/library/albedo.tex"));
+				batch.material.albedo.width = img.width();
+				batch.material.albedo.height = img.height();
+				batch.material.albedo.channels = img.components();
+				batch.material.albedo.data.append(img.data(), img.data() + img.size());
+
+				Image imgNormal = Image::load("../../../asset/textures/skyscraper-normal.jpg");
+				batch.material.normal = ArchiveImage(ArchivePath("../../../asset/library/normal.tex"));
+				batch.material.normal.width = imgNormal.width();
+				batch.material.normal.height = imgNormal.height();
+				batch.material.normal.channels = imgNormal.components();
+				batch.material.normal.data.append(imgNormal.data(), imgNormal.data() + imgNormal.size());
 
 				mesh.batches.append(batch);
 			}
 			ArchiveSaveResult res = mesh.save(mesh.getPath());
 		}
-		{
+		{ // Test if everything went well
 			app::ArchiveStaticMesh mesh(ArchivePath("../../../asset/library/mesh.smesh"));
 			ArchiveLoadResult res = mesh.load(mesh.getPath());
 			mesh.batches;
 		}
-
+		// Add to library & load it.
 		AssetLibrary library;
 		m_resourceID = library.registerStaticMesh(smeshPath);
 		m_resource = library.getStaticMesh(m_resourceID);
@@ -201,11 +223,11 @@ void Editor::onCreate(int argc, char* argv[])
 void Editor::onDestroy()
 {
 	gfx::GraphicDevice* device = graphic();
-	device->destroy(m_texture);
-	device->destroy(m_sampler);
 	device->destroy(m_vertices);
-	device->destroy(m_uniformBuffer);
-	device->destroy(m_descriptorSet);
+	device->destroy(m_cameraUniformBuffer);
+	device->destroy(m_instanceUniformBuffer);
+	device->destroy(m_cameraDescriptorSet);
+	device->destroy(m_instanceDescriptorSet);
 	device->destroy(m_renderPipeline);
 	device->destroy(m_renderPass);
 	device->destroy(m_backbuffer);
@@ -239,21 +261,26 @@ void Editor::onRender(gfx::Frame* _frame)
 	gfx::GraphicDevice* device = graphic();
 	gfx::CommandList* cmd = device->getGraphicCommandList(_frame);
 
-	//if (m_dirty)
+	if (m_dirty)
 	{
-		UniformBuffer ubo;
-		ubo.model = mat4f::rotate(vec3f(0,0,1), m_rotation);
+		CameraUniformBuffer ubo;
 		ubo.view = m_cameraController.view();
 		ubo.projection = m_cameraProjection.projection();
-		device->upload(m_uniformBuffer, &ubo, 0, sizeof(UniformBuffer));
+		device->upload(m_cameraUniformBuffer, &ubo, 0, sizeof(CameraUniformBuffer));
 		m_dirty = false;
+	}
+	{
+		InstanceUniformBuffer ubo;
+		ubo.model = mat4f::rotate(vec3f(0, 0, 1), m_rotation);
+		device->upload(m_instanceUniformBuffer, &ubo, 0, sizeof(InstanceUniformBuffer));
 	}
 
 	gfx::FramebufferHandle backbuffer = device->get(m_backbuffer, _frame);
 
 
 	cmd->bindPipeline(m_renderPipeline);
-	cmd->bindDescriptorSet(0, m_descriptorSet);
+	cmd->bindDescriptorSet(0, m_cameraDescriptorSet);
+	cmd->bindDescriptorSet(1, m_instanceDescriptorSet); // Should be by resource, within the scene hierarchy component
 
 	if (m_resource.isLoaded())
 	{
@@ -262,8 +289,9 @@ void Editor::onRender(gfx::Frame* _frame)
 		cmd->bindIndexBuffer(mesh.gfxIndexBuffer, gfx::IndexFormat::UnsignedInt, 0);
 
 		cmd->beginRenderPass(m_renderPass, backbuffer, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f }, 1.f, 0 });
-		for (auto batch : mesh.batches)
+		for (const auto& batch : mesh.batches)
 		{
+			cmd->bindDescriptorSet(2, batch.gfxDescriptorSet);
 			cmd->drawIndexed(batch.indexCount, batch.indexOffset, batch.vertexOffset, 1);
 		}
 		cmd->endRenderPass();

@@ -35,17 +35,20 @@ public: // Mandatory data for rendering & co
 	// Should be mutualized in a big single geometry buffer with pages.
 	gfx::BufferHandle gfxVertexBuffer;
 	gfx::BufferHandle gfxIndexBuffer;
+	gfx::SamplerHandle gfxAlbedoSampler;
+	gfx::SamplerHandle gfxNormalSampler;
 
 	struct DrawCallIndexed {
 		uint32_t vertexOffset;
 		uint32_t indexOffset;
 		uint32_t indexCount;
+		// TODO mutualize texture to avoid copies
+		gfx::TextureHandle gfxAlbedoTexture;
+		gfx::TextureHandle gfxNormalTexture;
+		gfx::BufferHandle gfxUniformBuffer;
+		gfx::DescriptorSetHandle gfxDescriptorSet;
 	};
-	struct Material {
-
-	};
-	Vector<DrawCallIndexed> batches;
-	Vector<Material> materials;
+	Vector<DrawCallIndexed> batches; // TODO indirect buffer. Require bindless for material
 };
 
 struct StaticMeshComponent {

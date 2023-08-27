@@ -3,28 +3,28 @@
 #include <Aka/Aka.h>
 
 #include "Archive.hpp"
-#include "ArchiveImage.hpp"
 
 namespace app {
 using namespace aka;
 
-enum class ArchiveMaterialVersion : uint32_t
+enum class ArchiveImageVersion : uint32_t
 {
 	ArchiveCreation = 0,
 
 	Latest = ArchiveCreation
 };
 
-struct ArchiveMaterial : Archive
+struct ArchiveImage : Archive
 {
-	ArchiveMaterial() {}
-	ArchiveMaterial(const ArchivePath& path) : Archive(path) {}
+	ArchiveImage() {}
+	ArchiveImage(const ArchivePath& path) : Archive(path) {}
 	ArchiveLoadResult load(const ArchivePath& blob) override;
 	ArchiveSaveResult save(const ArchivePath& blob) override;
 
-	color4f color;
-	ArchiveImage albedo;
-	ArchiveImage normal;
+	Vector<uint8_t> data;
+	uint32_t width;
+	uint32_t height;
+	uint32_t channels;
 };
 
 }
