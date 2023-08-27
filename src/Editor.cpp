@@ -6,6 +6,11 @@
 
 #include <imgui.h>
 
+#include "Asset/Asset.hpp"
+#include "Asset/Archive/ArchiveStaticMesh.hpp"
+#include "Asset/Resource/StaticMesh.hpp"
+#include "Asset/AssetLibrary.hpp"
+
 using namespace aka;
 
 struct UniformBuffer
@@ -39,52 +44,52 @@ struct Vertex
 
 static const uint32_t s_vertexCount = 36;
 
+static const float s_vertices[s_vertexCount * 5] = {
+	-1.0f,  1.0f, -1.0f,	0.f, 1.f,
+	-1.0f, -1.0f, -1.0f,	0.f, 0.f,
+	 1.0f, -1.0f, -1.0f,	1.f, 0.f,
+	 1.0f, -1.0f, -1.0f,	1.f, 0.f,
+	 1.0f,  1.0f, -1.0f,	1.f, 1.f,
+	-1.0f,  1.0f, -1.0f,	0.f, 1.f,
+
+	-1.0f, -1.0f,  1.0f,	0.f, 1.f,
+	-1.0f, -1.0f, -1.0f,	0.f, 0.f,
+	-1.0f,  1.0f, -1.0f,	1.f, 0.f,
+	-1.0f,  1.0f, -1.0f,	1.f, 0.f,
+	-1.0f,  1.0f,  1.0f,	1.f, 1.f,
+	-1.0f, -1.0f,  1.0f,	0.f, 1.f,
+
+	 1.0f, -1.0f, -1.0f,	0.f, 0.f,
+	 1.0f, -1.0f,  1.0f,	0.f, 1.f,
+	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
+	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
+	 1.0f,  1.0f, -1.0f,	1.f, 0.f,
+	 1.0f, -1.0f, -1.0f,	0.f, 0.f,
+
+	-1.0f, -1.0f,  1.0f,	0.f, 0.f,
+	-1.0f,  1.0f,  1.0f,	0.f, 1.f,
+	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
+	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
+	 1.0f, -1.0f,  1.0f,	1.f, 0.f,
+	-1.0f, -1.0f,  1.0f,	0.f, 0.f,
+
+	-1.0f,  1.0f, -1.0f,	0.f, 0.f,
+	 1.0f,  1.0f, -1.0f,	1.f, 0.f,
+	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
+	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
+	-1.0f,  1.0f,  1.0f,	0.f, 1.f,
+	-1.0f,  1.0f, -1.0f,	0.f, 0.f,
+
+	-1.0f, -1.0f, -1.0f,	0.f, 0.f,
+	-1.0f, -1.0f,  1.0f,	0.f, 1.f,
+	 1.0f, -1.0f, -1.0f,	1.f, 0.f,
+	 1.0f, -1.0f, -1.0f,	1.f, 0.f,
+	-1.0f, -1.0f,  1.0f,	0.f, 1.f,
+	 1.0f, -1.0f,  1.0f,	1.f, 1.f,
+};
 gfx::BufferHandle getCubeVertices(gfx::GraphicDevice* device)
 {
-	float vertices[s_vertexCount * 5] = {
-		-1.0f,  1.0f, -1.0f,	0.f, 1.f,
-		-1.0f, -1.0f, -1.0f,	0.f, 0.f,
-		 1.0f, -1.0f, -1.0f,	1.f, 0.f,
-		 1.0f, -1.0f, -1.0f,	1.f, 0.f,
-		 1.0f,  1.0f, -1.0f,	1.f, 1.f,
-		-1.0f,  1.0f, -1.0f,	0.f, 1.f,
-
-		-1.0f, -1.0f,  1.0f,	0.f, 1.f,
-		-1.0f, -1.0f, -1.0f,	0.f, 0.f,
-		-1.0f,  1.0f, -1.0f,	1.f, 0.f,
-		-1.0f,  1.0f, -1.0f,	1.f, 0.f,
-		-1.0f,  1.0f,  1.0f,	1.f, 1.f,
-		-1.0f, -1.0f,  1.0f,	0.f, 1.f,
-
-		 1.0f, -1.0f, -1.0f,	0.f, 0.f,
-		 1.0f, -1.0f,  1.0f,	0.f, 1.f,
-		 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-		 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-		 1.0f,  1.0f, -1.0f,	1.f, 0.f,
-		 1.0f, -1.0f, -1.0f,	0.f, 0.f,
-
-		-1.0f, -1.0f,  1.0f,	0.f, 0.f,
-		-1.0f,  1.0f,  1.0f,	0.f, 1.f,
-		 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-		 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-		 1.0f, -1.0f,  1.0f,	1.f, 0.f,
-		-1.0f, -1.0f,  1.0f,	0.f, 0.f,
-
-		-1.0f,  1.0f, -1.0f,	0.f, 0.f,
-		 1.0f,  1.0f, -1.0f,	1.f, 0.f,
-		 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-		 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-		-1.0f,  1.0f,  1.0f,	0.f, 1.f,
-		-1.0f,  1.0f, -1.0f,	0.f, 0.f,
-
-		-1.0f, -1.0f, -1.0f,	0.f, 0.f,
-		-1.0f, -1.0f,  1.0f,	0.f, 1.f,
-		 1.0f, -1.0f, -1.0f,	1.f, 0.f,
-		 1.0f, -1.0f, -1.0f,	1.f, 0.f,
-		-1.0f, -1.0f,  1.0f,	0.f, 1.f,
-		 1.0f, -1.0f,  1.0f,	1.f, 1.f,
-	};
-	return device->createBuffer("CubeVertexBuffer", gfx::BufferType::Vertex, sizeof(vertices), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, vertices);
+	return device->createBuffer("CubeVertexBuffer", gfx::BufferType::Vertex, sizeof(s_vertices), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, s_vertices);
 }
 
 // TODO: Should use JSON for this ? JSON that can be generated with a script reading all files in shaders folder (generating DB)
@@ -157,6 +162,44 @@ void Editor::onCreate(int argc, char* argv[])
 	data.addUniformBuffer(m_uniformBuffer);
 	data.addSampledImage(m_texture, m_sampler);
 	device->update(m_descriptorSet, data);
+
+
+	{ // Create a static mesh & archive it
+		using namespace app;
+		{
+			app::ArchiveStaticMesh mesh(ArchivePath("../../../asset/library/mesh.smesh"));
+			{
+				app::ArchiveBatch batch(ArchivePath("../../../asset/library/mesh.batch"));
+				batch.geometry = ArchiveGeometry(ArchivePath("../../../asset/library/mesh.geo"));
+				// indices
+				batch.geometry.indices.resize(s_vertexCount);
+				for (uint32_t i = 0; i < s_vertexCount; i++)
+					batch.geometry.indices[i] = i;
+				// Vertices
+				batch.geometry.vertices.resize(s_vertexCount);
+				Memory::copy(batch.geometry.vertices.data(), s_vertices, sizeof(s_vertices));
+				batch.geometry.bounds = aabbox(point3f(-1.f), point3f(1.f));
+				// Material
+				batch.material = ArchiveMaterial(ArchivePath("../../../asset/library/mesh.mat"));
+
+				mesh.batches.append(batch);
+			}
+			ArchiveSaveResult res = mesh.save(mesh.getPath());
+		}
+		{
+			app::ArchiveStaticMesh mesh(ArchivePath("../../../asset/library/mesh.smesh"));
+			ArchiveLoadResult res = mesh.load(mesh.getPath());
+			mesh.batches;
+		}
+
+		/*AssetLibrary library;
+		ResourceID id = library.addStaticMesh("");
+		ResourceHandle<app::StaticMesh> smesh = library.getStaticMesh(id);
+		if (smesh.isLoaded())
+		{
+			app::StaticMesh mesh = smesh.get();
+		}*/
+	}
 }
 
 void Editor::onDestroy()

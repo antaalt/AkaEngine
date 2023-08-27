@@ -13,8 +13,8 @@ using namespace aka;
 struct ArchiveScene : Archive {
 	std::vector<ArchiveStaticMesh> meshes;
 
-	void load(const Path& path) override;
-	void save(const Path& path) override;
+	ArchiveLoadResult load(const ArchivePath& path) override;
+	ArchiveSaveResult save(const ArchivePath& path) override;
 };
 
 struct Scene : Resource {

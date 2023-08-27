@@ -11,7 +11,11 @@ add_executable(AkaEditor
  	"src/Renderer/Renderer.hpp" 
  	"src/Importer/Importer.hpp"
  	"src/Asset/Asset.hpp"
-)
+	"src/Asset/Archive/ArchiveGeometry.cpp" 
+	"src/Asset/Archive/ArchiveMaterial.cpp" 
+	"src/Asset/Archive/ArchiveBatch.cpp" 
+	"src/Asset/Archive/ArchiveStaticMesh.cpp"
+ )
 #add_definitions(AKA_USE_IMGUI_LAYER)
 
 target_link_libraries(AkaEditor Aka)

@@ -28,17 +28,26 @@ struct Resource {
 	//virtual Resource* clone() = 0;
 };
 
+enum class ResourceState {
+	Unknown,
+	Disk,
+	Pending,
+	Loaded,
+};
 
 template <typename T>
 struct ResourceHandle {
-	static_assert(std::is_base_of<T, Resource>::value, "Type should inherit Resource");
+	static_assert(std::is_base_of<Resource, T>::value, "Type should inherit Resource");
 
-	std::shared_ptr<T> resource;
+	bool isLoaded() const { return m_state == ResourceState::Loaded; }
+	ResourceState getState() const { return m_state; }
 
-	bool isLoaded() const;
+	const T& get() const { return *m_resource.get(); }
+	T& get() { return *m_resource.get(); }
 
-	const T& get() const;
-	T& get();
+private:
+	std::shared_ptr<T> m_resource;
+	ResourceState m_state; // Should be a pointer shared between instance as well as ref count.
 };
 
 }
