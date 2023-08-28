@@ -4,9 +4,10 @@
 
 #include "StaticMesh.hpp"
 #include "Resource.hpp"
-#include "../Archive/ArchiveScene.hpp"
 
 namespace app {
+
+struct ArchiveScene;
 
 using namespace aka;
 
@@ -44,7 +45,7 @@ struct HierarchyComponent {
 };
 
 // ------------------------------------
-// Zorld
+// World
 // ------------------------------------
 struct World {
 	// Each scene has a single main camera
