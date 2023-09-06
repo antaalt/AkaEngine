@@ -2,9 +2,11 @@
 
 #include <Aka/OS/Archive.h>
 
+#include "../AssetLibrary.hpp"
+
 namespace app {
 
-ArchiveLoadResult ArchiveStaticMesh::load(const ArchivePath& path)
+ArchiveLoadResult ArchiveStaticMesh::load(AssetLibrary* _library, const AssetPath& path)
 {
 	FileStream stream(path.getPath(), FileMode::Read, FileType::Binary);
 	BinaryArchive archive(stream);
@@ -21,15 +23,16 @@ ArchiveLoadResult ArchiveStaticMesh::load(const ArchivePath& path)
 	uint32_t batchCount = archive.read<uint32_t>();
 	for (uint32_t i = 0; i < batchCount; i++)
 	{
-		ArchivePath path = ArchivePath::read(archive);
-		this->batches.append(ArchiveBatch(path));
-		this->batches.last().load(path);
+		AssetID batchID = archive.read<AssetID>();
+		AssetInfo info = _library->getAssetInfo(batchID);
+		this->batches.append(ArchiveBatch(batchID));
+		this->batches.last().load(_library, info.path);
 	}
 
 	return ArchiveLoadResult::Success;
 }
 
-ArchiveSaveResult ArchiveStaticMesh::save(const ArchivePath& path)
+ArchiveSaveResult ArchiveStaticMesh::save(AssetLibrary* _library, const AssetPath& path)
 {
 	FileStream stream(path.getPath(), FileMode::Write, FileType::Binary);
 	BinaryArchive archive(stream);
@@ -42,9 +45,9 @@ ArchiveSaveResult ArchiveStaticMesh::save(const ArchivePath& path)
 	archive.write<uint32_t>((uint32_t)this->batches.size());
 	for (uint32_t i = 0; i < this->batches.size(); i++)
 	{
-		ArchivePath batchPath = this->batches[i].getPath();
-		ArchivePath::write(archive, batchPath);
-		this->batches[i].save(batchPath);
+		archive.write<AssetID>(this->batches[i].id());
+		AssetInfo info = _library->getAssetInfo(this->batches[i].id());
+		this->batches[i].save(_library, info.path);
 	}
 
 	return ArchiveSaveResult::Success;

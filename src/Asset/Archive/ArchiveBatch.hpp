@@ -20,10 +20,10 @@ enum class ArchiveBatchVersion : uint32_t
 struct ArchiveBatch : Archive
 {
 	ArchiveBatch() {}
-	ArchiveBatch(const ArchivePath& path) : Archive(path), material(ArchivePath::invalid()), geometry(ArchivePath::invalid()) {}
+	ArchiveBatch(AssetID path) : Archive(path), material(AssetID::Invalid), geometry(AssetID::Invalid) {}
 
-	ArchiveLoadResult load(const ArchivePath& path) override;
-	ArchiveSaveResult save(const ArchivePath& path) override;
+	ArchiveLoadResult load(AssetLibrary* _library, const AssetPath& path) override;
+	ArchiveSaveResult save(AssetLibrary* _library, const AssetPath& path) override;
 
 	ArchiveMaterial material;
 	ArchiveGeometry geometry;

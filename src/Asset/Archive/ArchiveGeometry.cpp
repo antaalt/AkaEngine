@@ -2,9 +2,11 @@
 
 #include <Aka/OS/Archive.h>
 
+#include "../AssetLibrary.hpp"
+
 namespace app {
 
-ArchiveLoadResult ArchiveGeometry::load(const ArchivePath& path)
+ArchiveLoadResult ArchiveGeometry::load(AssetLibrary* _library, const AssetPath& path)
 {
 	FileStream stream(path.getPath(), FileMode::Read, FileType::Binary);
 	BinaryArchive archive(stream);
@@ -35,7 +37,7 @@ ArchiveLoadResult ArchiveGeometry::load(const ArchivePath& path)
 	return ArchiveLoadResult::Success;
 }
 
-ArchiveSaveResult ArchiveGeometry::save(const ArchivePath& path)
+ArchiveSaveResult ArchiveGeometry::save(AssetLibrary* _library, const AssetPath& path)
 {
 	FileStream stream(path.getPath(), FileMode::Write, FileType::Binary);
 	BinaryArchive archive(stream);

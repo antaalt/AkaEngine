@@ -2,7 +2,6 @@
 
 #include <Aka/Aka.h>
 
-#include <map>
 
 namespace app {
 
@@ -17,14 +16,17 @@ enum class AssetType {
 	StaticMesh,
 	DynamicMesh,
 	Image,
-	ImageCube,
-	ImageArray,
 	Font,
 	Audio,
 	Scene,
 };
+// Not an absolute path, but a relative path
 struct AssetPath {
-	aka::Path path; // might be a path to am agglomerated buffer for perf
+	AssetPath(const char* _path) : m_path(_path) {}
+
+	aka::Path getPath() const { return m_path; }
+private:
+	aka::Path m_path; // might be a path to am agglomerated buffer for perf
 };
 struct AssetInfo {
 	AssetPath path;
@@ -33,11 +35,13 @@ struct AssetInfo {
 };
 
 // Strict type generated from path ideally & storing asset type.
-enum class AssetID : uint64_t {}; // A single resource might use multiple assets.
+enum class AssetID : uint64_t {
+	Invalid = -1
+}; // A single resource might use multiple assets.
 
 inline AssetID generateAssetIDFromAssetPath(const AssetPath& path)
 {
-	size_t hash = aka::hash(path.path.cstr(), path.path.length());
+	size_t hash = aka::hash(path.getPath().cstr(), path.getPath().length());
 	return AssetID(hash);
 }
 

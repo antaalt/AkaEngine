@@ -37,7 +37,7 @@ void StaticMesh::create(gfx::GraphicDevice* _device, const ArchiveStaticMesh& _a
 		// TODO mips
 		const void* albedoData = batch.material.albedo.data.data();
 		gfx::TextureHandle gfxAlbedoTexture = _device->createTexture("AlbedoTexture", batch.material.albedo.width, batch.material.albedo.height, 1, gfx::TextureType::Texture2D, 1, 1, gfx::TextureFormat::RGBA8, gfx::TextureUsage::ShaderResource, &albedoData);
-		const void* normalData = batch.material.albedo.data.data();
+		const void* normalData = batch.material.normal.data.data();
 		gfx::TextureHandle gfxNormalTexture = _device->createTexture("AlbedoTexture", batch.material.normal.width, batch.material.normal.height, 1, gfx::TextureType::Texture2D, 1, 1, gfx::TextureFormat::RGBA8, gfx::TextureUsage::ShaderResource, &normalData);
 
 		MaterialUniformBuffer ubo{};
@@ -66,8 +66,8 @@ void StaticMesh::create(gfx::GraphicDevice* _device, const ArchiveStaticMesh& _a
 		indices.append(batch.geometry.indices);
 	}
 	this->attributes.add(gfx::VertexSemantic::Position, gfx::VertexFormat::Float, gfx::VertexType::Vec3).add(gfx::VertexSemantic::TexCoord0, gfx::VertexFormat::Float, gfx::VertexType::Vec2);
-	this->gfxVertexBuffer = _device->createBuffer("VertexBuffer", gfx::BufferType::Vertex, sizeof(Vertex) * vertices.size(), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, vertices.data());
-	this->gfxIndexBuffer = _device->createBuffer("IndexBuffer", gfx::BufferType::Index, sizeof(uint32_t) * indices.size(), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, indices.data());;
+	this->gfxVertexBuffer = _device->createBuffer("VertexBuffer", gfx::BufferType::Vertex, (uint32_t)(sizeof(Vertex) * vertices.size()), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, vertices.data());
+	this->gfxIndexBuffer = _device->createBuffer("IndexBuffer", gfx::BufferType::Index, (uint32_t)(sizeof(uint32_t) * indices.size()), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, indices.data());;
 }
 
 void StaticMesh::destroy(gfx::GraphicDevice* _device)

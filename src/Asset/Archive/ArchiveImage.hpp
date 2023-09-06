@@ -17,9 +17,9 @@ enum class ArchiveImageVersion : uint32_t
 struct ArchiveImage : Archive
 {
 	ArchiveImage() {}
-	ArchiveImage(const ArchivePath& path) : Archive(path) {}
-	ArchiveLoadResult load(const ArchivePath& blob) override;
-	ArchiveSaveResult save(const ArchivePath& blob) override;
+	ArchiveImage(const AssetID& id) : Archive(id) {}
+	ArchiveLoadResult load(AssetLibrary* _library, const AssetPath& path) override;
+	ArchiveSaveResult save(AssetLibrary* _library, const AssetPath& path) override;
 
 	Vector<uint8_t> data;
 	uint32_t width;

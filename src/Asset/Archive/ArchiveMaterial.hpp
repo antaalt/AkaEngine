@@ -18,9 +18,9 @@ enum class ArchiveMaterialVersion : uint32_t
 struct ArchiveMaterial : Archive
 {
 	ArchiveMaterial() {}
-	ArchiveMaterial(const ArchivePath& path) : Archive(path) {}
-	ArchiveLoadResult load(const ArchivePath& blob) override;
-	ArchiveSaveResult save(const ArchivePath& blob) override;
+	ArchiveMaterial(const AssetID& id) : Archive(id) {}
+	ArchiveLoadResult load(AssetLibrary* _library, const AssetPath& path) override;
+	ArchiveSaveResult save(AssetLibrary* _library, const AssetPath& path) override;
 
 	color4f color;
 	ArchiveImage albedo;

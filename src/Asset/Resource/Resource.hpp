@@ -8,9 +8,12 @@
 namespace app {
 
 enum class ResourceID : uint32_t {};
+// TODO define DECL_STRICT_TYPE(ResourceID)
 
 // A resource is something we can drop in engine, aka a component. we plug it gameplay component, and we have an actor
 enum class ResourceType {
+	Unknown,
+
 	Scene, // scene is not a component though... its a list of entity with component that we can drop or open ?
 	StaticMesh,
 	DynamicMesh,
@@ -18,6 +21,9 @@ enum class ResourceType {
 	FontMesh,
 	AudioSource,
 	AmbientAudioSource,
+
+	First = Scene,
+	Last = AmbientAudioSource,
 };
 
 // This could be Component directly for ECS.

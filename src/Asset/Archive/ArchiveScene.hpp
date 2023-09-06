@@ -19,6 +19,10 @@ struct ArchiveSceneTransform {
 };
 
 enum class ArchiveSceneID : uint32_t {};
+constexpr ArchiveSceneID InvalidArchiveSceneID = static_cast<ArchiveSceneID>(-1);
+inline std::underlying_type<ArchiveSceneID>::type toIntegral(ArchiveSceneID value) { return static_cast<std::underlying_type<ArchiveSceneID>::type>(value); }
+//ArchiveSceneID operator+(ArchiveSceneID lhs, ArchiveSceneID rhs) { return static_cast<ArchiveSceneID>(toIntegral(lhs) + toIntegral(rhs)); }
+//ArchiveSceneID operator-(ArchiveSceneID lhs, ArchiveSceneID rhs) { return static_cast<ArchiveSceneID>(toIntegral(lhs) - toIntegral(rhs)); }
 
 // TODO move to scene
 enum class SceneComponent {
@@ -41,6 +45,7 @@ enum class SceneComponentMask {
 	PointLight = 1 << aka::EnumToIndex(SceneComponent::PointLight),
 	SunLight   = 1 << aka::EnumToIndex(SceneComponent::SunLight),
 };
+AKA_IMPLEMENT_BITMASK_OPERATOR(SceneComponentMask)
 
 template<typename T>
 struct BitMask
@@ -49,25 +54,31 @@ struct BitMask
 	void add(T value) {}
 	void remove(T value) {}
 	void test(T value) {}
+
+	static BitMask<T> get(T value) { return 1U << EnumToIndex(value); }
+private:
+	T m_value;
 };
 
-AKA_IMPLEMENT_BITMASK_OPERATOR(SceneComponent)
 
 
 struct ArchiveSceneEntity {
-	SceneComponent components;
+	SceneComponentMask components;
 	ArchiveSceneID id[EnumCount<SceneComponent>()];
 };
 
 struct ArchiveScene : Archive {
+	ArchiveScene() {}
+	ArchiveScene(AssetID id) : Archive(id) {}
+
 	Vector<ArchiveStaticMesh> meshes;
 	Vector<ArchiveSceneTransform> transforms;
 	Vector<ArchiveSceneEntity> entities;
 	// TODO: add lights, envmap, cameras, gameplay struct
 
 
-	ArchiveLoadResult load(const ArchivePath& path) override;
-	ArchiveSaveResult save(const ArchivePath& path) override;
+	ArchiveLoadResult load(AssetLibrary* _library, const AssetPath& path) override;
+	ArchiveSaveResult save(AssetLibrary* _library, const AssetPath& path) override;
 };
 
 };

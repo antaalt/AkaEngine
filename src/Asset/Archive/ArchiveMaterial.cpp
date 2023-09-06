@@ -2,9 +2,11 @@
 
 #include <Aka/OS/Archive.h>
 
+#include "../AssetLibrary.hpp"
+
 namespace app {
 
-ArchiveLoadResult ArchiveMaterial::load(const ArchivePath& path)
+ArchiveLoadResult ArchiveMaterial::load(AssetLibrary* _library, const AssetPath& path)
 {
 	FileStream stream(path.getPath(), FileMode::Read, FileType::Binary);
 	BinaryArchive archive(stream);
@@ -20,16 +22,22 @@ ArchiveLoadResult ArchiveMaterial::load(const ArchivePath& path)
 
 	archive.read(this->color);
 
-	ArchivePath albedoPath = ArchivePath::read(archive);
-	this->albedo.load(albedoPath);
+	{
+		AssetID albedoID = archive.read<AssetID>();
+		AssetInfo info = _library->getAssetInfo(albedoID);
+		this->albedo.load(_library, info.path);
+	}
 
-	ArchivePath normalPath = ArchivePath::read(archive);
-	this->normal.load(normalPath);
+	{
+		AssetID normalID = archive.read<AssetID>();
+		AssetInfo info = _library->getAssetInfo(normalID);
+		this->normal.load(_library, info.path);
+	}
 
 	return ArchiveLoadResult::Success;
 }
 
-ArchiveSaveResult ArchiveMaterial::save(const ArchivePath& path)
+ArchiveSaveResult ArchiveMaterial::save(AssetLibrary* _library, const AssetPath& path)
 {
 	FileStream stream(path.getPath(), FileMode::Write, FileType::Binary);
 	BinaryArchive archive(stream);
@@ -41,11 +49,17 @@ ArchiveSaveResult ArchiveMaterial::save(const ArchivePath& path)
 
 	archive.write(this->color);
 
-	ArchivePath::write(archive, this->albedo.getPath());
-	this->albedo.save(this->albedo.getPath());
+	{
+		archive.write<AssetID>(this->albedo.id());
+		AssetInfo info = _library->getAssetInfo(this->albedo.id());
+		this->albedo.save(_library, info.path);
+	}
 
-	ArchivePath::write(archive, this->normal.getPath());
-	this->normal.save(this->normal.getPath());
+	{
+		archive.write<AssetID>(this->normal.id());
+		AssetInfo info = _library->getAssetInfo(this->normal.id());
+		this->normal.save(_library, info.path);
+	}
 
 	return ArchiveSaveResult::Success;
 }

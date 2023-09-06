@@ -2,9 +2,11 @@
 
 #include <Aka/OS/Archive.h>
 
+#include "../AssetLibrary.hpp"
+
 namespace app {
 
-ArchiveLoadResult ArchiveBatch::load(const ArchivePath& path)
+ArchiveLoadResult ArchiveBatch::load(AssetLibrary* _library, const AssetPath& path)
 {
 	FileStream stream(path.getPath(), FileMode::Read, FileType::Binary);
 	BinaryArchive archive(stream);
@@ -18,18 +20,20 @@ ArchiveLoadResult ArchiveBatch::load(const ArchivePath& path)
 	if (version > ArchiveBatchVersion::Latest)
 		return ArchiveLoadResult::IncompatibleVersion;
 	{
-		ArchivePath path = ArchivePath::read(archive);
+		AssetID materialID = archive.read<AssetID>();
 
-		this->material = ArchiveMaterial(path);
-		ArchiveLoadResult result = this->material.load(path);
+		this->material = ArchiveMaterial(materialID);
+		AssetInfo info = _library->getAssetInfo(materialID);
+		ArchiveLoadResult result = this->material.load(_library, info.path);
 		if (result != ArchiveLoadResult::Success)
 			return ArchiveLoadResult::InvalidDependency;
 	}
 	{
-		ArchivePath path = ArchivePath::read(archive);
+		AssetID geometryID = archive.read<AssetID>();
 
-		this->geometry = ArchiveGeometry(ArchivePath(path));
-		ArchiveLoadResult result = this->geometry.load(ArchivePath(path));
+		this->geometry = ArchiveGeometry(geometryID);
+		AssetInfo info = _library->getAssetInfo(geometryID);
+		ArchiveLoadResult result = this->geometry.load(_library, info.path);
 		if (result != ArchiveLoadResult::Success)
 			return ArchiveLoadResult::InvalidDependency;
 	}
@@ -38,7 +42,7 @@ ArchiveLoadResult ArchiveBatch::load(const ArchivePath& path)
 	return ArchiveLoadResult::Success;
 }
 
-ArchiveSaveResult ArchiveBatch::save(const ArchivePath& path)
+ArchiveSaveResult ArchiveBatch::save(AssetLibrary* _library, const AssetPath& path)
 {
 	FileStream stream(path.getPath(), FileMode::Write, FileType::Binary);
 	BinaryArchive archive(stream);
@@ -49,18 +53,16 @@ ArchiveSaveResult ArchiveBatch::save(const ArchivePath& path)
 	archive.write<ArchiveBatchVersion>(ArchiveBatchVersion::Latest);
 
 	{
-		ArchivePath path = this->material.getPath();
-		ArchivePath::write(archive, path);
-
-		ArchiveSaveResult result = this->material.save(ArchivePath(path));
+		archive.write<AssetID>(this->material.id());
+		AssetInfo info = _library->getAssetInfo(this->material.id());
+		ArchiveSaveResult result = this->material.save(_library, info.path);
 		if (result != ArchiveSaveResult::Success)
 			return ArchiveSaveResult::InvalidDependency;
 	}
 	{
-		ArchivePath path = this->geometry.getPath();
-		ArchivePath::write(archive, path);
-
-		ArchiveSaveResult result = this->geometry.save(ArchivePath(path));
+		archive.write<AssetID>(this->geometry.id());
+		AssetInfo info = _library->getAssetInfo(this->geometry.id());
+		ArchiveSaveResult result = this->geometry.save(_library, info.path);
 		if (result != ArchiveSaveResult::Success)
 			return ArchiveSaveResult::InvalidDependency;
 	}

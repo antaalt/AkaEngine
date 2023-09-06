@@ -1,9 +1,13 @@
 #include "ArchiveScene.hpp"
 
+#include "../AssetLibrary.hpp"
+
 namespace app {
 
-ArchiveLoadResult app::ArchiveScene::load(const ArchivePath& path)
+ArchiveLoadResult app::ArchiveScene::load(AssetLibrary* _library, const AssetPath& path)
 {
+	// Archive opened by lirbary ?
+	// 
 	// Quid de si ça a déjà chargé ? Archive cache ?
 	// Only big resources such as mesh & co could be efficiently cached. 
 	// Should read registry when loading mesh
@@ -19,45 +23,57 @@ ArchiveLoadResult app::ArchiveScene::load(const ArchivePath& path)
 	if (version > ArchiveSceneVersion::Latest)
 		return ArchiveLoadResult::IncompatibleVersion;
 
+	// TODO: should write assetID aswell
+
 	// Before loading entities, load all components that will be used in the scene.
-	// TODO: Some of these data should be cached somehow
-	// Or we just save the path / assetID & load it separately...
-	// Entities just reference components using ID
-	uint32_t nbStaticMesh = archive.read<uint32_t>();
-	for (uint32_t iMesh = 0; iMesh < nbStaticMesh; iMesh++)
 	{
-		ArchivePath path = ArchivePath::read(archive);
-		// TODO cache this somehow, request registry before loading.
-		this->meshes.append(ArchiveStaticMesh(path));
-		this->meshes.last().load(path);
+		uint32_t nbTransform = archive.read<uint32_t>();
+		for (uint32_t iTransform = 0; iTransform < nbTransform; iTransform++)
+		{
+			ArchiveSceneTransform transform{};
+			transform.matrix = archive.read<mat4f>();
+			this->transforms.append(transform);
+		}
+	}
+	{
+		// hierarchy only need an ID, do not store it.
+	}
+	{
+		uint32_t nbStaticMesh = archive.read<uint32_t>();
+		for (uint32_t iMesh = 0; iMesh < nbStaticMesh; iMesh++)
+		{
+			AssetID assetID = archive.read<AssetID>();
+			AssetInfo info = _library->getAssetInfo(assetID);
+			this->meshes.append(ArchiveStaticMesh(assetID));
+			// TODO cache
+			this->meshes.last().load(_library, info.path);
+		}
 	}
 
 	uint32_t nbEntity = archive.read<uint32_t>();
 	for (uint32_t iEntity = 0; iEntity < nbEntity; iEntity++)
 	{
-		// For each entity,
-		SceneComponent components = archive.read<SceneComponent>();
-		if (asBool(components & SceneComponent::Transform))
-		{
-			ArchiveSceneID parentID = archive.read<ArchiveSceneID>();
-			//mat4f transform = archive.read<mat4f>();
-		}
-		if (asBool(components & SceneComponent::Hierarchy))
-		{
-			ArchiveSceneID parentID = archive.read<ArchiveSceneID>();
-		}
-		if (asBool(components & SceneComponent::StaticMesh))
-		{
-			// This is meshID from local array.
-			ArchiveSceneID meshID = archive.read<ArchiveSceneID>();
+		ArchiveSceneEntity entity{};
+		entity.components = archive.read<SceneComponentMask>();
 
+		for (uint32_t i = 0; i < EnumCount<SceneComponent>(); i++)
+		{
+			if (asBool(static_cast<SceneComponentMask>(1 << i) & entity.components))
+			{
+				entity.id[i] = archive.read<ArchiveSceneID>();
+			}
+			else
+			{
+				entity.id[i] = InvalidArchiveSceneID;
+			}
+			this->entities.append(entity);
 		}
 	}
 
 	return ArchiveLoadResult::Success;
 }
 
-ArchiveSaveResult app::ArchiveScene::save(const ArchivePath& path)
+ArchiveSaveResult app::ArchiveScene::save(AssetLibrary* _library, const AssetPath& path)
 {
 	FileStream stream(path.getPath(), FileMode::Write, FileType::Binary);
 	BinaryArchive archive(stream);
@@ -67,6 +83,39 @@ ArchiveSaveResult app::ArchiveScene::save(const ArchivePath& path)
 	archive.write<char>(signature, 4);
 	archive.write<ArchiveSceneVersion>(ArchiveSceneVersion::Latest);
 
+	{
+		archive.write<uint32_t>((uint32_t)this->transforms.size());
+		for (size_t iTransform = 0; iTransform < this->transforms.size(); iTransform++)
+		{
+			archive.write<mat4f>(this->transforms[iTransform].matrix);
+		}
+	}
+	{
+		// hierarchy only need an ID, do not store it.
+	}
+	{
+		archive.write<uint32_t>((uint32_t)this->meshes.size());
+		for (size_t iMesh = 0; iMesh < this->meshes.size(); iMesh++)
+		{
+			archive.write<AssetID>(this->meshes[iMesh].id());
+		}
+	}
+
+	archive.write<uint32_t>((uint32_t)this->entities.size());
+	for (size_t iEntity = 0; iEntity < this->entities.size(); iEntity++)
+	{
+		ArchiveSceneEntity& entity = this->entities[iEntity];
+		archive.write<SceneComponentMask>(entity.components);
+
+		for (uint32_t i = 0; i < EnumCount<SceneComponent>(); i++)
+		{
+			SceneComponentMask mask = static_cast<SceneComponentMask>(1 << i);
+			if (asBool(mask & entity.components))
+			{
+				archive.write<ArchiveSceneID>(entity.id[i]);
+			}
+		}
+	}
 
 	return ArchiveSaveResult::Success;
 }

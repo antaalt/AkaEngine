@@ -4,7 +4,7 @@
 
 namespace app {
 
-ArchiveLoadResult ArchiveImage::load(const ArchivePath& path)
+ArchiveLoadResult ArchiveImage::load(AssetLibrary* _library, const AssetPath& path)
 {
 	FileStream stream(path.getPath(), FileMode::Read, FileType::Binary);
 	BinaryArchive archive(stream);
@@ -36,7 +36,7 @@ ArchiveLoadResult ArchiveImage::load(const ArchivePath& path)
 	return ArchiveLoadResult::Success;
 }
 
-ArchiveSaveResult ArchiveImage::save(const ArchivePath& path)
+ArchiveSaveResult ArchiveImage::save(AssetLibrary* _library, const AssetPath& path)
 {
 	FileStream stream(path.getPath(), FileMode::Write, FileType::Binary);
 	BinaryArchive archive(stream);
@@ -55,7 +55,7 @@ ArchiveSaveResult ArchiveImage::save(const ArchivePath& path)
 	if (encodedData.empty())
 		return ArchiveSaveResult::Failed;
 
-	archive.write<uint32_t>(encodedData.size());
+	archive.write<uint32_t>((uint32_t)encodedData.size());
 	archive.write(encodedData.data(), encodedData.size());
 
 	return ArchiveSaveResult::Success;

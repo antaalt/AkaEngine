@@ -16,10 +16,11 @@ enum class ArchiveStaticMeshVersion : uint32_t
 };
 
 struct ArchiveStaticMesh : Archive {
-	ArchiveStaticMesh(const ArchivePath& path) : Archive(path) {}
+	ArchiveStaticMesh() {}
+	ArchiveStaticMesh(AssetID id) : Archive(id) {}
 
-	ArchiveLoadResult load(const ArchivePath& path) override;
-	ArchiveSaveResult save(const ArchivePath& path) override;
+	ArchiveLoadResult load(AssetLibrary* _library, const AssetPath& path) override;
+	ArchiveSaveResult save(AssetLibrary* _library, const AssetPath& path) override;
 
 	// LOD will be generated at runtime, maybe cache it somewhere for perf...
 	// Use simplygon or mesh opt...

@@ -23,10 +23,10 @@ struct Vertex {
 struct ArchiveGeometry : Archive 
 {
 	ArchiveGeometry() {}
-	ArchiveGeometry(const ArchivePath& path) : Archive(path) {}
+	ArchiveGeometry(AssetID id) : Archive(id) {}
 
-	ArchiveLoadResult load(const ArchivePath& path) override;
-	ArchiveSaveResult save(const ArchivePath& path) override;
+	ArchiveLoadResult load(AssetLibrary* _library, const AssetPath& path) override;
+	ArchiveSaveResult save(AssetLibrary* _library, const AssetPath& path) override;
 
 	Vector<Vertex> vertices;
 	Vector<uint32_t> indices;

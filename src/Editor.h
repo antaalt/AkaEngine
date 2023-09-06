@@ -6,7 +6,9 @@
 
 #include "Asset/Asset.hpp"
 #include "Asset/Archive/ArchiveStaticMesh.hpp"
+#include "Asset/Archive/ArchiveScene.hpp"
 #include "Asset/Resource/StaticMesh.hpp"
+#include "Asset/Resource/Scene.hpp"
 #include "Asset/AssetLibrary.hpp"
 
 using namespace aka;
@@ -39,5 +41,7 @@ private:
 private:
 	app::AssetLibrary m_library;
 	app::ResourceID m_resourceID;
+	app::ResourceID m_sceneID;
 	app::ResourceHandle<app::StaticMesh> m_resource;
+	app::ResourceHandle<app::Scene> m_scene;
 };

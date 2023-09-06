@@ -5,6 +5,8 @@
 #include "Resource/Scene.hpp"
 #include "Asset.hpp"
 
+#include "Archive/ArchiveScene.hpp"
+
 #include <map>
 
 namespace app {
@@ -85,48 +87,134 @@ private:
 	std::map<AssetID, AssetInfo>& m_assets;
 };
 
+inline ResourceType getResourceType(AssetType _type)
+{
+	switch (_type)
+	{
+	default:
+	case AssetType::Mesh:
+	case AssetType::MeshBatch:
+	case AssetType::MeshMaterial:
+	case AssetType::MeshGeometry:
+	case AssetType::DynamicMesh:
+	case AssetType::Image:
+	case AssetType::Font:
+	case AssetType::Audio:
+		return ResourceType::Unknown;
+	case AssetType::StaticMesh:
+		return ResourceType::StaticMesh;
+	case AssetType::Scene:
+		return ResourceType::Scene;
+	}
+	return ResourceType::Unknown;
+}
+
 class AssetLibrary {
 public:
 	// parse library.json & store AssetInfo with AssetID
+	// Or parse whole folder looking for asset, with headers, we can id them
 	void parse();
 	// serialize library.json 
 	void serialize();
 public:
 	// For importer.
-	ResourceID registerAsset(const ArchivePath& _path, AssetType _assetType) {
-		AssetID assetID = generateAssetIDFromAssetPath(AssetPath{ _path.m_path });
-		auto itAsset = m_assets.insert(std::make_pair(assetID, AssetInfo{ AssetPath{ _path.m_path }, _assetType }));
+	AssetID registerAsset(const AssetPath& _path, AssetType _assetType) {
+		AssetID assetID = generateAssetIDFromAssetPath(_path);
+		auto itAsset = m_assets.insert(std::make_pair(assetID, AssetInfo{ _path, _assetType }));
 		if (!itAsset.second)
-			return ResourceID(-1);
+			return AssetID::Invalid;
 
-		auto itAsset2 = m_assets.insert(std::make_pair(assetID, AssetInfo{ AssetPath{ _path.m_path }, _assetType }));
+		auto itAsset2 = m_assets.insert(std::make_pair(assetID, AssetInfo{ _path, _assetType }));
 		ResourceID resourceID = generateResourceIDFromAssetID(assetID);
 
-		auto itResource = m_resources.insert(std::make_pair(resourceID, assetID));
-		if (!itResource.second)
-			return ResourceID(-1);
+		ResourceType resourceType = getResourceType(_assetType);
+		if (resourceType != ResourceType::Unknown)
+		{
+			auto itResource = m_resources.insert(std::make_pair(resourceID, assetID));
+			if (!itResource.second)
+				return AssetID::Invalid;
+		}
 
 		// TODO add check for type which read file (to check it exist, & check type is valid)
+		// switch type, read using archive (only header), check result.
 
-		return resourceID;
+		return assetID;
+	}
+	ResourceID getResourceID(AssetID _assetID)
+	{
+		return generateResourceIDFromAssetID(_assetID);
 	}
 public:
+	AssetInfo getAssetInfo(AssetID _id)
+	{
+		return m_assets.find(_id)->second;
+	}
 	// Function will check if asset exist
-	ResourceHandle<Scene> getScene(ResourceID _asset);
-	ResourceHandle<StaticMesh> getStaticMesh(ResourceID _resourceID) {
+	ResourceHandle<Scene> getScene(ResourceID _resourceID)
+	{
+		// Check if resource already exist.
+		auto itScene = m_scenes.find(_resourceID);
+		if (itScene != m_scenes.end())
+		{
+			return itScene->second;
+		}
+		// Get assetID corresponding to resource.
+		auto itResource = m_resources.find(_resourceID);
+		if (itResource == m_resources.end())
+		{
+			return ResourceHandle<Scene>::invalid();
+		}
+		AssetID assetID = itResource->second;
+		// Get assetInfo
+		auto itAsset = m_assets.find(itResource->second);
+		if (itAsset == m_assets.end())
+		{
+			return ResourceHandle<Scene>::invalid();
+		}
+		AssetInfo assetInfo = itAsset->second;
+		auto scene = std::make_shared<Scene>();
+		ArchiveScene archive(itResource->second);
+		ArchiveLoadResult res = archive.load(this, assetInfo.path);
+		AKA_ASSERT(res == ArchiveLoadResult::Success, "Failed loading");
+
+		auto it = m_scenes.insert(std::make_pair(_resourceID, ResourceHandle<Scene>(ResourceState::Loaded)));
+		if (it.second)
+		{
+			ResourceHandle<Scene> handle = it.first->second;
+			handle.get().create(this, archive);
+			return handle;
+		}
+		else
+		{
+			AKA_UNREACHABLE;
+			return ResourceHandle<Scene>::invalid();
+		}
+	}
+	ResourceHandle<StaticMesh> getStaticMesh(ResourceID _resourceID) 
+	{
+		// Check if resource already exist.
+		auto itMesh = m_staticMeshes.find(_resourceID);
+		if (itMesh != m_staticMeshes.end())
+		{
+			return itMesh->second;
+		}
+		// Get assetID corresponding to resource.
 		auto itResource = m_resources.find(_resourceID);
 		if (itResource == m_resources.end())
 		{
 			return ResourceHandle<StaticMesh>::invalid();
 		}
+		AssetID assetID = itResource->second;
+		// Get assetInfo
 		auto itAsset = m_assets.find(itResource->second);
 		if (itAsset == m_assets.end())
 		{
 			return ResourceHandle<StaticMesh>::invalid();
 		}
+		AssetInfo assetInfo = itAsset->second;
 		auto mesh = std::make_shared<StaticMesh>();
-		ArchiveStaticMesh archive(ArchivePath(itAsset->second.path.path));
-		ArchiveLoadResult res = archive.load(archive.getPath());
+		ArchiveStaticMesh archive(assetID);
+		ArchiveLoadResult res = archive.load(this, assetInfo.path);
 		AKA_ASSERT(res == ArchiveLoadResult::Success, "Failed loading");
 
 		auto it = m_staticMeshes.insert(std::make_pair(_resourceID, ResourceHandle<StaticMesh>(ResourceState::Loaded)));
@@ -138,7 +226,7 @@ public:
 		}
 		else
 		{
-			AKA_NOT_IMPLEMENTED;
+			AKA_UNREACHABLE;
 			return ResourceHandle<StaticMesh>::invalid();
 		}
 	}
