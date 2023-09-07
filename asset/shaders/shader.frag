@@ -1,6 +1,6 @@
 #version 450
 
-layout(location = 0) in vec2 v_worldPosition;
+layout(location = 0) in vec4 v_worldPosition;
 layout(location = 1) in vec2 v_uv;
 
 layout(location = 0) out vec4 o_color;
