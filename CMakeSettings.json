@@ -15,11 +15,6 @@
           "name": "GRAPHIC_VULKAN",
           "value": "True",
           "type": "BOOL"
-        },
-        {
-          "name": "GRAPHIC_OPENGL",
-          "value": "False",
-          "type": "BOOL"
         }
       ]
     }
