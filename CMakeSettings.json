@@ -11,11 +11,7 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "variables": [
-        {
-          "name": "GRAPHIC_VULKAN",
-          "value": "True",
-          "type": "BOOL"
-        }
+        
       ]
     }
   ]
