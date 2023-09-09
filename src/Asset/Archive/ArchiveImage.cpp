@@ -16,12 +16,20 @@ ArchiveImage::ArchiveImage(const AssetID& id) :
 	channels(0)
 {
 }
+// This hugely improve loading time, but we lose in memory.
+// Should store in compressed texture format instead (KTX & DDS)
+//#define STORE_COMPRESSED_IMAGE 1
 ArchiveLoadResult ArchiveImage::load_internal(ArchiveLoadContext& _context, BinaryArchive& _archive)
 {
 	this->width = _archive.read<uint32_t>();
 	this->height = _archive.read<uint32_t>();
 	this->channels = _archive.read<uint32_t>();
 
+#if !defined(STORE_COMPRESSED_IMAGE)
+	uint32_t size = _archive.read<uint32_t>();
+	this->data.resize(size);
+	_archive.read(this->data.data(), size);
+#else
 	uint32_t compressedSize = _archive.read<uint32_t>();
 	Vector<uint8_t> data(compressedSize);
 	_archive.read(data.data(), compressedSize);
@@ -32,7 +40,7 @@ ArchiveLoadResult ArchiveImage::load_internal(ArchiveLoadContext& _context, Bina
 
 	this->data.resize(image.size());
 	Memory::copy(this->data.data(), image.data(), image.size());
-
+#endif
 	return ArchiveLoadResult::Success;
 }
 
@@ -41,6 +49,10 @@ ArchiveSaveResult ArchiveImage::save_internal(ArchiveSaveContext& _context, Bina
 	_archive.write<uint32_t>(this->width);
 	_archive.write<uint32_t>(this->height);
 	_archive.write<uint32_t>(this->channels);
+#if !defined(STORE_COMPRESSED_IMAGE)
+	_archive.write<uint32_t>((uint32_t)this->data.size());
+	_archive.write(this->data.data(), this->data.size());
+#else
 
 	Image image(this->width, this->height, this->channels, this->data.data());
 	std::vector<uint8_t> encodedData = image.encodePNG();
@@ -49,6 +61,7 @@ ArchiveSaveResult ArchiveImage::save_internal(ArchiveSaveContext& _context, Bina
 
 	_archive.write<uint32_t>((uint32_t)encodedData.size());
 	_archive.write(encodedData.data(), encodedData.size());
+#endif
 
 	return ArchiveSaveResult::Success;
 }

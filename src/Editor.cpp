@@ -248,6 +248,7 @@ void Editor::onCreate(int argc, char* argv[])
 		AssetID image1ID = m_library.registerAsset(image1Path, AssetType::Image);
 		AssetID sceneID = m_library.registerAsset(scenePath, AssetType::Scene);
 		m_sceneID = m_library.getResourceID(sceneID);
+		aka::StopWatch watch;
 		{ // Hardcoded import for now
 			app::ArchiveStaticMesh mesh(meshID);
 			{ // Cube Mesh
@@ -392,7 +393,7 @@ void Editor::onCreate(int argc, char* argv[])
 					}
 				}
 			}
-			aka::StopWatch watch;
+			watch.start();
 			ArchiveSaveResult res = mesh.save(ArchiveSaveContext(&m_library), smeshPath);
 			AKA_ASSERT(res == ArchiveSaveResult::Success, "Failed to load mesh.");
 			res = scene.save(ArchiveSaveContext(&m_library), scenePath);
@@ -415,8 +416,8 @@ void Editor::onCreate(int argc, char* argv[])
 			Logger::info("Demo test load time : ", watch.elapsed(), "ms");
 		}
 		watch.start();
-		m_library.load<app::Scene>(id, graphic());
-		m_scene = m_library.get<app::Scene>(m_sceneID, graphic());
+		m_library.load<app::Scene>(m_sceneID, graphic());
+		m_scene = m_library.get<app::Scene>(m_sceneID);
 		Logger::info("Demo load time : ", watch.elapsed(), "ms");
 #if 1
 		watch.start();
