@@ -11,6 +11,10 @@
 
 namespace app {
 
+template<typename T> struct ArchiveTrait { using Archive = Archive; };
+template<> struct ArchiveTrait<Scene> { using Archive = ArchiveScene; };
+template<> struct ArchiveTrait<StaticMesh> { using Archive = ArchiveStaticMesh; };
+
 template <typename T>
 class ResourceIterator
 {
@@ -94,13 +98,16 @@ public:
 public:
 	AssetID registerAsset(const AssetPath& _path, AssetType _assetType);
 	ResourceID getResourceID(AssetID _assetID) const;
-	AssetInfo& getAssetInfo(AssetID _id);
+	AssetID getAssetID(ResourceID _resourceID) const;
+	AssetInfo& getAssetInfo(AssetID _assetID);
 
 public:
 	template <typename T>
 	ResourceHandle<T> get(ResourceID _resourceID);
-	ResourceHandle<Scene> getScene(ResourceID _resourceID, gfx::GraphicDevice* _device = nullptr);
-	ResourceHandle<StaticMesh> getStaticMesh(ResourceID _resourceID, gfx::GraphicDevice* _device = nullptr);
+	template <typename T>
+	ResourceHandle<T> load(ResourceID _resourceID, gfx::GraphicDevice* _device);
+	template <typename T>
+	ResourceHandle<T> load(ResourceID _resourceID, const typename ArchiveTrait<T>::Archive& _archive, gfx::GraphicDevice* _device);
 
 	void destroy(gfx::GraphicDevice* _device);
 
@@ -117,11 +124,21 @@ private:
 	std::map<ResourceID, ResourceHandle<Scene>> m_scenes;
 };
 
+template<> ResourceHandle<Scene> AssetLibrary::get(ResourceID _resourceID);
+template<> ResourceHandle<StaticMesh> AssetLibrary::get(ResourceID _resourceID);
+template<> ResourceHandle<Scene> AssetLibrary::load(ResourceID _resourceID, const ArchiveScene& _archive, gfx::GraphicDevice* _device);
+template<> ResourceHandle<StaticMesh> AssetLibrary::load(ResourceID _resourceID, const ArchiveStaticMesh& _archive, gfx::GraphicDevice* _device);
+
 
 template<typename T>
-inline ResourceHandle<T> AssetLibrary::get(ResourceID _resourceID)
+inline ResourceHandle<T> AssetLibrary::load(ResourceID _resourceID, gfx::GraphicDevice* _device)
 {
-	return ResourceHandle<T>();
+	auto it = m_resources.find(_resourceID);
+	if (it == m_resources.end())
+		return ResourceHandle<T>::invalid();
+	ArchiveTrait<T>::Archive archive(it->second);
+	archive.load(ArchiveLoadContext(this));
+	return load<T>(_resourceID, archive, _device);
 }
 
 }

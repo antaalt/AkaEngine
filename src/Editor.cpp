@@ -415,15 +415,9 @@ void Editor::onCreate(int argc, char* argv[])
 			Logger::info("Demo test load time : ", watch.elapsed(), "ms");
 		}
 		watch.start();
-		m_scene = m_library.getScene(m_sceneID, graphic());
+		m_library.load<app::Scene>(id, graphic());
+		m_scene = m_library.get<app::Scene>(m_sceneID, graphic());
 		Logger::info("Demo load time : ", watch.elapsed(), "ms");
-		if (m_scene.isLoaded())
-		{
-			app::Scene& scene = m_scene.get();
-			scene.world.registry().view<app::Transform3DComponent, app::StaticMeshComponent>().each([&](entt::entity entity, app::Transform3DComponent& transformComp, app::StaticMeshComponent& meshComp) {
-
-			});
-		}
 #if 1
 		watch.start();
 		app::AssimpImporter importer;
@@ -438,22 +432,30 @@ void Editor::onCreate(int argc, char* argv[])
 		m_library.parse();
 		Logger::info("Parsing time : ", watch.elapsed(), "ms");
 
-		app::ResourceID id = app::ResourceID::Invalid;
+		app::ResourceID resourceID = app::ResourceID::Invalid;
+		app::AssetID assetID = app::AssetID::Invalid;
 		for (auto it : m_library.getAssetRange())
 		{
 			if (it.second.type == app::AssetType::Scene)
 			{
-				id = m_library.getResourceID(it.first);
+				assetID = it.first;
+				resourceID = m_library.getResourceID(assetID);
 				break;
 			}
 		}
 		watch.start();
-		m_scene = m_library.getScene(id, graphic());
+		app::ArchiveScene archive(assetID);
+		archive.load(app::ArchiveLoadContext(&m_library));
+		Logger::info("Loading archive time : ", watch.elapsed(), "ms");
+
+		watch.start();
+		m_library.load<app::Scene>(resourceID, archive, graphic());
+		m_scene = m_library.get<app::Scene>(resourceID);
 		if (m_scene.isLoaded())
 		{
 			m_cameraController.set(m_scene.get().getBounds());
 		}
-		Logger::info("Loading time : ", watch.elapsed(), "ms");
+		Logger::info("Loading resource time : ", watch.elapsed(), "ms");
 #endif
 	}
 }

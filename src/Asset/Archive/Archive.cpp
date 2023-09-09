@@ -23,6 +23,7 @@ ArchiveLoadResult Archive::load(ArchiveLoadContext& _context, const Blob& _blob,
 	if (it != _context.cache.end())
 	{
 		copyFrom(it->second);
+		return ArchiveLoadResult::Success; // dependency already loaded
 	}
 	else
 	{
@@ -48,6 +49,7 @@ ArchiveLoadResult Archive::load(ArchiveLoadContext& _context, const AssetPath& _
 	if (it != _context.cache.end())
 	{
 		copyFrom(it->second);
+		return ArchiveLoadResult::Success; // dependency already loaded
 	}
 	else
 	{
@@ -95,11 +97,16 @@ ArchiveSaveResult Archive::save(ArchiveSaveContext& _context, Blob& _blob, bool 
 		if (res != ArchiveSaveResult::Success)
 			return res;
 		_context.cache.insert(id());
+
+		if (_saveDependency)
+			return save_dependency(_context);
+		else
+			return ArchiveSaveResult::Success;
 	}
-	if (_saveDependency)
-		return save_dependency(_context);
 	else
-		return ArchiveSaveResult::Success;
+	{
+		return ArchiveSaveResult::Success; // already written
+	}
 }
 
 ArchiveSaveResult Archive::save(ArchiveSaveContext& _context, const AssetPath& _path, bool _saveDependency)
@@ -118,11 +125,16 @@ ArchiveSaveResult Archive::save(ArchiveSaveContext& _context, const AssetPath& _
 		if (res != ArchiveSaveResult::Success)
 			return res;
 		_context.cache.insert(id());
+	
+		if (_saveDependency)
+			return save_dependency(_context);
+		else
+			return ArchiveSaveResult::Success;
 	}
-	if (_saveDependency)
-		return save_dependency(_context);
 	else
-		return ArchiveSaveResult::Success;
+	{
+		return ArchiveSaveResult::Success; // already written
+	}
 }
 
 ArchiveSaveResult Archive::save(ArchiveSaveContext& _context, bool _saveDependency)

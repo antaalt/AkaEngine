@@ -147,6 +147,14 @@ ResourceID AssetLibrary::getResourceID(AssetID _assetID) const
 	return generateResourceIDFromAssetID(_assetID);
 }
 
+AssetID AssetLibrary::getAssetID(ResourceID _resourceID) const
+{
+	auto it = m_resources.find(_resourceID);
+	if (it == m_resources.end())
+		return AssetID::Invalid;
+	return it->second;
+}
+
 AssetInfo& AssetLibrary::getAssetInfo(AssetID _id)
 {
 	auto it = m_assets.find(_id);
@@ -155,42 +163,50 @@ AssetInfo& AssetLibrary::getAssetInfo(AssetID _id)
 	return it->second;
 }
 
-template <typename T, typename A>
-ResourceHandle<T> getResource(ResourceID _resourceID, AssetLibrary* library, gfx::GraphicDevice* _device, std::map<ResourceID, ResourceHandle<T>>& _map, std::map<AssetID, AssetInfo>& _assets, std::map<ResourceID, AssetID>& _resources)
+template<typename T>
+ResourceHandle<T> get_internal(ResourceID _resourceID, std::map<ResourceID, ResourceHandle<T>>& _map)
+{
+	static_assert(std::is_base_of<Resource, T>::value, "Invalid resource type");
+	auto itResource = _map.find(_resourceID);
+	if (itResource != _map.end())
+	{
+		return itResource->second;
+	}
+	return ResourceHandle<T>::invalid();
+}
+template<typename T, typename A>
+ResourceHandle<T> load_internal(ResourceID _resourceID, const A& _archive, gfx::GraphicDevice* _device, AssetLibrary* _library, std::map<ResourceID, ResourceHandle<T>>& _map, std::map<AssetID, AssetInfo>& _assets, std::map<ResourceID, AssetID>& _resources)
 {
 	static_assert(std::is_base_of<Resource, T>::value, "Invalid resource type");
 	static_assert(std::is_base_of<Archive, A>::value, "Invalid archive type");
 	// Check if resource already exist.
-	auto itScene = _map.find(_resourceID);
-	if (itScene != _map.end())
+	auto itResource = _map.find(_resourceID);
+	if (itResource != _map.end())
 	{
-		return itScene->second;
+		Logger::warn("Trying to load a resource that is already loaded.");
+		return itResource->second;
 	}
 	// Get assetID corresponding to resource.
-	auto itResource = _resources.find(_resourceID);
-	if (itResource == _resources.end())
+	auto itAssetID = _resources.find(_resourceID);
+	if (itAssetID == _resources.end())
 	{
 		return ResourceHandle<T>::invalid();
 	}
-	AssetID assetID = itResource->second;
+	AssetID assetID = itAssetID->second;
 	// Get assetInfo
-	auto itAsset = _assets.find(itResource->second);
-	if (itAsset == _assets.end())
+	auto itAssetInfo = _assets.find(assetID);
+	if (itAssetInfo == _assets.end())
 	{
 		return ResourceHandle<T>::invalid();
 	}
-	AssetInfo assetInfo = itAsset->second;
+	const AssetInfo& assetInfo = itAssetInfo->second;
 	auto scene = std::make_shared<T>(_resourceID, assetInfo.path.cstr());
-	A archive(itResource->second);
-	ArchiveLoadResult res = archive.load(ArchiveLoadContext(library), assetInfo.path);
-	AKA_ASSERT(res == ArchiveLoadResult::Success, "Failed loading");
-
 	auto it = _map.insert(std::make_pair(_resourceID, ResourceHandle<T>(ResourceState::Loaded)));
 	if (it.second)
 	{
-		AKA_ASSERT(_device != nullptr, "Creating resource without passing device");
+		AKA_ASSERT(_device != nullptr, "Invalid device");
 		ResourceHandle<T> handle = it.first->second;
-		handle.get().create(library, _device, archive);
+		handle.get().create(_library, _device, _archive);
 		return handle;
 	}
 	else
@@ -200,15 +216,25 @@ ResourceHandle<T> getResource(ResourceID _resourceID, AssetLibrary* library, gfx
 		return ResourceHandle<T>::invalid();
 	}
 }
-
-ResourceHandle<Scene> AssetLibrary::getScene(ResourceID _resourceID, gfx::GraphicDevice* _device)
+template<> 
+ResourceHandle<Scene> AssetLibrary::get(ResourceID _resourceID)
 {
-	return getResource<Scene, ArchiveScene>(_resourceID, this, _device, m_scenes, m_assets, m_resources);
+	return get_internal<Scene>(_resourceID, m_scenes);
 }
-
-ResourceHandle<StaticMesh> AssetLibrary::getStaticMesh(ResourceID _resourceID, gfx::GraphicDevice* _device)
+template<> 
+ResourceHandle<StaticMesh> AssetLibrary::get(ResourceID _resourceID)
 {
-	return getResource<StaticMesh, ArchiveStaticMesh>(_resourceID, this, _device, m_staticMeshes, m_assets, m_resources);
+	return get_internal<StaticMesh>(_resourceID, m_staticMeshes);
+}
+template<>
+ResourceHandle<Scene> AssetLibrary::load(ResourceID _resourceID, const ArchiveScene& _archive, gfx::GraphicDevice* _device)
+{
+	return load_internal<Scene, ArchiveScene>(_resourceID, _archive, _device, this, m_scenes, m_assets, m_resources);
+}
+template<>
+ResourceHandle<StaticMesh> AssetLibrary::load(ResourceID _resourceID, const ArchiveStaticMesh& _archive, gfx::GraphicDevice* _device)
+{
+	return load_internal<StaticMesh, ArchiveStaticMesh>(_resourceID, _archive, _device, this, m_staticMeshes, m_assets, m_resources);
 }
 
 void AssetLibrary::destroy(gfx::GraphicDevice* _device)

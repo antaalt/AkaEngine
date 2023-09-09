@@ -54,9 +54,7 @@ void Scene::create(AssetLibrary* _library, gfx::GraphicDevice* _device, const Ar
 			ArchiveSceneID id = entity.id[EnumToIndex(SceneComponent::StaticMesh)];
 			StaticMeshComponent& s = e.add<StaticMeshComponent>();
 			const ArchiveStaticMesh& mesh = scene.meshes[toIntegral(id)];
-			// TODO: here we reload archive when calling getStaticMesh...
-			// We could check library if resource exist & load it ourselves somehow using our archive to avoid loading 2 times the same data.
-			s.mesh = _library->getStaticMesh(_library->getResourceID(mesh.id()), _device);
+			s.mesh = _library->load<app::StaticMesh>(_library->getResourceID(mesh.id()), mesh, _device);
 		}
 		/*if (asBool(SceneComponentMask::PointLight & e.components))
 		{
