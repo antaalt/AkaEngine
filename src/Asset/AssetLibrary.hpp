@@ -99,7 +99,7 @@ public:
 	AssetID registerAsset(const AssetPath& _path, AssetType _assetType);
 	ResourceID getResourceID(AssetID _assetID) const;
 	AssetID getAssetID(ResourceID _resourceID) const;
-	AssetInfo& getAssetInfo(AssetID _assetID);
+	AssetInfo getAssetInfo(AssetID _assetID);
 
 public:
 	template <typename T>

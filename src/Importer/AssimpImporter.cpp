@@ -59,9 +59,9 @@ ArchiveSceneID addTransform(ArchiveScene& scene, const mat4f& transform)
 {
 	return ArchiveSceneID(scene.transforms.append(ArchiveSceneTransform{ transform }).size() - 1);
 }
-ArchiveSceneID addStaticMesh(ArchiveScene& scene, const ArchiveStaticMesh& mesh)
+ArchiveSceneID addStaticMesh(ArchiveScene& scene, ArchiveStaticMesh&& mesh)
 {
-	return ArchiveSceneID(scene.meshes.append(mesh).size() - 1);
+	return ArchiveSceneID(scene.meshes.append(std::move(mesh)).size() - 1);
 }
 void addTextureData(ArchiveImage& image, uint32_t width, uint32_t height, uint32_t channels, const uint8_t* data)
 {
@@ -152,6 +152,10 @@ AssimpLocalImporter::AssimpLocalImporter(const Path& directory, AssetLibrary* _l
 	addTextureData(m_blankColorTexture, 1, 1, 4, bytesBlankColor);
 	addTextureData(m_missingNormalTexture, 1, 1, 4, bytesNormal);
 	addTextureData(m_missingRoughnessTexture, 1, 1, 4, bytesRoughness);
+
+	// Reserve vector to avoid rellocation
+	m_scene.meshes.reserve(m_assimpScene->mNumMeshes);
+	m_scene.transforms.reserve(m_assimpScene->mNumMeshes);
 }
 
 AssetID AssimpLocalImporter::registerAsset(AssetType type, const String& name)
@@ -437,18 +441,18 @@ ArchiveSceneID AssimpLocalImporter::processMesh(aiMesh* mesh)
 	ArchiveStaticMesh archiveMesh = ArchiveStaticMesh(registerAsset(AssetType::StaticMesh, mesh->mName.C_Str()));
 	archiveMesh.batches.append(std::move(archiveBatch));
 	
-	return addStaticMesh(m_scene, archiveMesh);
+	return addStaticMesh(m_scene, std::move(archiveMesh));
 }
 
 ArchiveImage AssimpLocalImporter::processImage(const Path& path)
 {
-	ArchiveImage image = ArchiveImage(registerAsset(AssetType::Image, OS::File::basename(path)));
+	ArchiveImage image(registerAsset(AssetType::Image, OS::File::basename(path)));
 
-	Image img = Image::load(path);
-	image.channels = img.components();
-	image.width = img.width();
-	image.height = img.height();
-	image.data = Vector<uint8_t>(img.data(), img.size());
+	Image img = ImageDecoder::fromDisk(path);
+	image.channels = getImageComponentCount(img.components);
+	image.width = img.width;
+	image.height = img.height;
+	image.data = std::move(img.bytes);
 
 	return image;
 }

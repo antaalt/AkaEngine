@@ -155,7 +155,7 @@ AssetID AssetLibrary::getAssetID(ResourceID _resourceID) const
 	return it->second;
 }
 
-AssetInfo& AssetLibrary::getAssetInfo(AssetID _id)
+AssetInfo AssetLibrary::getAssetInfo(AssetID _id)
 {
 	auto it = m_assets.find(_id);
 	if (it == m_assets.end())

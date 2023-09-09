@@ -18,6 +18,7 @@ ArchiveImage::ArchiveImage(const AssetID& id) :
 }
 // This hugely improve loading time, but we lose in memory.
 // Should store in compressed texture format instead (KTX & DDS)
+// Could also have a flag that is telling if the image is compressed or not depending on the size on disk ?
 //#define STORE_COMPRESSED_IMAGE 1
 ArchiveLoadResult ArchiveImage::load_internal(ArchiveLoadContext& _context, BinaryArchive& _archive)
 {

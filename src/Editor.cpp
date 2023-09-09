@@ -268,19 +268,20 @@ void Editor::onCreate(int argc, char* argv[])
 				batch.material = ArchiveMaterial(materialID);
 				batch.material.color = color4f(0.0, 0.0, 1.0, 1.0);
 
-				Image img = Image::load("../../../asset/textures/skyscraper.jpg");
+				Image img = ImageDecoder::fromDisk("../../../asset/textures/skyscraper.jpg");
 				batch.material.albedo = ArchiveImage(image0ID);
-				batch.material.albedo.width = img.width();
-				batch.material.albedo.height = img.height();
-				batch.material.albedo.channels = img.components();
+				batch.material.albedo.width = img.width;
+				batch.material.albedo.height = img.height;
+				batch.material.albedo.channels = img.getComponents();
 				batch.material.albedo.data.append(img.data(), img.data() + img.size());
+				batch.material.albedo.data = std::move(img.bytes);
 
-				Image imgNormal = Image::load("../../../asset/textures/skyscraper-normal.jpg");
+				Image imgNormal = ImageDecoder::fromDisk("../../../asset/textures/skyscraper-normal.jpg");
 				batch.material.normal = ArchiveImage(image1ID);
-				batch.material.normal.width = imgNormal.width();
-				batch.material.normal.height = imgNormal.height();
-				batch.material.normal.channels = imgNormal.components();
-				batch.material.normal.data.append(imgNormal.data(), imgNormal.data() + imgNormal.size());
+				batch.material.normal.width = imgNormal.width;
+				batch.material.normal.height = imgNormal.height;
+				batch.material.normal.channels = imgNormal.getComponents();
+				batch.material.normal.data = std::move(imgNormal.bytes);
 
 				mesh.batches.append(batch);
 			}
@@ -297,19 +298,19 @@ void Editor::onCreate(int argc, char* argv[])
 				batch.material = ArchiveMaterial(materialID);
 				batch.material.color = color4f(0.0, 0.0, 1.0, 1.0);
 
-				Image img = Image::load("../../../asset/textures/skyscraper.jpg");
+				Image img = ImageDecoder::fromDisk("../../../asset/textures/skyscraper.jpg");
 				batch.material.albedo = ArchiveImage(image0ID);
-				batch.material.albedo.width = img.width();
-				batch.material.albedo.height = img.height();
-				batch.material.albedo.channels = img.components();
-				batch.material.albedo.data.append(img.data(), img.data() + img.size());
+				batch.material.albedo.width = img.width;
+				batch.material.albedo.height = img.height;
+				batch.material.albedo.channels = img.getComponents();
+				batch.material.albedo.data = std::move(img.bytes);
 
-				Image imgNormal = Image::load("../../../asset/textures/skyscraper-normal.jpg");
+				Image imgNormal = ImageDecoder::fromDisk("../../../asset/textures/skyscraper-normal.jpg");
 				batch.material.normal = ArchiveImage(image1ID);
-				batch.material.normal.width = imgNormal.width();
-				batch.material.normal.height = imgNormal.height();
-				batch.material.normal.channels = imgNormal.components();
-				batch.material.normal.data.append(imgNormal.data(), imgNormal.data() + imgNormal.size());
+				batch.material.normal.width = imgNormal.width;
+				batch.material.normal.height = imgNormal.height;
+				batch.material.normal.channels = imgNormal.getComponents();
+				batch.material.normal.data = std::move(imgNormal.bytes);
 
 				sphereMesh.batches.append(batch);
 			}
@@ -455,6 +456,7 @@ void Editor::onCreate(int argc, char* argv[])
 		if (m_scene.isLoaded())
 		{
 			m_cameraController.set(m_scene.get().getBounds());
+			m_dirty = true;
 		}
 		Logger::info("Loading resource time : ", watch.elapsed(), "ms");
 #endif
