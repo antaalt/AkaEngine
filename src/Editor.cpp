@@ -5,8 +5,11 @@
 #include <Aka/Layer/ImGuiLayer.h>
 
 #include <imgui.h>
+#include <imguizmo.h>
 #include <map>
 #include <vector>
+
+#include "Importer/AssimpImporter.hpp"
 
 using namespace aka;
 
@@ -15,12 +18,6 @@ struct CameraUniformBuffer
 {
 	mat4f view;
 	mat4f projection;
-};
-
-struct InstanceUniformBuffer
-{
-	mat4f model;
-	mat3f normal;
 };
 
 struct MaterialUniformBuffer
@@ -74,9 +71,75 @@ static const float s_vertices[s_vertexCount * 5] = {
 	-1.0f, -1.0f,  1.0f,	0.f, 1.f,
 	 1.0f, -1.0f,  1.0f,	1.f, 1.f,
 };
-gfx::BufferHandle getCubeVertices(gfx::GraphicDevice* device)
+
+std::vector<app::Vertex> getSphereVertices(float radius, uint32_t segmentCount, uint32_t ringCount)
 {
-	return device->createBuffer("CubeVertexBuffer", gfx::BufferType::Vertex, sizeof(s_vertices), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, s_vertices);
+	// http://www.songho.ca/opengl/gl_sphere.html
+	std::vector<app::Vertex> vertices;
+
+	float length = 1.f / radius;
+	anglef sectorStep = 2.f * pi<float> / (float)ringCount;
+	anglef stackStep = pi<float> / (float)segmentCount;
+	anglef ringAngle, segmentAngle;
+	aabbox<> bounds;
+
+	for (uint32_t i = 0; i <= segmentCount; ++i)
+	{
+		segmentAngle = pi<float> / 2.f - (float)i * stackStep; // starting from pi/2 to -pi/2
+		float xy = radius * cos(segmentAngle); // r * cos(u)
+		float z = radius * sin(segmentAngle); // r * sin(u)
+
+		// add (ringCount+1) vertices per segment
+		// the first and last vertices have same position and normal, but different uv
+		for (uint32_t j = 0; j <= ringCount; ++j)
+		{
+			app::Vertex v;
+			ringAngle = (float)j * sectorStep; // starting from 0 to 2pi
+
+			v.position.x = xy * cos(ringAngle); // r * cos(u) * cos(v)
+			v.position.y = xy * sin(ringAngle); // r * cos(u) * sin(v)
+			v.position.z = z;
+
+			//v.normal = norm3f(v.position / radius);
+
+			v.uv.u = (float)j / ringCount;
+			v.uv.v = (float)i / segmentCount;
+			//v.color = color4f(1.f);
+			vertices.push_back(v);
+			bounds.include(v.position);
+		}
+	}
+	return vertices;
+}
+
+std::vector<uint32_t> getSphereIndices(float radius, uint32_t segmentCount, uint32_t ringCount)
+{
+	std::vector<uint32_t> indices;
+	for (uint32_t i = 0; i < segmentCount; ++i)
+	{
+		uint32_t k1 = i * (ringCount + 1);     // beginning of current stack
+		uint32_t k2 = k1 + ringCount + 1;      // beginning of next stack
+
+		for (uint32_t j = 0; j < ringCount; ++j, ++k1, ++k2)
+		{
+			// 2 triangles per sector excluding first and last stacks
+			// k1 => k2 => k1+1
+			if (i != 0)
+			{
+				indices.push_back(k1);
+				indices.push_back(k2);
+				indices.push_back(k1 + 1);
+			}
+			// k1+1 => k2 => k2+1
+			if (i != (segmentCount - 1))
+			{
+				indices.push_back(k1 + 1);
+				indices.push_back(k2);
+				indices.push_back(k2 + 1);
+			}
+		}
+	}
+	return indices;
 }
 
 // TODO: Should use JSON for this ? JSON that can be generated with a script reading all files in shaders folder (generating DB)
@@ -118,7 +181,6 @@ void Editor::onCreate(int argc, char* argv[])
 		gfx::BlendStateDisabled,
 		gfx::FillStateFill
 	);
-	m_vertices = getCubeVertices(device);
 
 	// TODO retrieve this from somewhere generated from shader ?
 	// Or pass it as input of program instead
@@ -146,7 +208,7 @@ void Editor::onCreate(int argc, char* argv[])
 		m_cameraProjection.hFov = anglef::degree(60.f);
 		m_cameraProjection.ratio = width() / (float)height();
 		m_cameraProjection.nearZ = 0.1f;
-		m_cameraProjection.farZ = 100.f;
+		m_cameraProjection.farZ = 10000.f;
 
 		CameraUniformBuffer ubo;
 		ubo.view = m_cameraController.view();
@@ -157,39 +219,34 @@ void Editor::onCreate(int argc, char* argv[])
 		data.addUniformBuffer(m_cameraUniformBuffer);
 		device->update(m_cameraDescriptorSet, data);
 	}
-	{ // INSTANCE UBO
-		m_instanceDescriptorSet = device->createDescriptorSet("InstanceDescriptorSet", bindings[1]);
-
-		InstanceUniformBuffer ubo;
-		ubo.model = mat4f::rotate(vec3f(0, 0, 1), m_rotation);
-		ubo.normal = mat3f(mat4f::transpose(mat4f::inverse(ubo.model)));
-		m_instanceUniformBuffer = device->createBuffer("InstanceBuffer", gfx::BufferType::Uniform, sizeof(InstanceUniformBuffer), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, &ubo);
-
-		gfx::DescriptorSetData data{};
-		data.addUniformBuffer(m_instanceUniformBuffer);
-		device->update(m_instanceDescriptorSet, data);
-	}
 
 
 	{ // Create a static mesh & archive it
+#if 0
 		using namespace app;
-		AssetPath scenePath		= AssetPath("../../../asset/library/scene.scene");
-		AssetPath smeshPath		= AssetPath("../../../asset/library/mesh.smesh");
-		AssetPath batchPath		= AssetPath("../../../asset/library/mesh.batch");
-		AssetPath geoPath		= AssetPath("../../../asset/library/mesh.geo");
-		AssetPath materialPath	= AssetPath("../../../asset/library/mesh.mat");
-		AssetPath image0Path	= AssetPath("../../../asset/library/albedo.img");
-		AssetPath image1Path	= AssetPath("../../../asset/library/normal.img");
+		AssetPath scenePath			= AssetPath("demo/scene.scene");
+		AssetPath smeshPath			= AssetPath("demo/cube.smesh");
+		AssetPath smeshSpherePath	= AssetPath("demo/sphere.smesh");
+		AssetPath batchPath			= AssetPath("demo/cube.batch");
+		AssetPath batchSpherePath	= AssetPath("demo/sphere.batch");
+		AssetPath geoPath			= AssetPath("demo/cube.geo");
+		AssetPath geoSpherePath		= AssetPath("demo/sphere.geo");
+		AssetPath materialPath		= AssetPath("demo/mesh.mat");
+		AssetPath image0Path		= AssetPath("demo/albedo.img");
+		AssetPath image1Path		= AssetPath("demo/normal.img");
+		OS::Directory::create(AssetPath("demo/").getAbsolutePath());
 
 		// Add to library & load it.
 		AssetID meshID = m_library.registerAsset(smeshPath, AssetType::StaticMesh);
-		AssetID batchID = m_library.registerAsset(batchPath, AssetType::MeshBatch);
-		AssetID geometryID = m_library.registerAsset(geoPath, AssetType::MeshGeometry);
-		AssetID materialID = m_library.registerAsset(materialPath, AssetType::MeshMaterial);
+		AssetID meshSphereID = m_library.registerAsset(smeshSpherePath, AssetType::StaticMesh);
+		AssetID batchID = m_library.registerAsset(batchPath, AssetType::Batch);
+		AssetID batchSphereID = m_library.registerAsset(batchSpherePath, AssetType::Batch);
+		AssetID geometryID = m_library.registerAsset(geoPath, AssetType::Geometry);
+		AssetID geometrySphereID = m_library.registerAsset(geoSpherePath, AssetType::Geometry);
+		AssetID materialID = m_library.registerAsset(materialPath, AssetType::Material);
 		AssetID image0ID = m_library.registerAsset(image0Path, AssetType::Image);
 		AssetID image1ID = m_library.registerAsset(image1Path, AssetType::Image);
 		AssetID sceneID = m_library.registerAsset(scenePath, AssetType::Scene);
-		m_resourceID = m_library.getResourceID(meshID);
 		m_sceneID = m_library.getResourceID(sceneID);
 		{ // Hardcoded import for now
 			app::ArchiveStaticMesh mesh(meshID);
@@ -226,77 +283,191 @@ void Editor::onCreate(int argc, char* argv[])
 
 				mesh.batches.append(batch);
 			}
+			app::ArchiveStaticMesh sphereMesh(meshSphereID);
+			{ // Cube Mesh
+				app::ArchiveBatch batch(batchSphereID);
+				batch.geometry = ArchiveGeometry(geometrySphereID);
+				batch.geometry.indices = getSphereIndices(1.0, 32, 16);
+				batch.geometry.vertices = getSphereVertices(1.0, 32, 16);
+				for (uint32_t i = 0; i < batch.geometry.vertices.size(); i++)
+					batch.geometry.bounds.include(batch.geometry.vertices[i].position);
+
+				// Material
+				batch.material = ArchiveMaterial(materialID);
+				batch.material.color = color4f(0.0, 0.0, 1.0, 1.0);
+
+				Image img = Image::load("../../../asset/textures/skyscraper.jpg");
+				batch.material.albedo = ArchiveImage(image0ID);
+				batch.material.albedo.width = img.width();
+				batch.material.albedo.height = img.height();
+				batch.material.albedo.channels = img.components();
+				batch.material.albedo.data.append(img.data(), img.data() + img.size());
+
+				Image imgNormal = Image::load("../../../asset/textures/skyscraper-normal.jpg");
+				batch.material.normal = ArchiveImage(image1ID);
+				batch.material.normal.width = imgNormal.width();
+				batch.material.normal.height = imgNormal.height();
+				batch.material.normal.channels = imgNormal.components();
+				batch.material.normal.data.append(imgNormal.data(), imgNormal.data() + imgNormal.size());
+
+				sphereMesh.batches.append(batch);
+			}
 			app::ArchiveScene scene(sceneID);
 			{ // Scene
 				scene.meshes.append(mesh);
+				scene.meshes.append(sphereMesh);
 				scene.transforms.append(ArchiveSceneTransform{ mat4f::identity() });
 				scene.transforms.append(ArchiveSceneTransform{ mat4f::TRS(vec3f(10.f, 0.f, 0.f), quatf::identity(), vec3f(1.f)) });
+				scene.transforms.append(ArchiveSceneTransform{ mat4f::TRS(vec3f(5.f, 2.f, 0.f), quatf::identity(), vec3f(1.f)) });
+				scene.transforms.append(ArchiveSceneTransform{ mat4f::TRS(vec3f(-5.f, 2.f, 0.f), quatf::identity(), vec3f(2.f)) });
+				scene.transforms.append(ArchiveSceneTransform{ mat4f::TRS(vec3f(-5.f, 2.f, 0.f), quatf::identity(), vec3f(1.5f)) });
 				scene.entities.append(ArchiveSceneEntity{ 
+					"Cube",
 					SceneComponentMask::Transform | SceneComponentMask::Hierarchy | SceneComponentMask::StaticMesh,
 					{ 
 						ArchiveSceneID(0), // t
-						ArchiveSceneID(0), // h
+						InvalidArchiveSceneID, // h
 						ArchiveSceneID(0), // sm
-						ArchiveSceneID(0), //pl
-						ArchiveSceneID(0) // sl
+						InvalidArchiveSceneID, //pl
+						InvalidArchiveSceneID // sl
 					}
 					});
 				scene.entities.append(ArchiveSceneEntity{
+					"Cube2",
 					SceneComponentMask::Transform | SceneComponentMask::Hierarchy | SceneComponentMask::StaticMesh,
 					{
 						ArchiveSceneID(1), // t
-						ArchiveSceneID(0), // h
+						InvalidArchiveSceneID, // h
 						ArchiveSceneID(0), // sm
-						ArchiveSceneID(0), //pl
-						ArchiveSceneID(0) // sl
+						InvalidArchiveSceneID, //pl
+						InvalidArchiveSceneID // sl
 					}
 					});
+				scene.entities.append(ArchiveSceneEntity{
+					"Sphere1",
+					SceneComponentMask::Transform | SceneComponentMask::Hierarchy | SceneComponentMask::StaticMesh,
+					{
+						ArchiveSceneID(2), // t
+						InvalidArchiveSceneID, // h
+						ArchiveSceneID(1), // sm
+						InvalidArchiveSceneID, //pl
+						InvalidArchiveSceneID // sl
+					}
+					});
+				scene.entities.append(ArchiveSceneEntity{
+					"Sphere2",
+					SceneComponentMask::Transform | SceneComponentMask::Hierarchy | SceneComponentMask::StaticMesh,
+					{
+						ArchiveSceneID(3), // t
+						InvalidArchiveSceneID, // h
+						ArchiveSceneID(1), // sm
+						InvalidArchiveSceneID, //pl
+						InvalidArchiveSceneID // sl
+					}
+					});
+				scene.entities.append(ArchiveSceneEntity{
+					"Sphere3",
+					SceneComponentMask::Transform | SceneComponentMask::Hierarchy | SceneComponentMask::StaticMesh,
+					{
+						ArchiveSceneID(4), // t
+						ArchiveSceneID(0), // h
+						ArchiveSceneID(1), // sm
+						InvalidArchiveSceneID, //pl
+						InvalidArchiveSceneID // sl
+					}
+					});
+				for (ArchiveSceneEntity& entity : scene.entities)
+				{
+					SceneComponentMask mask = SceneComponentMask::Transform | SceneComponentMask::StaticMesh;
+					if ((entity.components & mask) == mask)
+					{
+						ArchiveSceneID transformID = entity.id[EnumToIndex(SceneComponent::Transform)];
+						ArchiveSceneID meshID = entity.id[EnumToIndex(SceneComponent::StaticMesh)];
+						const mat4f& transform = scene.transforms[toIntegral(transformID)].matrix;
+						const ArchiveStaticMesh& mesh = scene.meshes[toIntegral(meshID)];
+						for (const ArchiveBatch& batch : mesh.batches)
+						{
+							scene.bounds.include(transform * batch.geometry.bounds);
+						}
+					}
+				}
 			}
-			ArchiveSaveResult res = mesh.save(&m_library, smeshPath);
+			aka::StopWatch watch;
+			ArchiveSaveResult res = mesh.save(ArchiveSaveContext(&m_library), smeshPath);
 			AKA_ASSERT(res == ArchiveSaveResult::Success, "Failed to load mesh.");
-			res = scene.save(&m_library, scenePath);
+			res = scene.save(ArchiveSaveContext(&m_library), scenePath);
 			AKA_ASSERT(res == ArchiveSaveResult::Success, "Failed to load scene.");
+			Logger::info("Demo save time : ", watch.elapsed(), "ms");
 		}
 		{ // Test if everything went well
+			aka::StopWatch watch;
 			app::ArchiveStaticMesh mesh(meshID);
-			ArchiveLoadResult res = mesh.load(&m_library, smeshPath);
+			ArchiveLoadResult res = mesh.load(ArchiveLoadContext(&m_library), smeshPath);
+			AKA_ASSERT(res == ArchiveLoadResult::Success, "Failed to load scene.");
+
+			app::ArchiveStaticMesh spheremesh(meshSphereID);
+			res = spheremesh.load(ArchiveLoadContext(&m_library), smeshSpherePath);
 			AKA_ASSERT(res == ArchiveLoadResult::Success, "Failed to load scene.");
 
 			app::ArchiveScene scene(sceneID);
-			res = scene.load(&m_library, scenePath);
+			res = scene.load(ArchiveLoadContext(&m_library), scenePath);
 			AKA_ASSERT(res == ArchiveLoadResult::Success, "Failed to load scene.");
+			Logger::info("Demo test load time : ", watch.elapsed(), "ms");
 		}
-		m_resource = m_library.getStaticMesh(m_resourceID);
-		m_scene = m_library.getScene(m_sceneID);
-		if (m_resource.isLoaded())
-		{
-			app::StaticMesh& mesh = m_resource.get();
-		}
+		watch.start();
+		m_scene = m_library.getScene(m_sceneID, graphic());
+		Logger::info("Demo load time : ", watch.elapsed(), "ms");
 		if (m_scene.isLoaded())
 		{
 			app::Scene& scene = m_scene.get();
 			scene.world.registry().view<app::Transform3DComponent, app::StaticMeshComponent>().each([&](entt::entity entity, app::Transform3DComponent& transformComp, app::StaticMeshComponent& meshComp) {
 
-				m_resource = m_library.getStaticMesh(m_resourceID);
-				meshComp.mesh.get();
 			});
 		}
+#if 1
+		watch.start();
+		app::AssimpImporter importer;
+		importer.import(&m_library, Path("../../../asset/Sponza/sponza.obj"));
+		Logger::info("Import time : ", watch.elapsed(), "ms");
+#endif
+		watch.start();
+		m_library.serialize();
+		Logger::info("Serialize time : ", watch.elapsed(), "ms");
+#else
+		aka::StopWatch watch;
+		m_library.parse();
+		Logger::info("Parsing time : ", watch.elapsed(), "ms");
+
+		app::ResourceID id = app::ResourceID::Invalid;
+		for (auto it : m_library.getAssetRange())
+		{
+			if (it.second.type == app::AssetType::Scene)
+			{
+				id = m_library.getResourceID(it.first);
+				break;
+			}
+		}
+		watch.start();
+		m_scene = m_library.getScene(id, graphic());
+		if (m_scene.isLoaded())
+		{
+			m_cameraController.set(m_scene.get().getBounds());
+		}
+		Logger::info("Loading time : ", watch.elapsed(), "ms");
+#endif
 	}
 }
 
 void Editor::onDestroy()
 {
 	gfx::GraphicDevice* device = graphic();
-	device->destroy(m_vertices);
 	device->destroy(m_cameraUniformBuffer);
-	device->destroy(m_instanceUniformBuffer);
 	device->destroy(m_cameraDescriptorSet);
-	device->destroy(m_instanceDescriptorSet);
 	device->destroy(m_renderPipeline);
 	device->destroy(m_renderPass);
 	device->destroy(m_backbuffer);
 
-	m_resource.get().destroy(device);
+	m_library.destroy(device);
 }
 
 void Editor::onFixedUpdate(aka::Time time)
@@ -327,8 +498,8 @@ struct ComponentNode {
 	static bool draw(T& component) { Logger::error("Trying to draw an undefined component"); return false; }
 };
 
-template <> const char* ComponentNode<TagComponent>::name() { return "Tag"; }
-template <> bool ComponentNode<TagComponent>::draw(TagComponent& tag)
+template <> const char* ComponentNode<aka::TagComponent>::name() { return "Tag"; }
+template <> bool ComponentNode<aka::TagComponent>::draw(aka::TagComponent& tag)
 {
 	char buffer[256];
 	String::copy(buffer, 256, tag.name.cstr());
@@ -349,8 +520,8 @@ template <> bool ComponentNode<app::Hierarchy3DComponent>::draw(app::Hierarchy3D
 	}
 	else
 	{
-		if (hierarchy.parent.has<TagComponent>())
-			ImGui::Text("Parent : %s", hierarchy.parent.get<TagComponent>().name.cstr());
+		if (hierarchy.parent.has<aka::TagComponent>())
+			ImGui::Text("Parent : %s", hierarchy.parent.get<aka::TagComponent>().name.cstr());
 		else
 			ImGui::Text("Parent : Unknown");
 	}
@@ -364,12 +535,12 @@ template <> bool ComponentNode<app::Transform3DComponent>::draw(app::Transform3D
 	float translation[3];
 	float rotation[3];
 	float scale[3];
-	/*ImGuizmo::DecomposeMatrixToComponents(transform.transform.cols[0].data, translation, rotation, scale);
+	ImGuizmo::DecomposeMatrixToComponents(transform.transform.cols[0].data, translation, rotation, scale);
 	updated |= ImGui::InputFloat3("Translation", translation);
 	updated |= ImGui::InputFloat3("Rotation", rotation);
 	updated |= ImGui::InputFloat3("Scale", scale);
 	if (updated)
-		ImGuizmo::RecomposeMatrixFromComponents(translation, rotation, scale, transform.transform.cols[0].data);*/
+		ImGuizmo::RecomposeMatrixFromComponents(translation, rotation, scale, transform.transform.cols[0].data);
 	return updated;
 }
 
@@ -436,6 +607,18 @@ void component(World& world, entt::entity entity)
 	}
 }
 
+// Make the UI compact because there are so many fields
+static void PushStyleCompact()
+{
+	ImGuiStyle& style = ImGui::GetStyle();
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(style.FramePadding.x, (float)(int)(style.FramePadding.y * 0.60f)));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, (float)(int)(style.ItemSpacing.y * 0.60f)));
+}
+
+static void PopStyleCompact()
+{
+	ImGui::PopStyleVar(2);
+}
 
 
 void Editor::onRender(gfx::Frame* _frame)
@@ -451,64 +634,92 @@ void Editor::onRender(gfx::Frame* _frame)
 		device->upload(m_cameraUniformBuffer, &ubo, 0, sizeof(CameraUniformBuffer));
 		m_dirty = false;
 	}
-	{
-		InstanceUniformBuffer ubo;
-		ubo.model = mat4f::rotate(vec3f(0, 0, 1), m_rotation);
-		device->upload(m_instanceUniformBuffer, &ubo, 0, sizeof(InstanceUniformBuffer));
-	}
 
 	gfx::FramebufferHandle backbuffer = device->get(m_backbuffer, _frame);
 
 
 	cmd->bindPipeline(m_renderPipeline);
 	cmd->bindDescriptorSet(0, m_cameraDescriptorSet);
-	cmd->bindDescriptorSet(1, m_instanceDescriptorSet); // Should be by resource, within the scene hierarchy component
 
 	if (m_scene.isLoaded())
 	{
+		cmd->beginRenderPass(m_renderPass, backbuffer, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f }, 1.f, 0 });
 		app::Scene& scene = m_scene.get();
 		scene.world.registry().view<app::Transform3DComponent, app::StaticMeshComponent>().each([&](entt::entity entity, app::Transform3DComponent& transformComp, app::StaticMeshComponent& meshComp) {
 
 			if (meshComp.mesh.isLoaded())
 			{
 				app::StaticMesh& mesh = meshComp.mesh.get();
+				//Logger::info("Rendering", mesh.getName());
 				cmd->bindVertexBuffer(mesh.gfxVertexBuffer, 0);
 				cmd->bindIndexBuffer(mesh.gfxIndexBuffer, gfx::IndexFormat::UnsignedInt, 0);
 
-				cmd->beginRenderPass(m_renderPass, backbuffer, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f }, 1.f, 0 });
+				// Should use vertex buffer instead
+				cmd->bindDescriptorSet(1, meshComp.descriptorSet);
 				for (const auto& batch : mesh.batches)
 				{
 					cmd->bindDescriptorSet(2, batch.gfxDescriptorSet);
 					cmd->drawIndexed(batch.indexCount, batch.indexOffset, batch.vertexOffset, 1);
 				}
-				cmd->endRenderPass();
 			}
 		});
-		/*app::StaticMesh& mesh = m_resource.get();
-		cmd->bindVertexBuffer(mesh.gfxVertexBuffer, 0);
-		cmd->bindIndexBuffer(mesh.gfxIndexBuffer, gfx::IndexFormat::UnsignedInt, 0);
-
-		cmd->beginRenderPass(m_renderPass, backbuffer, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f }, 1.f, 0 });
-		for (const auto& batch : mesh.batches)
-		{
-			cmd->bindDescriptorSet(2, batch.gfxDescriptorSet);
-			cmd->drawIndexed(batch.indexCount, batch.indexOffset, batch.vertexOffset, 1);
-		}
-		cmd->endRenderPass();*/
+		cmd->endRenderPass();
 	}
 
 
 	{
+		ImGui::ShowDemoWindow();
 		if (ImGui::Begin("ArchiveEditor"))
 		{
+			static const ImVec4 color = ImVec4(0.93f, 0.04f, 0.26f, 1.f);
 			// We should list all archive from library here.
 			// We could open them in separate tab to edit their content & save them.
-			ImGui::TextColored(ImVec4(0.0, 0.0, 1.0, 1.0), "Assets");
-			for (auto asset : m_library.getAssetRange()) // TODO sort them by type ?
+
+			ImGui::TextColored(color, "Assets");
+			static int s_flags = (1 << EnumCount<app::AssetType>()) - 1;
+			PushStyleCompact();
+			for (app::AssetType type : EnumRange<app::AssetType>())
 			{
-				//asset.second.type
-				ImGui::Text("AssetID: %3u | Path: %s", (uint32_t)asset.first, asset.second.path.getPath().cstr());
+				ImGui::CheckboxFlags(getAssetTypeString(type), &s_flags, 1 << EnumToIndex(type));
+				if (type != app::AssetType::Last)
+					ImGui::SameLine();
 			}
+			PopStyleCompact();
+
+			if (ImGui::BeginTable("Assets", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 20)))
+			{
+				ImGui::TableSetupColumn("AssetID", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("Load", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupScrollFreeze(0, 1); // Make row always visible
+				ImGui::TableHeadersRow();
+				for (auto asset : m_library.getAssetRange())
+				{
+					if ((s_flags & (1 << EnumToIndex(asset.second.type))) == 0)
+						continue;
+					ImGui::TableNextRow();
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("%llu", (uint64_t)asset.second.id);
+					ImGui::TableSetColumnIndex(1);
+					ImGui::Text("%s", getAssetTypeString(asset.second.type));
+					ImGui::TableSetColumnIndex(2);
+					app::ResourceType res = app::getResourceType(asset.second.type);
+					if (res != app::ResourceType::Unknown)
+					{
+						app::ResourceID id = m_library.getResourceID(asset.second.id);
+						if (ImGui::SmallButton("load"))
+						{
+
+							// Load if resource
+						}
+					}
+					ImGui::TableSetColumnIndex(3);
+					ImGui::Text("%s", (uint64_t)asset.second.path.cstr());
+				}
+				ImGui::EndTable();
+			}
+
 			ImGui::Separator();
 			auto getStatusString = [](app::ResourceState state) -> String {
 				switch (state)
@@ -516,12 +727,11 @@ void Editor::onRender(gfx::Frame* _frame)
 				case app::ResourceState::Disk: return "Disk";
 				case app::ResourceState::Loaded: return "Loaded";
 				case app::ResourceState::Pending: return "Pending";
-				case app::ResourceState::Unknown: return "Unknown";
 				default:
-					break;
+				case app::ResourceState::Unknown: return "Unknown";
 				}
-				};
-			ImGui::TextColored(ImVec4(0.0, 0.0, 1.0, 1.0), "Resources");
+			};
+			ImGui::TextColored(color, "Resources");
 			ImGui::TextColored(ImVec4(0.0, 1.0, 0.0, 1.0), "Meshes");
 			for (auto resPair : m_library.getStaticMeshRange())
 			{
@@ -532,7 +742,7 @@ void Editor::onRender(gfx::Frame* _frame)
 				if (resHandle.isLoaded())
 				{
 					const app::StaticMesh& mesh = resHandle.get();
-					batchCount = mesh.batches.size();
+					batchCount = (uint32_t)mesh.batches.size();
 					mesh.attributes;
 					status = getStatusString(resHandle.getState());
 				}
@@ -572,7 +782,7 @@ void Editor::onRender(gfx::Frame* _frame)
 		recurse = [&recurse](World& world, entt::entity entity, const std::map<entt::entity, std::vector<entt::entity>>& childrens, entt::entity& current)
 			{
 				char buffer[256];
-				const TagComponent& tag = world.registry().get<TagComponent>(entity);
+				const aka::TagComponent& tag = world.registry().get<aka::TagComponent>(entity);
 
 				auto it = childrens.find(entity);
 				if (it != childrens.end())
@@ -691,7 +901,7 @@ void Editor::onRender(gfx::Frame* _frame)
 							e.add<app::Transform3DComponent>(app::Transform3DComponent{ mat4f::identity() });
 						if (ImGui::MenuItem("Hierarchy", nullptr, nullptr, !e.has<app::Hierarchy3DComponent>()))
 							e.add<app::Hierarchy3DComponent>(app::Hierarchy3DComponent{ Entity::null(), mat4f::identity() });
-						/*if (ImGui::MenuItem("Camera", nullptr, nullptr, !e.has<app::Camera3DComponent>()))
+						/*if (ImGui::MenuItem("Camera", nullptr, nullptr, !e.has<app:: >()))
 						{
 							auto p = std::make_unique<CameraPerspective>();
 							p->hFov = anglef::degree(60.f);
@@ -835,7 +1045,7 @@ void Editor::onRender(gfx::Frame* _frame)
 				else
 				{
 					// Draw every component.
-					component<TagComponent>(scene.world, m_currentEntity);
+					component<aka::TagComponent>(scene.world, m_currentEntity);
 					component<app::Transform3DComponent>(scene.world, m_currentEntity);
 					component<app::Hierarchy3DComponent>(scene.world, m_currentEntity);
 					component<app::StaticMeshComponent>(scene.world, m_currentEntity);

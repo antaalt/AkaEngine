@@ -7,8 +7,10 @@ struct MaterialUniformBuffer {
 };
 
 
-void StaticMesh::create(gfx::GraphicDevice* _device, const ArchiveStaticMesh& _archive)
+void StaticMesh::create(AssetLibrary* _library, gfx::GraphicDevice* _device, const Archive& _archive)
 {
+	AKA_ASSERT(_archive.type() == AssetType::StaticMesh, "Invalid archive");
+	const ArchiveStaticMesh& meshArchive = reinterpret_cast<const ArchiveStaticMesh&>(_archive);
 	// TODO mutualize sampler in Renderer class (& pass renderer instead of device as argument, or renderer create class)
 	this->gfxAlbedoSampler = _device->createSampler(
 		"Sampler",
@@ -26,7 +28,7 @@ void StaticMesh::create(gfx::GraphicDevice* _device, const ArchiveStaticMesh& _a
 	);
 	Vector<Vertex> vertices;
 	Vector<uint32_t> indices;
-	for (const ArchiveBatch& batch : _archive.batches)
+	for (const ArchiveBatch& batch : meshArchive.batches)
 	{
 		// TODO should retrieve this from shader somehow...
 		gfx::ShaderBindingState bindings{};
@@ -53,8 +55,8 @@ void StaticMesh::create(gfx::GraphicDevice* _device, const ArchiveStaticMesh& _a
 		_device->update(gfxDescriptorSet, data);
 		
 		this->batches.append(DrawCallIndexed{
-			(uint32_t)vertices.size(),
-			(uint32_t)indices.size(),
+			(uint32_t)(vertices.size() * sizeof(Vertex)),
+			(uint32_t)(indices.size() * sizeof(uint32_t)),
 			(uint32_t)batch.geometry.indices.size(),
 			gfxAlbedoTexture,
 			gfxNormalTexture,
@@ -70,7 +72,12 @@ void StaticMesh::create(gfx::GraphicDevice* _device, const ArchiveStaticMesh& _a
 	this->gfxIndexBuffer = _device->createBuffer("IndexBuffer", gfx::BufferType::Index, (uint32_t)(sizeof(uint32_t) * indices.size()), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, indices.data());;
 }
 
-void StaticMesh::destroy(gfx::GraphicDevice* _device)
+void StaticMesh::save(AssetLibrary* _library, gfx::GraphicDevice* _device, Archive& _archive)
+{
+	AKA_NOT_IMPLEMENTED;
+}
+
+void StaticMesh::destroy(AssetLibrary* _library, gfx::GraphicDevice* _device)
 {
 	_device->destroy(this->gfxAlbedoSampler);
 	_device->destroy(this->gfxNormalSampler);

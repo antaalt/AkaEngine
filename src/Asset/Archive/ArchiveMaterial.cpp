@@ -6,62 +6,69 @@
 
 namespace app {
 
-ArchiveLoadResult ArchiveMaterial::load(AssetLibrary* _library, const AssetPath& path)
+ArchiveMaterial::ArchiveMaterial() : 
+	ArchiveMaterial(AssetID::Invalid)
 {
-	FileStream stream(path.getPath(), FileMode::Read, FileType::Binary);
-	BinaryArchive archive(stream);
+}
+ArchiveMaterial::ArchiveMaterial(const AssetID& id) : 
+	Archive(AssetType::Material, id, getLatestVersion()),
+	flags(ArchiveMaterialFlag::None),
+	color(0.f, 0.f, 0.f, 1.f),
+	albedo(),
+	normal()
+{
+}
+ArchiveLoadResult ArchiveMaterial::load_internal(ArchiveLoadContext& _context, BinaryArchive& _archive)
+{
+	_archive.read<ArchiveMaterialFlag>(this->flags);
+	_archive.read<color4f>(this->color);
 
-	// Read header
-	char sign[4];
-	archive.read<char>(sign, 4);
-	if (sign[0] != 'a' || sign[1] != 'k' || sign[2] != 'a' || sign[3] != 'm')
-		return ArchiveLoadResult::InvalidMagicWord;
-	ArchiveMaterialVersion version = archive.read<ArchiveMaterialVersion>();
-	if (version > ArchiveMaterialVersion::Latest)
-		return ArchiveLoadResult::IncompatibleVersion;
-
-	archive.read(this->color);
-
-	{
-		AssetID albedoID = archive.read<AssetID>();
-		AssetInfo info = _library->getAssetInfo(albedoID);
-		this->albedo.load(_library, info.path);
-	}
-
-	{
-		AssetID normalID = archive.read<AssetID>();
-		AssetInfo info = _library->getAssetInfo(normalID);
-		this->normal.load(_library, info.path);
-	}
+	this->albedo = ArchiveImage(_archive.read<AssetID>());
+	this->normal = ArchiveImage(_archive.read<AssetID>());
 
 	return ArchiveLoadResult::Success;
 }
 
-ArchiveSaveResult ArchiveMaterial::save(AssetLibrary* _library, const AssetPath& path)
+ArchiveSaveResult ArchiveMaterial::save_internal(ArchiveSaveContext& _context, BinaryArchive& _archive)
 {
-	FileStream stream(path.getPath(), FileMode::Write, FileType::Binary);
-	BinaryArchive archive(stream);
+	_archive.write<ArchiveMaterialFlag>(this->flags);
+	_archive.write<color4f>(this->color);
 
-	// Write header
-	char signature[4] = { 'a', 'k', 'a', 'm' };
-	archive.write<char>(signature, 4);
-	archive.write<ArchiveMaterialVersion>(ArchiveMaterialVersion::Latest);
-
-	archive.write(this->color);
-
-	{
-		archive.write<AssetID>(this->albedo.id());
-		AssetInfo info = _library->getAssetInfo(this->albedo.id());
-		this->albedo.save(_library, info.path);
-	}
-
-	{
-		archive.write<AssetID>(this->normal.id());
-		AssetInfo info = _library->getAssetInfo(this->normal.id());
-		this->normal.save(_library, info.path);
-	}
-
+	_archive.write<AssetID>(this->albedo.id());
+	_archive.write<AssetID>(this->normal.id());
+	
 	return ArchiveSaveResult::Success;
+}
+
+ArchiveLoadResult ArchiveMaterial::load_dependency(ArchiveLoadContext& _context)
+{
+	ArchiveLoadResult res = this->albedo.load(_context);
+	if (res != ArchiveLoadResult::Success)
+		return ArchiveLoadResult::InvalidDependency;
+	res = this->normal.load(_context);
+	if (res != ArchiveLoadResult::Success)
+		return ArchiveLoadResult::InvalidDependency;
+	return ArchiveLoadResult::Success;
+}
+
+ArchiveSaveResult ArchiveMaterial::save_dependency(ArchiveSaveContext& _context)
+{
+	ArchiveSaveResult res = this->albedo.save(_context);
+	if (res != ArchiveSaveResult::Success)
+		return ArchiveSaveResult::InvalidDependency;
+	res = this->normal.save(_context);
+	if (res != ArchiveSaveResult::Success)
+		return ArchiveSaveResult::InvalidDependency;
+	return ArchiveSaveResult::Success;
+}
+void ArchiveMaterial::copyFrom(const Archive* _archive)
+{
+	AKA_ASSERT(_archive->id() == id(), "Invalid id");
+	AKA_ASSERT(_archive->type() == type(), "Invalid type");
+	AKA_ASSERT(_archive->version() == version(), "Invalid version");
+
+	const ArchiveMaterial* archive = reinterpret_cast<const ArchiveMaterial*>(_archive);
+	*this = *archive;
 }
 
 }

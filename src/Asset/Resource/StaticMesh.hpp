@@ -6,10 +6,15 @@
 
 namespace app {
 
-struct StaticMesh : Resource {
+class StaticMesh : public Resource {
 public:
-	void create(gfx::GraphicDevice* _device, const ArchiveStaticMesh& _archive);
-	void destroy(gfx::GraphicDevice* _device);
+	StaticMesh() : Resource(ResourceType::StaticMesh) {}
+	StaticMesh(ResourceID _id, const String& _name) : Resource(ResourceType::StaticMesh, _id, _name) {}
+
+
+	void create(AssetLibrary* _library, gfx::GraphicDevice* _device, const Archive& _archive) override;
+	void save(AssetLibrary* _library, gfx::GraphicDevice* _device, Archive& _archive) override;
+	void destroy(AssetLibrary* _library, gfx::GraphicDevice* _device) override;
 
 public: // Optionnal data for runtime operations
 	gfx::VertexAttributeState attributes;
@@ -33,8 +38,13 @@ public: // Mandatory data for rendering & co
 	Vector<DrawCallIndexed> batches; // TODO indirect buffer. Require bindless for material
 };
 
+
+// Component could inherit from StaticMesh directly ?
 struct StaticMeshComponent {
 	ResourceHandle<StaticMesh> mesh;
+	// Instance data.
+	gfx::BufferHandle instanceBuffer;
+	gfx::DescriptorSetHandle descriptorSet;
 };
 
 

@@ -4,14 +4,19 @@
 #include <memory>
 #include <atomic>
 
+#include <Aka/Core/Container/String.h>
+#include <Aka/Graphic/GraphicDevice.h>
 
 namespace app {
 
-enum class ResourceID : uint32_t {};
+class AssetLibrary;
+struct Archive;
+
+enum class ResourceID : uint64_t { Invalid = (uint64_t)-1 };
 // TODO define DECL_STRICT_TYPE(ResourceID)
 
-// A resource is something we can drop in engine, aka a component. we plug it gameplay component, and we have an actor
-enum class ResourceType {
+enum class ResourceType : uint32_t
+{
 	Unknown,
 
 	Scene, // scene is not a component though... its a list of entity with component that we can drop or open ?
@@ -28,11 +33,26 @@ enum class ResourceType {
 
 // This could be Component directly for ECS.
 // Might cause issue with component which are not directly droppable
-struct Resource {
-	ResourceID id;
+class Resource
+{
+public:
+	Resource(ResourceType _type) : Resource(_type, ResourceID::Invalid, "") {}
+	Resource(ResourceType _type, ResourceID id, const aka::String& _name) : m_type(_type), m_id(id), m_name(_name) {}
 
-	// We need to be able to clone a resource
+	const aka::String& getName() const { return m_name; }
+
+	ResourceType getType() const { return m_type; }
+
+	virtual void create(AssetLibrary* _library, aka::gfx::GraphicDevice* _device, const Archive& _archive) = 0;
+	virtual void save(AssetLibrary* _library, aka::gfx::GraphicDevice* _device, Archive& _archive) = 0;
+	virtual void destroy(AssetLibrary* _library, aka::gfx::GraphicDevice* _device) = 0;
+
+	// We need to be able to clone a resource ?
 	//virtual Resource* clone() = 0;
+private:
+	ResourceType m_type;
+	ResourceID m_id;
+	aka::String m_name;
 };
 
 enum class ResourceState {

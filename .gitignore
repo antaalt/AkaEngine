@@ -3,6 +3,8 @@
 
 ### Custom ###
 out/
+asset/library/
+asset/Sponza/
 
 ### CMake ###
 CMakeLists.txt.user

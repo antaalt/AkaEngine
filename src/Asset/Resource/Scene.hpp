@@ -12,20 +12,31 @@ class AssetLibrary;
 
 using namespace aka;
 
-struct Scene : Resource {
+class Scene : public Resource {
 public:
+	Scene() : Resource(ResourceType::Scene) {}
+	Scene(ResourceID _id, const String& _name) : Resource(ResourceType::Scene, _id, _name) {}
+
 	// Should be load / save instead and take library + id instead of archive directly for cache.
-	void create(AssetLibrary* library, const ArchiveScene& _archive);
-	void destroy(AssetLibrary* library);
+	void create(AssetLibrary* library, gfx::GraphicDevice* _device, const Archive& _archive) override;
+	void save(AssetLibrary* library, gfx::GraphicDevice* _device, Archive& _archive) override;
+	void destroy(AssetLibrary* library, gfx::GraphicDevice* _device) override;
+
+	void update(aka::Time time, gfx::GraphicDevice* _device);
+	void render(gfx::GraphicDevice* _device, gfx::Frame* _frame);
+
+	aabbox<> getBounds() const { return m_bounds; }
 //private:
 	// ECS hierarchy here...
 	//entt::registry registry;
+	// TODO scene is now world.
+	aabbox<> m_bounds;
 	World world;
 };
 
-struct Entity {
+/*struct Entity {
 	entt::entity entity;
-};
+};*/
 
 // ------------------------------------
 // Systems

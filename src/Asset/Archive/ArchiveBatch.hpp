@@ -10,23 +10,29 @@ namespace app {
 using namespace aka;
 
 
-enum class ArchiveBatchVersion : uint32_t
-{
-	ArchiveCreation = 0,
-
-	Latest = ArchiveCreation
-};
-
 struct ArchiveBatch : Archive
 {
-	ArchiveBatch() {}
-	ArchiveBatch(AssetID path) : Archive(path), material(AssetID::Invalid), geometry(AssetID::Invalid) {}
+	enum class Version : ArchiveVersionType
+	{
+		ArchiveCreation = 0,
 
-	ArchiveLoadResult load(AssetLibrary* _library, const AssetPath& path) override;
-	ArchiveSaveResult save(AssetLibrary* _library, const AssetPath& path) override;
+		Latest = ArchiveCreation
+	};
+	ArchiveBatch();
+	ArchiveBatch(AssetID path);
 
 	ArchiveMaterial material;
 	ArchiveGeometry geometry;
+
+protected:
+	ArchiveLoadResult load_internal(ArchiveLoadContext& _context, BinaryArchive& path) override;
+	ArchiveSaveResult save_internal(ArchiveSaveContext& _context, BinaryArchive& path) override;
+	ArchiveLoadResult load_dependency(ArchiveLoadContext& _context) override;
+	ArchiveSaveResult save_dependency(ArchiveSaveContext& _context) override;
+
+	ArchiveVersionType getLatestVersion() const override { return static_cast<ArchiveVersionType>(Version::Latest); };
+
+	void copyFrom(const Archive* _archive) override;
 };
 
 }

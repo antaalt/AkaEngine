@@ -6,51 +6,68 @@
 
 namespace app {
 
-ArchiveLoadResult ArchiveStaticMesh::load(AssetLibrary* _library, const AssetPath& path)
+ArchiveStaticMesh::ArchiveStaticMesh() : 
+	ArchiveStaticMesh(AssetID::Invalid)
 {
-	FileStream stream(path.getPath(), FileMode::Read, FileType::Binary);
-	BinaryArchive archive(stream);
+}
+ArchiveStaticMesh::ArchiveStaticMesh(AssetID id) : 
+	Archive(AssetType::StaticMesh, id, getLatestVersion()),
+	batches{}
+{
+}
 
-	// Read header
-	char sign[4];
-	archive.read<char>(sign, 4);
-	if (sign[0] != 'a' || sign[1] != 'k' || sign[2] != 'a' || sign[3] != 's')
-		return ArchiveLoadResult::InvalidMagicWord;
-	ArchiveStaticMeshVersion version = archive.read<ArchiveStaticMeshVersion>();
-	if (version > ArchiveStaticMeshVersion::Latest)
-		return ArchiveLoadResult::IncompatibleVersion;
-
-	uint32_t batchCount = archive.read<uint32_t>();
+ArchiveLoadResult ArchiveStaticMesh::load_internal(ArchiveLoadContext& _context, BinaryArchive& _archive)
+{
+	uint32_t batchCount = _archive.read<uint32_t>();
 	for (uint32_t i = 0; i < batchCount; i++)
 	{
-		AssetID batchID = archive.read<AssetID>();
-		AssetInfo info = _library->getAssetInfo(batchID);
-		this->batches.append(ArchiveBatch(batchID));
-		this->batches.last().load(_library, info.path);
+		this->batches.append(ArchiveBatch(_archive.read<AssetID>()));
 	}
 
 	return ArchiveLoadResult::Success;
 }
 
-ArchiveSaveResult ArchiveStaticMesh::save(AssetLibrary* _library, const AssetPath& path)
+ArchiveSaveResult ArchiveStaticMesh::save_internal(ArchiveSaveContext& _context, BinaryArchive& _archive)
 {
-	FileStream stream(path.getPath(), FileMode::Write, FileType::Binary);
-	BinaryArchive archive(stream);
-
-	// Write header
-	char signature[4] = { 'a', 'k', 'a', 's' };
-	archive.write<char>(signature, 4);
-	archive.write<ArchiveStaticMeshVersion>(ArchiveStaticMeshVersion::Latest);
-
-	archive.write<uint32_t>((uint32_t)this->batches.size());
+	_archive.write<uint32_t>((uint32_t)this->batches.size());
 	for (uint32_t i = 0; i < this->batches.size(); i++)
 	{
-		archive.write<AssetID>(this->batches[i].id());
-		AssetInfo info = _library->getAssetInfo(this->batches[i].id());
-		this->batches[i].save(_library, info.path);
+		_archive.write<AssetID>(this->batches[i].id());
 	}
 
 	return ArchiveSaveResult::Success;
+}
+
+ArchiveLoadResult ArchiveStaticMesh::load_dependency(ArchiveLoadContext& _context)
+{
+	for (size_t i = 0; i < this->batches.size(); i++)
+	{
+		ArchiveLoadResult res = this->batches[i].load(_context);
+		if (res != ArchiveLoadResult::Success)
+			return res;
+	}
+	return ArchiveLoadResult::Success;
+}
+
+ArchiveSaveResult ArchiveStaticMesh::save_dependency(ArchiveSaveContext& _context)
+{
+	for (size_t i = 0; i < this->batches.size(); i++)
+	{
+		ArchiveSaveResult res = this->batches[i].save(_context);
+		if (res != ArchiveSaveResult::Success)
+			return res;
+	}
+	return ArchiveSaveResult::Success;
+}
+
+void ArchiveStaticMesh::copyFrom(const Archive* _archive)
+{
+	AKA_ASSERT(_archive->id() == id(), "Invalid id");
+	AKA_ASSERT(_archive->type() == type(), "Invalid type");
+	AKA_ASSERT(_archive->version() == version(), "Invalid version");
+
+	const ArchiveStaticMesh* archive = reinterpret_cast<const ArchiveStaticMesh*>(_archive);
+	*this = *archive;
 }
 
 }

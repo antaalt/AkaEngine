@@ -1,3 +1,6 @@
 [submodule "lib/Aka"]
 	path = lib/Aka
 	url = git@github.com:antaalt/Aka.git
+[submodule "lib/assimp"]
+	path = lib/assimp
+	url = git@github.com:assimp/assimp.git

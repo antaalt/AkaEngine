@@ -6,14 +6,6 @@ namespace app {
 
 using namespace aka;
 
-
-enum class ArchiveSceneVersion : uint32_t
-{
-	ArchiveCreation = 0,
-
-	Latest = ArchiveCreation
-};
-
 struct ArchiveSceneTransform {
 	mat4f matrix;
 };
@@ -38,6 +30,7 @@ enum class SceneComponent {
 	Last = SunLight,
 };
 enum class SceneComponentMask {
+	None  = 0,
 	Transform  = 1 << aka::EnumToIndex(SceneComponent::Transform),
 	Hierarchy  = 1 << aka::EnumToIndex(SceneComponent::Hierarchy),
 	StaticMesh = 1 << aka::EnumToIndex(SceneComponent::StaticMesh),
@@ -47,38 +40,40 @@ enum class SceneComponentMask {
 };
 AKA_IMPLEMENT_BITMASK_OPERATOR(SceneComponentMask)
 
-template<typename T>
-struct BitMask
-{
-	// Check is enum, Use First & Last
-	void add(T value) {}
-	void remove(T value) {}
-	void test(T value) {}
-
-	static BitMask<T> get(T value) { return 1U << EnumToIndex(value); }
-private:
-	T m_value;
-};
-
 
 
 struct ArchiveSceneEntity {
+	String name;
 	SceneComponentMask components;
 	ArchiveSceneID id[EnumCount<SceneComponent>()];
 };
 
-struct ArchiveScene : Archive {
-	ArchiveScene() {}
-	ArchiveScene(AssetID id) : Archive(id) {}
+struct ArchiveScene : Archive 
+{
+	enum class Version : ArchiveVersionType
+	{
+		ArchiveCreation = 0,
 
+		Latest = ArchiveCreation
+	};
+	ArchiveScene();
+	ArchiveScene(AssetID id);
+
+	aabbox<> bounds;
 	Vector<ArchiveStaticMesh> meshes;
 	Vector<ArchiveSceneTransform> transforms;
 	Vector<ArchiveSceneEntity> entities;
 	// TODO: add lights, envmap, cameras, gameplay struct
 
+protected:
+	ArchiveLoadResult load_internal(ArchiveLoadContext& _context, BinaryArchive& path) override;
+	ArchiveSaveResult save_internal(ArchiveSaveContext& _context, BinaryArchive& path) override;
+	ArchiveLoadResult load_dependency(ArchiveLoadContext& _context) override;
+	ArchiveSaveResult save_dependency(ArchiveSaveContext& _context) override;
 
-	ArchiveLoadResult load(AssetLibrary* _library, const AssetPath& path) override;
-	ArchiveSaveResult save(AssetLibrary* _library, const AssetPath& path) override;
+	ArchiveVersionType getLatestVersion() const override { return static_cast<ArchiveVersionType>(Version::Latest); };
+
+	void copyFrom(const Archive* _archive) override;
 };
 
 };

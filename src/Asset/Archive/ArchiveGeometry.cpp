@@ -5,59 +5,69 @@
 #include "../AssetLibrary.hpp"
 
 namespace app {
-
-ArchiveLoadResult ArchiveGeometry::load(AssetLibrary* _library, const AssetPath& path)
+ArchiveGeometry::ArchiveGeometry() : 
+	ArchiveGeometry(AssetID::Invalid)
 {
-	FileStream stream(path.getPath(), FileMode::Read, FileType::Binary);
-	BinaryArchive archive(stream);
-
-	// Read header
-	char sign[4];
-	archive.read<char>(sign, 4);
-	if (sign[0] != 'a' || sign[1] != 'k' || sign[2] != 'a' || sign[3] != 'g')
-		return ArchiveLoadResult::InvalidMagicWord;
-	ArchiveGeometryVersion version = archive.read<ArchiveGeometryVersion>();
-	if (version > ArchiveGeometryVersion::Latest)
-		return ArchiveLoadResult::IncompatibleVersion;
-
+}
+ArchiveGeometry::ArchiveGeometry(AssetID id) :
+	Archive(AssetType::Geometry, id, getLatestVersion()),
+	vertices{},
+	indices{},
+	bounds()
+{
+}
+ArchiveLoadResult ArchiveGeometry::load_internal(ArchiveLoadContext& _context, BinaryArchive& _archive)
+{
 	// Bounds
-	archive.read(this->bounds.min);
-	archive.read(this->bounds.max);
+	_archive.read(this->bounds.min);
+	_archive.read(this->bounds.max);
 
 	// Indices
-	uint32_t indexCount = archive.read<uint32_t>();
+	uint32_t indexCount = _archive.read<uint32_t>();
 	this->indices.resize(indexCount);
-	archive.read(this->indices.data(), indexCount);
+	_archive.read<uint32_t>(this->indices.data(), indexCount);
 
 	// Vertices
-	uint32_t vertexCount = archive.read<uint32_t>();
+	uint32_t vertexCount = _archive.read<uint32_t>();
 	this->vertices.resize(vertexCount);
-	archive.read(this->vertices.data(), vertexCount);
+	_archive.read<Vertex>(this->vertices.data(), vertexCount);
 
 	return ArchiveLoadResult::Success;
 }
 
-ArchiveSaveResult ArchiveGeometry::save(AssetLibrary* _library, const AssetPath& path)
+ArchiveSaveResult ArchiveGeometry::save_internal(ArchiveSaveContext& _context, BinaryArchive& _archive)
 {
-	FileStream stream(path.getPath(), FileMode::Write, FileType::Binary);
-	BinaryArchive archive(stream);
-
-	// Write header
-	char signature[4] = { 'a', 'k', 'a', 'g' };
-	archive.write<char>(signature, 4);
-	archive.write<ArchiveGeometryVersion>(ArchiveGeometryVersion::Latest);
-
 	// Bounds
-	archive.write(this->bounds.min);
-	archive.write(this->bounds.max);
+	_archive.write(this->bounds.min);
+	_archive.write(this->bounds.max);
 
-	archive.write<uint32_t>((uint32_t)this->indices.size());
-	archive.write<uint32_t>(this->indices.data(), this->indices.size());
+	_archive.write<uint32_t>((uint32_t)this->indices.size());
+	_archive.write<uint32_t>(this->indices.data(), this->indices.size());
 
-	archive.write<uint32_t>((uint32_t)this->vertices.size());
-	archive.write<Vertex>(this->vertices.data(), this->vertices.size());
+	_archive.write<uint32_t>((uint32_t)this->vertices.size());
+	_archive.write<Vertex>(this->vertices.data(), this->vertices.size());
 
 	return ArchiveSaveResult::Success;
+}
+
+ArchiveLoadResult ArchiveGeometry::load_dependency(ArchiveLoadContext& _context)
+{
+	return ArchiveLoadResult::Success;
+}
+
+ArchiveSaveResult ArchiveGeometry::save_dependency(ArchiveSaveContext& _context)
+{
+	return ArchiveSaveResult::Success;
+}
+
+void ArchiveGeometry::copyFrom(const Archive* _archive)
+{
+	AKA_ASSERT(_archive->id() == id(), "Invalid id");
+	AKA_ASSERT(_archive->type() == type(), "Invalid type");
+	AKA_ASSERT(_archive->version() == version(), "Invalid version");
+
+	const ArchiveGeometry* geometry = reinterpret_cast<const ArchiveGeometry*>(_archive);
+	*this = *geometry;
 }
 
 }

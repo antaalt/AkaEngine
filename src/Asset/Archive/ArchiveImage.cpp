@@ -4,27 +4,27 @@
 
 namespace app {
 
-ArchiveLoadResult ArchiveImage::load(AssetLibrary* _library, const AssetPath& path)
+ArchiveImage::ArchiveImage() :
+	ArchiveImage(AssetID::Invalid)
 {
-	FileStream stream(path.getPath(), FileMode::Read, FileType::Binary);
-	BinaryArchive archive(stream);
+}
+ArchiveImage::ArchiveImage(const AssetID& id) : 
+	Archive(AssetType::Image, id, getLatestVersion()),
+	data{},
+	width(0),
+	height(0),
+	channels(0)
+{
+}
+ArchiveLoadResult ArchiveImage::load_internal(ArchiveLoadContext& _context, BinaryArchive& _archive)
+{
+	this->width = _archive.read<uint32_t>();
+	this->height = _archive.read<uint32_t>();
+	this->channels = _archive.read<uint32_t>();
 
-	// Read header
-	char sign[4];
-	archive.read<char>(sign, 4);
-	if (sign[0] != 'a' || sign[1] != 'k' || sign[2] != 'a' || sign[3] != 'i')
-		return ArchiveLoadResult::InvalidMagicWord;
-	ArchiveImageVersion version = archive.read<ArchiveImageVersion>();
-	if (version > ArchiveImageVersion::Latest)
-		return ArchiveLoadResult::IncompatibleVersion;
-
-	this->width = archive.read<uint32_t>();
-	this->height = archive.read<uint32_t>();
-	this->channels = archive.read<uint32_t>();
-
-	uint32_t compressedSize = archive.read<uint32_t>();
+	uint32_t compressedSize = _archive.read<uint32_t>();
 	Vector<uint8_t> data(compressedSize);
-	archive.read(data.data(), compressedSize);
+	_archive.read(data.data(), compressedSize);
 
 	Image image;
 	if (!image.decode(data.data(), data.size()))
@@ -36,29 +36,40 @@ ArchiveLoadResult ArchiveImage::load(AssetLibrary* _library, const AssetPath& pa
 	return ArchiveLoadResult::Success;
 }
 
-ArchiveSaveResult ArchiveImage::save(AssetLibrary* _library, const AssetPath& path)
+ArchiveSaveResult ArchiveImage::save_internal(ArchiveSaveContext& _context, BinaryArchive& _archive)
 {
-	FileStream stream(path.getPath(), FileMode::Write, FileType::Binary);
-	BinaryArchive archive(stream);
-
-	// Write header
-	char signature[4] = { 'a', 'k', 'a', 'i' };
-	archive.write<char>(signature, 4);
-	archive.write<ArchiveImageVersion>(ArchiveImageVersion::Latest);
-
-	archive.write<uint32_t>(this->width);
-	archive.write<uint32_t>(this->height);
-	archive.write<uint32_t>(this->channels);
+	_archive.write<uint32_t>(this->width);
+	_archive.write<uint32_t>(this->height);
+	_archive.write<uint32_t>(this->channels);
 
 	Image image(this->width, this->height, this->channels, this->data.data());
 	std::vector<uint8_t> encodedData = image.encodePNG();
 	if (encodedData.empty())
 		return ArchiveSaveResult::Failed;
 
-	archive.write<uint32_t>((uint32_t)encodedData.size());
-	archive.write(encodedData.data(), encodedData.size());
+	_archive.write<uint32_t>((uint32_t)encodedData.size());
+	_archive.write(encodedData.data(), encodedData.size());
 
 	return ArchiveSaveResult::Success;
+}
+
+ArchiveLoadResult ArchiveImage::load_dependency(ArchiveLoadContext& _context)
+{
+	return ArchiveLoadResult::Success;
+}
+
+ArchiveSaveResult ArchiveImage::save_dependency(ArchiveSaveContext& _context)
+{
+	return ArchiveSaveResult::Success;
+}
+void ArchiveImage::copyFrom(const Archive* _archive)
+{
+	AKA_ASSERT(_archive->id() == id(), "Invalid id");
+	AKA_ASSERT(_archive->type() == type(), "Invalid type");
+	AKA_ASSERT(_archive->version() == version(), "Invalid version");
+
+	const ArchiveImage* archive = reinterpret_cast<const ArchiveImage*>(_archive);
+	*this = *archive;
 }
 
 }
