@@ -10,10 +10,11 @@
 #include "Asset/Resource/StaticMesh.hpp"
 #include "Asset/Resource/Scene.hpp"
 #include "Asset/AssetLibrary.hpp"
+#include "Editor/AssetEditorLayer.hpp"
 
 using namespace aka;
 
-class Editor : public aka::Application
+class Editor : public aka::Application, EventListener<app::SceneSwitchEvent>
 {
 public:
 	Editor();
@@ -23,6 +24,7 @@ public:
 	void onUpdate(aka::Time time) override;
 	void onRender(aka::gfx::Frame* frame) override;
 	void onResize(uint32_t width, uint32_t height) override;
+	void onReceive(const app::SceneSwitchEvent& event) override;
 private:
 	void createRenderPass();
 	void destroyRenderPass();

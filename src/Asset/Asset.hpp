@@ -37,16 +37,12 @@ struct AssetInfo
 	AssetID id;
 	AssetPath path;
 	AssetType type;
-	uint32_t writeCounter = 0;
-	uint32_t readCounter = 0;
 
 	static AssetInfo invalid() {
 		return AssetInfo{
 			AssetID::Invalid,
 			"",
-			AssetType::Unknown,
-			0,
-			0
+			AssetType::Unknown
 		};
 	}
 };

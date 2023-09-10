@@ -123,9 +123,9 @@ static void drawResource(const char* type, AssetLibrary* library, AssetViewer<T>
 void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 {
 	ImGui::ShowDemoWindow();
-	if (ImGui::Begin("ArchiveEditor", nullptr, ImGuiWindowFlags_MenuBar))
+	bool openImportWindow = false;
+	if (ImGui::Begin("Asset Browser", nullptr, ImGuiWindowFlags_MenuBar))
 	{
-		bool openImportWindow = false;
 		if (ImGui::BeginMenuBar())
 		{
 			if (ImGui::BeginMenu("File"))
@@ -145,7 +145,7 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 				if (ImGui::MenuItem("Scene"))
 				{
 					openImportWindow = true;
-					import([&](const aka::Path& path) -> bool{
+					importDeferred([&](const aka::Path& path) -> bool{
 						aka::Logger::info("Importing scene : ", path);
 
 						AssimpImporter importer;
@@ -175,48 +175,107 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 		// -------- ASSETS ---------
 		// -------------------------
 		ImGui::TextColored(color, "Assets");
-		static int s_flags = (1 << EnumCount<app::AssetType>()) - 1;
-		PushStyleCompact();
-		for (app::AssetType type : EnumRange<app::AssetType>())
+		struct AssetNode
 		{
-			// TODO handle window size.
-			ImGui::CheckboxFlags(getAssetTypeString(type), &s_flags, 1 << EnumToIndex(type));
-			if (type != app::AssetType::Last)
-				ImGui::SameLine();
-		}
-		PopStyleCompact();
+			AssetID id = AssetID::Invalid;
+			String name = "";
+			AssetType type = AssetType::Unknown;
+			size_t size = 0;
 
-		if (ImGui::BeginTable("Assets", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 20)))
-		{
-			ImGui::TableSetupColumn("AssetID", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableSetupColumn("Load", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableSetupScrollFreeze(0, 1); // Make row always visible
-			ImGui::TableHeadersRow();
-			for (auto asset : m_library->getAssetRange())
+			// Using std vector cuz aka::Vector cause stack overflow:
+			// Should not call constructor for reserved memory.
+			std::vector<AssetNode> childrens = {};
+			static void draw(AssetLibrary* library, const AssetNode& node)
 			{
-				if ((s_flags & (1 << EnumToIndex(asset.second.type))) == 0)
-					continue;
 				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				ImGui::Text("%llu", (uint64_t)asset.second.id);
-				ImGui::TableSetColumnIndex(1);
-				ImGui::Text("%s", getAssetTypeString(asset.second.type));
-				ImGui::TableSetColumnIndex(2);
-				app::ResourceType res = app::getResourceType(asset.second.type);
-				if (res != app::ResourceType::Unknown)
+				ImGui::TableNextColumn();
+				const bool isFolder = (node.childrens.size() > 0);
+				if (isFolder)
 				{
-					app::ResourceID id = m_library->getResourceID(asset.second.id);
-					if (ImGui::SmallButton("load"))
+					bool open = ImGui::TreeNodeEx(node.name.cstr(), ImGuiTreeNodeFlags_SpanFullWidth);
+					ImGui::TableNextColumn();
+					ImGui::TextDisabled("--");
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted("");
+					if (open)
 					{
-
-						// Load if resource
+						for (int iChild = 0; iChild < node.childrens.size(); iChild++)
+							AssetNode::draw(library, node.childrens[iChild]);
+						ImGui::TreePop();
 					}
 				}
-				ImGui::TableSetColumnIndex(3);
-				ImGui::Text("%s", (uint64_t)asset.second.path.cstr());
+				else // isFile
+				{
+					const char* popUpName = node.name.cstr(); // TODO: avoid duplicated name, should use path...
+					if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
+						ImGui::OpenPopup(popUpName);
+
+					ImGui::TreeNodeEx(node.name.cstr(), ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanFullWidth);
+					ImGui::TableNextColumn();
+					ImGui::Text("%u", node.size);
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(getAssetTypeString(node.type));
+
+					if (ImGui::BeginPopupContextItem(popUpName))
+					{
+						if (ImGui::MenuItem("Load"))
+						{
+							switch (node.type)
+							{
+							case AssetType::Scene:
+								EventDispatcher<SceneSwitchEvent>::trigger(SceneSwitchEvent{ 
+									library->load<Scene>(library->getResourceID(node.id), Application::app()->graphic()) 
+								});
+								break;
+							case AssetType::StaticMesh:
+								library->load<StaticMesh>(library->getResourceID(node.id), Application::app()->graphic());
+								break;
+							default:
+								break;
+							}
+						}
+						ImGui::EndPopup();
+					}
+				}
 			}
+			static AssetNode* addNodeToTree(AssetNode& node, const AssetInfo& assetInfo, const String* directories, size_t count)
+			{
+				// TODO should not compute this every time, only when asset added / removed. event ?
+				if (count == 0)
+					return &node;
+				for (AssetNode& node : node.childrens)
+				{
+					if (node.name == directories[0])
+					{
+						return addNodeToTree(node, assetInfo, &directories[1], --count);
+					}
+				}
+				// Not found if we reach here. Create a folder & inspect it
+				AssetType type = (count == 1) ? assetInfo.type : AssetType::Unknown;
+				node.childrens.push_back(AssetNode{ assetInfo.id, directories[0], type, 0, {} });
+				return addNodeToTree(node.childrens.back(), assetInfo, &directories[1], --count);
+			}
+		};
+		AssetNode root{};
+		for (const auto& asset : m_library->getAssetRange())
+		{
+			const AssetID& assetID = asset.first;
+			const AssetInfo& assetInfo = asset.second;
+			String path = assetInfo.path.cstr();
+			Vector<String> directories = path.split('/');
+			AssetNode::addNodeToTree(root, assetInfo, directories.data(), directories.size());
+			// if not found, add it.
+			
+		}
+		// First we need to iterate all assets & sort them by path & iterate on this.
+		if (ImGui::BeginTable("Assets", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 20)))
+		{
+			ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed);
+			ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
+			ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
+			ImGui::TableHeadersRow();
+			for (const AssetNode& node : root.childrens)
+				AssetNode::draw(m_library, node);
 			ImGui::EndTable();
 		}
 
@@ -225,7 +284,7 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 		// ------- RESOURCES -------
 		// -------------------------
 		ImGui::TextColored(color, "Resources");
-		
+
 		static ImGuiTableFlags flags = ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody;
 
 		if (ImGui::BeginTable("Resources", 6, flags))
@@ -241,7 +300,7 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 			drawResource<StaticMesh>("meshes", m_library, &m_meshViewer);
 			ImGui::EndTable();
 		}
-
+	}
 	ImGui::End();
 	// -------------------------
 	// ------- IMPORTER --------
@@ -332,7 +391,6 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 
 	for (AssetViewerBase* viewer : m_viewers)
 		viewer->render(frame);
-	}
 }
 
 void AssetEditorLayer::onLayerPresent()
@@ -347,7 +405,7 @@ void AssetEditorLayer::setLibrary(AssetLibrary* _library)
 	m_library = _library;
 }
 
-void AssetEditorLayer::import(std::function<bool(const aka::Path&)> callback)
+void AssetEditorLayer::importDeferred(std::function<bool(const aka::Path&)> callback)
 {
 	m_currentPath = AssetPath().getAbsolutePath();
 	m_selectedPath = nullptr;

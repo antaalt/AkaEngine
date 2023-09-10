@@ -212,7 +212,7 @@ void Editor::onCreate(int argc, char* argv[])
 	}
 
 
-	{ // Create a static mesh & archive it
+	/*{ // Create a static mesh & archive it
 #if 0
 		using namespace app;
 		AssetPath scenePath			= AssetPath("demo/scene.scene");
@@ -451,7 +451,7 @@ void Editor::onCreate(int argc, char* argv[])
 		}
 		Logger::info("Loading resource time : ", watch.elapsed(), "ms");
 #endif
-	}
+	}*/
 }
 
 void Editor::onDestroy()
@@ -509,9 +509,9 @@ void Editor::onRender(gfx::Frame* _frame)
 	cmd->bindDescriptorSet(0, m_cameraDescriptorSet);
 	cmd->bindDescriptorSet(0, m_cameraDescriptorSet);
 
+	cmd->beginRenderPass(m_renderPass, backbuffer, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f }, 1.f, 0 });
 	if (m_scene.isLoaded())
 	{
-		cmd->beginRenderPass(m_renderPass, backbuffer, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f }, 1.f, 0 });
 		app::Scene& scene = m_scene.get();
 		scene.world.registry().view<app::Transform3DComponent, app::StaticMeshComponent>().each([&](entt::entity entity, app::Transform3DComponent& transformComp, app::StaticMeshComponent& meshComp) {
 
@@ -531,14 +531,23 @@ void Editor::onRender(gfx::Frame* _frame)
 				}
 			}
 		});
-		cmd->endRenderPass();
 	}
+	cmd->endRenderPass();
 }
 
 void Editor::onResize(uint32_t width, uint32_t height)
 {
 	destroyRenderPass();
 	createRenderPass();
+}
+
+void Editor::onReceive(const app::SceneSwitchEvent& event)
+{
+	const app::Scene& scene = event.scene.get();
+	m_scene = event.scene;
+	m_sceneID = scene.getID();
+	m_cameraController.set(scene.getBounds());
+	m_dirty = true;
 }
 
 void Editor::createRenderPass()

@@ -115,7 +115,7 @@ bool validate(AssetLibrary* _library, AssetID id, AssetType _type)
 AssetID AssetLibrary::registerAsset(const AssetPath& _path, AssetType _assetType)
 {
 	AssetID assetID = generateAssetIDFromAssetPath(_path);
-	auto itAsset = m_assets.insert(std::make_pair(assetID, AssetInfo{ assetID, _path, _assetType, 0, 0 }));
+	auto itAsset = m_assets.insert(std::make_pair(assetID, AssetInfo{ assetID, _path, _assetType }));
 	if (!itAsset.second)
 	{
 		// Check if the file already exist & is valid, if so, use it.
@@ -127,7 +127,7 @@ AssetID AssetLibrary::registerAsset(const AssetPath& _path, AssetType _assetType
 			return AssetID::Invalid; // Avoid overwriting an asset. There might be hash conflict.
 	}
 
-	auto itAsset2 = m_assets.insert(std::make_pair(assetID, AssetInfo{ assetID, _path, _assetType, 0 , 0 }));
+	auto itAsset2 = m_assets.insert(std::make_pair(assetID, AssetInfo{ assetID, _path, _assetType }));
 	ResourceID resourceID = generateResourceIDFromAssetID(assetID);
 
 	ResourceType resourceType = getResourceType(_assetType);

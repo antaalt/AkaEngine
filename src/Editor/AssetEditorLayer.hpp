@@ -9,6 +9,11 @@ namespace app {
 
 class AssetLibrary;
 
+struct SceneSwitchEvent
+{
+	ResourceHandle<Scene> scene;
+};
+
 class AssetEditorLayer : public aka::Layer {
 public:
 	AssetEditorLayer();
@@ -24,7 +29,7 @@ public:
 public:
 	void setLibrary(AssetLibrary* _library);
 private:
-	void import(std::function<bool(const aka::Path&)> callback);
+	void importDeferred(std::function<bool(const aka::Path&)> callback);
 private:
 	aka::Path m_currentPath;
 	aka::Path* m_selectedPath;
