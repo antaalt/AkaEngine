@@ -40,7 +40,7 @@ public:
 	Resource(ResourceType _type, ResourceID id, const aka::String& _name) : m_type(_type), m_id(id), m_name(_name) {}
 
 	const aka::String& getName() const { return m_name; }
-
+	ResourceID getID() const { return m_id; }
 	ResourceType getType() const { return m_type; }
 
 	virtual void create(AssetLibrary* _library, aka::gfx::GraphicDevice* _device, const Archive& _archive) = 0;
@@ -82,6 +82,8 @@ public:
 	bool isValid() const { return m_resource != nullptr; }
 	bool isLoaded() const { return isValid() && m_resource->state == ResourceState::Loaded; }
 	ResourceState getState() const { return !isValid() ? ResourceState::Unknown : m_resource->state.load(); }
+
+	size_t getCount() const { return m_resource.use_count(); }
 
 	const T& get() const { return m_resource->resource; }
 	T& get() { return m_resource->resource; }

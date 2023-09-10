@@ -25,7 +25,12 @@ add_executable(AkaEditor
 	"src/Asset/Archive/ArchiveScene.cpp" 
 	"src/Asset/Archive/Archive.cpp"
 	"src/Asset/Resource/Scene.cpp"
-	"src/Asset/Resource/StaticMesh.cpp" 
+	"src/Asset/Resource/StaticMesh.cpp"
+	
+	"src/Editor/SceneEditorLayer.cpp" 
+	"src/Editor/AssetEditorLayer.cpp" 
+	"src/Editor/InfoEditorLayer.cpp" 
+	"src/Editor/AssetViewer.cpp"
 )
 
 # ASSIMP

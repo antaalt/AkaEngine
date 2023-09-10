@@ -174,11 +174,11 @@ ResourceHandle<T> get_internal(ResourceID _resourceID, std::map<ResourceID, Reso
 	}
 	return ResourceHandle<T>::invalid();
 }
-template<typename T, typename A>
-ResourceHandle<T> load_internal(ResourceID _resourceID, const A& _archive, gfx::GraphicDevice* _device, AssetLibrary* _library, std::map<ResourceID, ResourceHandle<T>>& _map, std::map<AssetID, AssetInfo>& _assets, std::map<ResourceID, AssetID>& _resources)
+template<typename T>
+ResourceHandle<T> load_internal(ResourceID _resourceID, const typename ArchiveTrait<T>::Archive& _archive, gfx::GraphicDevice* _device, AssetLibrary* _library, std::map<ResourceID, ResourceHandle<T>>& _map, std::map<AssetID, AssetInfo>& _assets, std::map<ResourceID, AssetID>& _resources)
 {
 	static_assert(std::is_base_of<Resource, T>::value, "Invalid resource type");
-	static_assert(std::is_base_of<Archive, A>::value, "Invalid archive type");
+	static_assert(std::is_base_of<Archive, ArchiveTrait<T>::Archive>::value, "Invalid archive type");
 	// Check if resource already exist.
 	auto itResource = _map.find(_resourceID);
 	if (itResource != _map.end())
@@ -229,12 +229,22 @@ ResourceHandle<StaticMesh> AssetLibrary::get(ResourceID _resourceID)
 template<>
 ResourceHandle<Scene> AssetLibrary::load(ResourceID _resourceID, const ArchiveScene& _archive, gfx::GraphicDevice* _device)
 {
-	return load_internal<Scene, ArchiveScene>(_resourceID, _archive, _device, this, m_scenes, m_assets, m_resources);
+	return load_internal<Scene>(_resourceID, _archive, _device, this, m_scenes, m_assets, m_resources);
 }
 template<>
 ResourceHandle<StaticMesh> AssetLibrary::load(ResourceID _resourceID, const ArchiveStaticMesh& _archive, gfx::GraphicDevice* _device)
 {
-	return load_internal<StaticMesh, ArchiveStaticMesh>(_resourceID, _archive, _device, this, m_staticMeshes, m_assets, m_resources);
+	return load_internal<StaticMesh>(_resourceID, _archive, _device, this, m_staticMeshes, m_assets, m_resources);
+}
+template<> 
+ResourceRange<Scene> AssetLibrary::getRange()
+{
+	return ResourceRange<Scene>(m_scenes);
+}
+template<> 
+ResourceRange<StaticMesh> AssetLibrary::getRange()
+{
+	return ResourceRange<StaticMesh>(m_staticMeshes);
 }
 
 void AssetLibrary::destroy(gfx::GraphicDevice* _device)

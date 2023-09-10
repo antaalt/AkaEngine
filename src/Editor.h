@@ -22,6 +22,10 @@ public:
 	void onFixedUpdate(aka::Time time) override;
 	void onUpdate(aka::Time time) override;
 	void onRender(aka::gfx::Frame* frame) override;
+	void onResize(uint32_t width, uint32_t height) override;
+private:
+	void createRenderPass();
+	void destroyRenderPass();
 private:
 	gfx::RenderPassHandle m_renderPass;
 	gfx::BackbufferHandle m_backbuffer;

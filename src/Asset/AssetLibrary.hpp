@@ -102,18 +102,14 @@ public:
 	AssetInfo getAssetInfo(AssetID _assetID);
 
 public:
-	template <typename T>
-	ResourceHandle<T> get(ResourceID _resourceID);
-	template <typename T>
-	ResourceHandle<T> load(ResourceID _resourceID, gfx::GraphicDevice* _device);
-	template <typename T>
-	ResourceHandle<T> load(ResourceID _resourceID, const typename ArchiveTrait<T>::Archive& _archive, gfx::GraphicDevice* _device);
+	template <typename T> ResourceHandle<T> get(ResourceID _resourceID);
+	template <typename T> ResourceHandle<T> load(ResourceID _resourceID, gfx::GraphicDevice* _device);
+	template <typename T> ResourceHandle<T> load(ResourceID _resourceID, const typename ArchiveTrait<T>::Archive& _archive, gfx::GraphicDevice* _device);
 
 	void destroy(gfx::GraphicDevice* _device);
 
 public:
-	ResourceRange<Scene> getSceneRange() { return ResourceRange<Scene>(m_scenes); }
-	ResourceRange<StaticMesh> getStaticMeshRange() { return ResourceRange<StaticMesh>(m_staticMeshes); }
+	template<typename T> ResourceRange<T> getRange();
 	AssetRange getAssetRange() { return AssetRange(m_assets); }
 
 private:
@@ -128,6 +124,8 @@ template<> ResourceHandle<Scene> AssetLibrary::get(ResourceID _resourceID);
 template<> ResourceHandle<StaticMesh> AssetLibrary::get(ResourceID _resourceID);
 template<> ResourceHandle<Scene> AssetLibrary::load(ResourceID _resourceID, const ArchiveScene& _archive, gfx::GraphicDevice* _device);
 template<> ResourceHandle<StaticMesh> AssetLibrary::load(ResourceID _resourceID, const ArchiveStaticMesh& _archive, gfx::GraphicDevice* _device);
+template<> ResourceRange<Scene> AssetLibrary::getRange();
+template<> ResourceRange<StaticMesh> AssetLibrary::getRange();
 
 
 template<typename T>

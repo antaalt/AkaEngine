@@ -48,10 +48,10 @@ struct System {
 // ------------------------------------
 // Components
 // ------------------------------------
-struct TagComponent
+/*struct TagComponent
 {
 	String name;
-};
+};*/
 
 struct Transform3DComponent {
 	mat4f transform;
