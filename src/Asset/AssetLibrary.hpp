@@ -88,6 +88,11 @@ private:
 
 ResourceType getResourceType(AssetType _type);
 
+struct AssetAddedEvent
+{
+	AssetID asset;
+};
+
 class AssetLibrary {
 public:
 	// parse library.json & store AssetInfo with AssetID

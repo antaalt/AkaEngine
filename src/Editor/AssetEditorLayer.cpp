@@ -13,9 +13,97 @@ namespace app {
 
 using namespace aka;
 
+struct AssetNode
+{
+	AssetID id = AssetID::Invalid;
+	String name = "";
+	AssetType type = AssetType::Unknown;
+	size_t size = 0;
+
+	// Using std vector cuz aka::Vector cause stack overflow:
+	// Should not call constructor for reserved memory.
+	std::vector<AssetNode> childrens = {};
+	static void draw(AssetLibrary* library, const AssetNode& node)
+	{
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+		const bool isFolder = (node.childrens.size() > 0);
+		if (isFolder)
+		{
+			bool open = ImGui::TreeNodeEx(node.name.cstr(), ImGuiTreeNodeFlags_SpanFullWidth);
+			ImGui::TableNextColumn();
+			ImGui::TextDisabled("--");
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted("");
+			if (open)
+			{
+				for (int iChild = 0; iChild < node.childrens.size(); iChild++)
+					AssetNode::draw(library, node.childrens[iChild]);
+				ImGui::TreePop();
+			}
+		}
+		else // isFile
+		{
+			const char* popUpName = node.name.cstr(); // TODO: avoid duplicated name, should use path...
+			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
+				ImGui::OpenPopup(popUpName);
+
+			ImGui::TreeNodeEx(node.name.cstr(), ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanFullWidth);
+			ImGui::TableNextColumn();
+			ImGui::Text("%u", node.size);
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(getAssetTypeString(node.type));
+
+			if (ImGui::BeginPopupContextItem(popUpName))
+			{
+				if (ImGui::MenuItem("Load"))
+				{
+					switch (node.type)
+					{
+					case AssetType::Scene:
+						EventDispatcher<SceneSwitchEvent>::trigger(SceneSwitchEvent{
+							library->load<Scene>(library->getResourceID(node.id), Application::app()->graphic())
+							});
+						break;
+					case AssetType::StaticMesh:
+						library->load<StaticMesh>(library->getResourceID(node.id), Application::app()->graphic());
+						break;
+					default:
+						break;
+					}
+				}
+				ImGui::EndPopup();
+			}
+		}
+	}
+	static AssetNode* addNodeToTree(AssetNode& node, const AssetInfo& assetInfo, const String* directories, size_t count)
+	{
+		// TODO should not compute this every time, only when asset added / removed. event ?
+		if (count == 0)
+			return &node;
+		for (AssetNode& node : node.childrens)
+		{
+			if (node.name == directories[0])
+			{
+				return addNodeToTree(node, assetInfo, &directories[1], --count);
+			}
+		}
+		// Not found if we reach here. Create a folder & inspect it
+		AssetType type = (count == 1) ? assetInfo.type : AssetType::Unknown;
+		node.childrens.push_back(AssetNode{ assetInfo.id, directories[0], type, 0, {} });
+		return addNodeToTree(node.childrens.back(), assetInfo, &directories[1], --count);
+	}
+};
+
 AssetEditorLayer::AssetEditorLayer()
 {
 	m_viewers.append(&m_meshViewer);
+	m_rootNode = new AssetNode();
+}
+
+AssetEditorLayer::~AssetEditorLayer()
+{
+	delete m_rootNode;
 }
 
 void AssetEditorLayer::onLayerCreate()
@@ -175,97 +263,20 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 		// -------- ASSETS ---------
 		// -------------------------
 		ImGui::TextColored(color, "Assets");
-		struct AssetNode
+		// Generate asset tree.
+		if (m_assetUpdated)
 		{
-			AssetID id = AssetID::Invalid;
-			String name = "";
-			AssetType type = AssetType::Unknown;
-			size_t size = 0;
-
-			// Using std vector cuz aka::Vector cause stack overflow:
-			// Should not call constructor for reserved memory.
-			std::vector<AssetNode> childrens = {};
-			static void draw(AssetLibrary* library, const AssetNode& node)
+			for (const auto& asset : m_library->getAssetRange())
 			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				const bool isFolder = (node.childrens.size() > 0);
-				if (isFolder)
-				{
-					bool open = ImGui::TreeNodeEx(node.name.cstr(), ImGuiTreeNodeFlags_SpanFullWidth);
-					ImGui::TableNextColumn();
-					ImGui::TextDisabled("--");
-					ImGui::TableNextColumn();
-					ImGui::TextUnformatted("");
-					if (open)
-					{
-						for (int iChild = 0; iChild < node.childrens.size(); iChild++)
-							AssetNode::draw(library, node.childrens[iChild]);
-						ImGui::TreePop();
-					}
-				}
-				else // isFile
-				{
-					const char* popUpName = node.name.cstr(); // TODO: avoid duplicated name, should use path...
-					if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
-						ImGui::OpenPopup(popUpName);
-
-					ImGui::TreeNodeEx(node.name.cstr(), ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanFullWidth);
-					ImGui::TableNextColumn();
-					ImGui::Text("%u", node.size);
-					ImGui::TableNextColumn();
-					ImGui::TextUnformatted(getAssetTypeString(node.type));
-
-					if (ImGui::BeginPopupContextItem(popUpName))
-					{
-						if (ImGui::MenuItem("Load"))
-						{
-							switch (node.type)
-							{
-							case AssetType::Scene:
-								EventDispatcher<SceneSwitchEvent>::trigger(SceneSwitchEvent{ 
-									library->load<Scene>(library->getResourceID(node.id), Application::app()->graphic()) 
-								});
-								break;
-							case AssetType::StaticMesh:
-								library->load<StaticMesh>(library->getResourceID(node.id), Application::app()->graphic());
-								break;
-							default:
-								break;
-							}
-						}
-						ImGui::EndPopup();
-					}
-				}
-			}
-			static AssetNode* addNodeToTree(AssetNode& node, const AssetInfo& assetInfo, const String* directories, size_t count)
-			{
-				// TODO should not compute this every time, only when asset added / removed. event ?
-				if (count == 0)
-					return &node;
-				for (AssetNode& node : node.childrens)
-				{
-					if (node.name == directories[0])
-					{
-						return addNodeToTree(node, assetInfo, &directories[1], --count);
-					}
-				}
-				// Not found if we reach here. Create a folder & inspect it
-				AssetType type = (count == 1) ? assetInfo.type : AssetType::Unknown;
-				node.childrens.push_back(AssetNode{ assetInfo.id, directories[0], type, 0, {} });
-				return addNodeToTree(node.childrens.back(), assetInfo, &directories[1], --count);
-			}
-		};
-		AssetNode root{};
-		for (const auto& asset : m_library->getAssetRange())
-		{
-			const AssetID& assetID = asset.first;
-			const AssetInfo& assetInfo = asset.second;
-			String path = assetInfo.path.cstr();
-			Vector<String> directories = path.split('/');
-			AssetNode::addNodeToTree(root, assetInfo, directories.data(), directories.size());
-			// if not found, add it.
+				const AssetID& assetID = asset.first;
+				const AssetInfo& assetInfo = asset.second;
+				String path = assetInfo.path.cstr();
+				Vector<String> directories = path.split('/');
+				AssetNode::addNodeToTree(*m_rootNode, assetInfo, directories.data(), directories.size());
+				// if not found, add it.
 			
+			}
+			m_assetUpdated = false;
 		}
 		// First we need to iterate all assets & sort them by path & iterate on this.
 		if (ImGui::BeginTable("Assets", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 20)))
@@ -274,7 +285,7 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 			ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
 			ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
 			ImGui::TableHeadersRow();
-			for (const AssetNode& node : root.childrens)
+			for (const AssetNode& node : m_rootNode->childrens)
 				AssetNode::draw(m_library, node);
 			ImGui::EndTable();
 		}
@@ -399,6 +410,10 @@ void AssetEditorLayer::onLayerPresent()
 
 void AssetEditorLayer::onLayerResize(uint32_t width, uint32_t height)
 {
+}
+void AssetEditorLayer::onReceive(const AssetAddedEvent& event)
+{
+	m_assetUpdated = true;
 }
 void AssetEditorLayer::setLibrary(AssetLibrary* _library)
 {

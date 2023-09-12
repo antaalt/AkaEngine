@@ -149,10 +149,10 @@ std::vector<uint32_t> getSphereIndices(float radius, uint32_t segmentCount, uint
 const aka::Path ShaderVertexPath = aka::OS::cwd() + "../../../asset/shaders/shader.vert";
 const aka::Path ShaderFragmentPath = aka::OS::cwd() + "../../../asset/shaders/shader.frag";
 
-const aka::ShaderKey ShaderVertex{ ShaderVertexPath, {  }, aka::ShaderType::Vertex, "main" };
-const aka::ShaderKey ShaderFragment{ ShaderFragmentPath, {  }, aka::ShaderType::Fragment, "main"};
+const aka::ShaderKey ShaderVertex = aka::ShaderKey().setPath(ShaderVertexPath).setType(aka::ShaderType::Vertex);
+const aka::ShaderKey ShaderFragment = aka::ShaderKey().setPath(ShaderFragmentPath).setType(aka::ShaderType::Fragment);
 
-const aka::ProgramKey ProgramGraphic{ {{ShaderVertex, ShaderFragment}} };
+const aka::ProgramKey ProgramGraphic = aka::ProgramKey().add(ShaderVertex).add(ShaderFragment);
 
 Editor::Editor()
 {
@@ -485,6 +485,7 @@ void Editor::onUpdate(aka::Time time)
 		}
 	}
 	m_rotation += aka::anglef::radian(time.seconds());
+	EventDispatcher<app::AssetAddedEvent>::dispatch();
 }
 
 

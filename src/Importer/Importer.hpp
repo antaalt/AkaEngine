@@ -20,17 +20,4 @@ public:
 	virtual ImportResult import(AssetLibrary* _library, const aka::Blob& blob) = 0;
 };
 
-class StbiImporter {
-
-};
-
-
-class FreeTypeImporter {
-
-};
-
-class AudioImporter {
-
-};
-
 }

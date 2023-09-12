@@ -138,6 +138,7 @@ AssetID AssetLibrary::registerAsset(const AssetPath& _path, AssetType _assetType
 			return AssetID::Invalid;
 	}
 	// Could check file if correct type but might not be created yet...
+	EventDispatcher<AssetAddedEvent>::emit(AssetAddedEvent{ assetID });
 
 	return assetID;
 }

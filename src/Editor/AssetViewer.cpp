@@ -241,11 +241,11 @@ const char* toString(gfx::BufferCPUAccess access)
 		return "Unknown";
 	}
 }
+const aka::ShaderKey ShaderVertex = aka::ShaderKey().setPath(app::AssetPath("../shaders/editor/basic.vert").getAbsolutePath()).setType(aka::ShaderType::Vertex);
+const aka::ShaderKey ShaderFragment = aka::ShaderKey().setPath(app::AssetPath("../shaders/editor/basic.frag").getAbsolutePath()).setType(aka::ShaderType::Fragment);
 
-const aka::ShaderKey ShaderVertex{ app::AssetPath("../shaders/editor/basic.vert").getAbsolutePath(), {  }, aka::ShaderType::Vertex, "main" };
-const aka::ShaderKey ShaderFragment{ app::AssetPath("../shaders/editor/basic.frag").getAbsolutePath(), {  }, aka::ShaderType::Fragment, "main" };
+const aka::ProgramKey ProgramGraphic = aka::ProgramKey().add(ShaderVertex).add(ShaderFragment);
 
-const aka::ProgramKey ProgramGraphic{ {{ShaderVertex, ShaderFragment}} };
 
 void MeshViewer::create()
 {
