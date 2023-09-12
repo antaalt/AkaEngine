@@ -145,14 +145,6 @@ std::vector<uint32_t> getSphereIndices(float radius, uint32_t segmentCount, uint
 	return indices;
 }
 
-// TODO: Should use JSON for this ? JSON that can be generated with a script reading all files in shaders folder (generating DB)
-const aka::Path ShaderVertexPath = aka::OS::cwd() + "../../../asset/shaders/shader.vert";
-const aka::Path ShaderFragmentPath = aka::OS::cwd() + "../../../asset/shaders/shader.frag";
-
-const aka::ShaderKey ShaderVertex = aka::ShaderKey().setPath(ShaderVertexPath).setType(aka::ShaderType::Vertex);
-const aka::ShaderKey ShaderFragment = aka::ShaderKey().setPath(ShaderFragmentPath).setType(aka::ShaderType::Fragment);
-
-const aka::ProgramKey ProgramGraphic = aka::ProgramKey().add(ShaderVertex).add(ShaderFragment);
 
 Editor::Editor()
 {
@@ -168,8 +160,17 @@ void Editor::onCreate(int argc, char* argv[])
 	gfx::GraphicDevice* device = graphic();
 	ShaderRegistry* registry = program();
 
+	// TODO: Should use JSON for this ? JSON that can be generated with a script reading all files in shaders folder (generating DB)
+	const aka::Path ShaderVertexPath = aka::OS::cwd() + "../../../asset/shaders/shader.vert";
+	const aka::Path ShaderFragmentPath = aka::OS::cwd() + "../../../asset/shaders/shader.frag";
+
+	const aka::ShaderKey ShaderVertex = aka::ShaderKey().setPath(ShaderVertexPath).setType(aka::ShaderType::Vertex);
+	const aka::ShaderKey ShaderFragment = aka::ShaderKey().setPath(ShaderFragmentPath).setType(aka::ShaderType::Fragment);
+
+	const aka::ProgramKey ProgramGraphic = aka::ProgramKey().add(ShaderVertex).add(ShaderFragment);
+
 	registry->add(ProgramGraphic, device);
-	gfx::ProgramHandle program = registry->get(ProgramGraphic);
+	m_program = registry->get(ProgramGraphic);
 
 	createRenderPass();
 
@@ -179,17 +180,17 @@ void Editor::onCreate(int argc, char* argv[])
 	{
 		// Camera
 		bindings[0].add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::Vertex, 1);
-		AKA_ASSERT(device->get(program)->sets[0] == bindings[0], "Invalid bindings");
+		AKA_ASSERT(device->get(m_program)->sets[0] == bindings[0], "Invalid bindings");
 
 		// Instance
 		bindings[1].add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::Vertex, 1);
-		AKA_ASSERT(device->get(program)->sets[1] == bindings[1], "Invalid bindings");
+		AKA_ASSERT(device->get(m_program)->sets[1] == bindings[1], "Invalid bindings");
 
 		// Material
 		bindings[2].add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::Vertex | gfx::ShaderMask::Fragment, 1);
 		bindings[2].add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment, 1);
 		bindings[2].add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment, 1);
-		AKA_ASSERT(device->get(program)->sets[2] == bindings[2], "Invalid bindings");
+		AKA_ASSERT(device->get(m_program)->sets[2] == bindings[2], "Invalid bindings");
 	}
 
 	{ // CAMERA UBO
@@ -556,14 +557,12 @@ void Editor::createRenderPass()
 	gfx::GraphicDevice* device = graphic();
 	ShaderRegistry* registry = program();
 
-	gfx::ProgramHandle program = registry->get(ProgramGraphic);
-
 	m_renderPass = device->createBackbufferRenderPass();
 	m_backbuffer = device->createBackbuffer(m_renderPass);
 
 	m_renderPipeline = device->createGraphicPipeline(
 		"RenderPipeline",
-		program,
+		m_program,
 		gfx::PrimitiveType::Triangles,
 		device->get(m_renderPass)->state,
 		gfx::VertexAttributeState {}.add(gfx::VertexSemantic::Position, gfx::VertexFormat::Float, gfx::VertexType::Vec3).add(gfx::VertexSemantic::Normal, gfx::VertexFormat::Float, gfx::VertexType::Vec2),

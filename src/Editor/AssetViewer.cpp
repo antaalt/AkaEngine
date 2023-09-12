@@ -241,10 +241,6 @@ const char* toString(gfx::BufferCPUAccess access)
 		return "Unknown";
 	}
 }
-const aka::ShaderKey ShaderVertex = aka::ShaderKey().setPath(app::AssetPath("../shaders/editor/basic.vert").getAbsolutePath()).setType(aka::ShaderType::Vertex);
-const aka::ShaderKey ShaderFragment = aka::ShaderKey().setPath(app::AssetPath("../shaders/editor/basic.frag").getAbsolutePath()).setType(aka::ShaderType::Fragment);
-
-const aka::ProgramKey ProgramGraphic = aka::ProgramKey().add(ShaderVertex).add(ShaderFragment);
 
 
 void MeshViewer::create()
@@ -260,6 +256,11 @@ void MeshViewer::create()
 	m_renderPass = device->createRenderPass("MeshViewerRenderPass", gfx::RenderPassState{}.addColor(gfx::TextureFormat::RGBA8).setDepth(gfx::TextureFormat::Depth));
 	m_target = device->createFramebuffer("MeshViewerFramebuffer", m_renderPass, &color, 1, &depth);
 
+
+	const aka::ShaderKey ShaderVertex = aka::ShaderKey().setPath(app::AssetPath("../shaders/editor/basic.vert").getAbsolutePath()).setType(aka::ShaderType::Vertex);
+	const aka::ShaderKey ShaderFragment = aka::ShaderKey().setPath(app::AssetPath("../shaders/editor/basic.frag").getAbsolutePath()).setType(aka::ShaderType::Fragment);
+
+	const aka::ProgramKey ProgramGraphic = aka::ProgramKey().add(ShaderVertex).add(ShaderFragment);
 	ShaderRegistry* program = Application::app()->program();
 	program->add(ProgramGraphic, device);
 	gfx::ProgramHandle p = program->get(ProgramGraphic);

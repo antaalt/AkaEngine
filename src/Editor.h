@@ -34,7 +34,7 @@ private:
 	gfx::GraphicPipelineHandle m_renderPipeline;
 	gfx::BufferHandle m_cameraUniformBuffer;
 	gfx::DescriptorSetHandle m_cameraDescriptorSet;
-
+	gfx::ProgramHandle m_program;
 private:
 	bool m_dirty = false;
 	anglef m_rotation = anglef::radian(0.f);
