@@ -53,15 +53,18 @@ void addComponent(ArchiveSceneEntity& entity, SceneComponent _component, Archive
 }
 ArchiveSceneID addEntity(ArchiveScene& scene, ArchiveSceneEntity entity)
 {
-	return ArchiveSceneID(scene.entities.append(entity).size() - 1);
+	scene.entities.append(entity);
+	return ArchiveSceneID(scene.entities.size() - 1);
 }
 ArchiveSceneID addTransform(ArchiveScene& scene, const mat4f& transform)
 {
-	return ArchiveSceneID(scene.transforms.append(ArchiveSceneTransform{ transform }).size() - 1);
+	scene.transforms.append(ArchiveSceneTransform{ transform });
+	return ArchiveSceneID(scene.transforms.size() - 1);
 }
 ArchiveSceneID addStaticMesh(ArchiveScene& scene, ArchiveStaticMesh&& mesh)
 {
-	return ArchiveSceneID(scene.meshes.append(std::move(mesh)).size() - 1);
+	scene.meshes.append(std::move(mesh));
+	return ArchiveSceneID(scene.meshes.size() - 1);
 }
 void addTextureData(ArchiveImage& image, uint32_t width, uint32_t height, uint32_t channels, const uint8_t* data)
 {
