@@ -19,20 +19,18 @@ enum class ResourceType : uint32_t
 {
 	Unknown,
 
-	Scene, // scene is not a component though... its a list of entity with component that we can drop or open ?
+	Scene,
 	StaticMesh,
-	DynamicMesh,
-	SpriteMesh, // 2D mesh, could be staticmesh2D instead ?
-	FontMesh,
+	Material,
+	Texture,
 	AudioSource,
-	AmbientAudioSource,
 
 	First = Scene,
-	Last = AmbientAudioSource,
+	Last = AudioSource,
 };
 
 // This could be Component directly for ECS.
-// Might cause issue with component which are not directly droppable
+// Might cause issue with component which are not directly droppable -> could have droppable resource to inherit from 
 class Resource
 {
 public:

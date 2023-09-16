@@ -26,6 +26,7 @@ add_executable(AkaEditor
 	"src/Asset/Archive/Archive.cpp"
 	"src/Asset/Resource/Scene.cpp"
 	"src/Asset/Resource/StaticMesh.cpp"
+	"src/Asset/Resource/Texture.cpp"
 	
 	"src/Editor/SceneEditorLayer.cpp" 
 	"src/Editor/AssetEditorLayer.cpp" 

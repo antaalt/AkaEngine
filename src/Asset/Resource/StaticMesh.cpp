@@ -1,5 +1,7 @@
 #include "StaticMesh.hpp"
 
+#include "../AssetLibrary.hpp"
+
 namespace app {
 
 struct MaterialUniformBuffer {
@@ -37,11 +39,9 @@ void StaticMesh::create(AssetLibrary* _library, gfx::GraphicDevice* _device, con
 		bindings.add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment, 1);
 		// Material
 		// TODO mips
-		const void* albedoData = batch.material.albedo.data.data();
-		gfx::TextureHandle gfxAlbedoTexture = _device->createTexture("AlbedoTexture", batch.material.albedo.width, batch.material.albedo.height, 1, gfx::TextureType::Texture2D, 1, 1, gfx::TextureFormat::RGBA8, gfx::TextureUsage::ShaderResource, &albedoData);
-		const void* normalData = batch.material.normal.data.data();
-		gfx::TextureHandle gfxNormalTexture = _device->createTexture("AlbedoTexture", batch.material.normal.width, batch.material.normal.height, 1, gfx::TextureType::Texture2D, 1, 1, gfx::TextureFormat::RGBA8, gfx::TextureUsage::ShaderResource, &normalData);
-
+		ResourceHandle<Texture> albedo = _library->load<app::Texture>(_library->getResourceID(batch.material.albedo.id()), batch.material.albedo, _device);
+		ResourceHandle<Texture> normal = _library->load<app::Texture>(_library->getResourceID(batch.material.normal.id()), batch.material.normal, _device);
+		
 		MaterialUniformBuffer ubo{};
 		ubo.color = batch.material.color;
 		gfx::BufferHandle gfxUniformBuffer = _device->createBuffer("MaterialUniformBuffer", gfx::BufferType::Uniform, sizeof(MaterialUniformBuffer), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, &ubo);
@@ -50,16 +50,16 @@ void StaticMesh::create(AssetLibrary* _library, gfx::GraphicDevice* _device, con
 
 		gfx::DescriptorSetData data;
 		data.addUniformBuffer(gfxUniformBuffer);
-		data.addSampledImage(gfxAlbedoTexture, this->gfxAlbedoSampler);
-		data.addSampledImage(gfxNormalTexture, this->gfxNormalSampler);
+		data.addSampledImage(albedo.get().getGfxHandle(), this->gfxAlbedoSampler);
+		data.addSampledImage(normal.get().getGfxHandle(), this->gfxNormalSampler);
 		_device->update(gfxDescriptorSet, data);
 		
 		this->batches.append(DrawCallIndexed{
 			(uint32_t)(vertices.size() * sizeof(Vertex)),
 			(uint32_t)(indices.size() * sizeof(uint32_t)),
 			(uint32_t)batch.geometry.indices.size(),
-			gfxAlbedoTexture,
-			gfxNormalTexture,
+			albedo,
+			normal,
 			gfxUniformBuffer,
 			gfxDescriptorSet,
 		});
@@ -85,8 +85,6 @@ void StaticMesh::destroy(AssetLibrary* _library, gfx::GraphicDevice* _device)
 	_device->destroy(this->gfxVertexBuffer);
 	for (const DrawCallIndexed& batch : batches)
 	{
-		_device->destroy(batch.gfxAlbedoTexture);
-		_device->destroy(batch.gfxNormalTexture);
 		_device->destroy(batch.gfxDescriptorSet);
 		_device->destroy(batch.gfxUniformBuffer);
 	}

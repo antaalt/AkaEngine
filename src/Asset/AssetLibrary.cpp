@@ -27,10 +27,11 @@ ResourceType getResourceType(AssetType _type)
 	case AssetType::Material:
 	case AssetType::Geometry:
 	case AssetType::DynamicMesh:
-	case AssetType::Image:
 	case AssetType::Font:
 	case AssetType::Audio:
 		return ResourceType::Unknown;
+	case AssetType::Image:
+		return ResourceType::Texture;
 	case AssetType::StaticMesh:
 		return ResourceType::StaticMesh;
 	case AssetType::Scene:
@@ -228,6 +229,11 @@ ResourceHandle<StaticMesh> AssetLibrary::get(ResourceID _resourceID)
 	return get_internal<StaticMesh>(_resourceID, m_staticMeshes);
 }
 template<>
+ResourceHandle<Texture> AssetLibrary::get(ResourceID _resourceID)
+{
+	return get_internal<Texture>(_resourceID, m_textures);
+}
+template<>
 ResourceHandle<Scene> AssetLibrary::load(ResourceID _resourceID, const ArchiveScene& _archive, gfx::GraphicDevice* _device)
 {
 	return load_internal<Scene>(_resourceID, _archive, _device, this, m_scenes, m_assets, m_resources);
@@ -236,6 +242,11 @@ template<>
 ResourceHandle<StaticMesh> AssetLibrary::load(ResourceID _resourceID, const ArchiveStaticMesh& _archive, gfx::GraphicDevice* _device)
 {
 	return load_internal<StaticMesh>(_resourceID, _archive, _device, this, m_staticMeshes, m_assets, m_resources);
+}
+template<>
+ResourceHandle<Texture> AssetLibrary::load(ResourceID _resourceID, const ArchiveImage& _archive, gfx::GraphicDevice* _device)
+{
+	return load_internal<Texture>(_resourceID, _archive, _device, this, m_textures, m_assets, m_resources);
 }
 template<> 
 ResourceRange<Scene> AssetLibrary::getRange()
@@ -246,6 +257,11 @@ template<>
 ResourceRange<StaticMesh> AssetLibrary::getRange()
 {
 	return ResourceRange<StaticMesh>(m_staticMeshes);
+}
+template<>
+ResourceRange<Texture> AssetLibrary::getRange()
+{
+	return ResourceRange<Texture>(m_textures);
 }
 
 void AssetLibrary::destroy(gfx::GraphicDevice* _device)
@@ -258,6 +274,13 @@ void AssetLibrary::destroy(gfx::GraphicDevice* _device)
 		}
 	}
 	for (auto it : m_staticMeshes)
+	{
+		if (it.second.isLoaded())
+		{
+			it.second.get().destroy(this, _device);
+		}
+	}
+	for (auto it : m_textures)
 	{
 		if (it.second.isLoaded())
 		{

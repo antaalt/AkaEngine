@@ -3,6 +3,7 @@
 #include "../Archive/Archive.hpp"
 #include "../Archive/ArchiveStaticMesh.hpp"
 #include "Resource.hpp"
+#include "Texture.hpp"
 
 namespace app {
 
@@ -30,8 +31,8 @@ public: // Mandatory data for rendering & co
 		uint32_t indexOffset;
 		uint32_t indexCount;
 		// TODO mutualize texture to avoid copies
-		gfx::TextureHandle gfxAlbedoTexture;
-		gfx::TextureHandle gfxNormalTexture;
+		ResourceHandle<Texture> m_albedo;
+		ResourceHandle<Texture> m_normal;
 		gfx::BufferHandle gfxUniformBuffer;
 		gfx::DescriptorSetHandle gfxDescriptorSet;
 	};

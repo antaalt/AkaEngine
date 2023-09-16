@@ -14,6 +14,7 @@ namespace app {
 template<typename T> struct ArchiveTrait { using Archive = Archive; };
 template<> struct ArchiveTrait<Scene> { using Archive = ArchiveScene; };
 template<> struct ArchiveTrait<StaticMesh> { using Archive = ArchiveStaticMesh; };
+template<> struct ArchiveTrait<Texture> { using Archive = ArchiveImage; };
 
 template <typename T>
 class ResourceIterator
@@ -123,14 +124,18 @@ private:
 private:
 	std::map<ResourceID, ResourceHandle<StaticMesh>> m_staticMeshes;
 	std::map<ResourceID, ResourceHandle<Scene>> m_scenes;
+	std::map<ResourceID, ResourceHandle<Texture>> m_textures;
 };
 
 template<> ResourceHandle<Scene> AssetLibrary::get(ResourceID _resourceID);
 template<> ResourceHandle<StaticMesh> AssetLibrary::get(ResourceID _resourceID);
+template<> ResourceHandle<Texture> AssetLibrary::get(ResourceID _resourceID);
 template<> ResourceHandle<Scene> AssetLibrary::load(ResourceID _resourceID, const ArchiveScene& _archive, gfx::GraphicDevice* _device);
 template<> ResourceHandle<StaticMesh> AssetLibrary::load(ResourceID _resourceID, const ArchiveStaticMesh& _archive, gfx::GraphicDevice* _device);
+template<> ResourceHandle<Texture> AssetLibrary::load(ResourceID _resourceID, const ArchiveImage& _archive, gfx::GraphicDevice* _device);
 template<> ResourceRange<Scene> AssetLibrary::getRange();
 template<> ResourceRange<StaticMesh> AssetLibrary::getRange();
+template<> ResourceRange<Texture> AssetLibrary::getRange();
 
 
 template<typename T>
