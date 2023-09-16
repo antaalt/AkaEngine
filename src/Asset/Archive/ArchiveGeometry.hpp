@@ -9,9 +9,11 @@ using namespace aka;
 
 struct Vertex {
 	point3f position;
-	//norm3f normal;
+	norm3f normal;
 	uv2f uv;
-	//color4f color;
+	color4f color;
+
+	static gfx::VertexAttributeState getState();
 };
 
 struct ArchiveGeometry : Archive 
@@ -19,8 +21,9 @@ struct ArchiveGeometry : Archive
 	enum class Version : ArchiveVersionType
 	{
 		ArchiveCreation = 0,
+		AddedNormalAndColor,
 
-		Latest = ArchiveCreation
+		Latest = AddedNormalAndColor
 	};
 	ArchiveGeometry();
 	ArchiveGeometry(AssetID id);

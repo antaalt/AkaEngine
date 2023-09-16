@@ -172,8 +172,8 @@ ArchiveLoadResult Archive::readHeader(BinaryArchive& _archive)
 	for (uint32_t i = 0; i < 4; i++)
 		if (sign[i] != magicWord[i])
 			return ArchiveLoadResult::InvalidMagicWord;
-	ArchiveVersionType version = _archive.read<ArchiveVersionType>();
-	if (version > getLatestVersion() || version == InvalidArchiveVersion)
+	ArchiveVersionType archiveVersion = _archive.read<ArchiveVersionType>();
+	if (archiveVersion != version() || archiveVersion == InvalidArchiveVersion)
 		return ArchiveLoadResult::IncompatibleVersion;
 	AssetID assetID = _archive.read<AssetID>();
 	if (assetID != id() || assetID == AssetID::Invalid)

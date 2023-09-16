@@ -5,6 +5,17 @@
 #include "../AssetLibrary.hpp"
 
 namespace app {
+
+gfx::VertexAttributeState Vertex::getState()
+{
+	gfx::VertexAttributeState attributes{};
+	attributes.add(gfx::VertexSemantic::Position, gfx::VertexFormat::Float, gfx::VertexType::Vec3);
+	attributes.add(gfx::VertexSemantic::Normal, gfx::VertexFormat::Float, gfx::VertexType::Vec3);
+	attributes.add(gfx::VertexSemantic::TexCoord0, gfx::VertexFormat::Float, gfx::VertexType::Vec2);
+	attributes.add(gfx::VertexSemantic::Color0, gfx::VertexFormat::Float, gfx::VertexType::Vec4);
+	return attributes;
+}
+
 ArchiveGeometry::ArchiveGeometry() : 
 	ArchiveGeometry(AssetID::Invalid)
 {

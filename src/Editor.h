@@ -14,7 +14,9 @@
 
 using namespace aka;
 
-class Editor : public aka::Application, EventListener<app::SceneSwitchEvent>
+class Editor : public aka::Application, 
+	EventListener<app::SceneSwitchEvent>,
+	EventListener<ShaderReloadedEvent>
 {
 public:
 	Editor();
@@ -25,6 +27,7 @@ public:
 	void onRender(aka::gfx::Frame* frame) override;
 	void onResize(uint32_t width, uint32_t height) override;
 	void onReceive(const app::SceneSwitchEvent& event) override;
+	void onReceive(const ShaderReloadedEvent& event) override;
 private:
 	void createRenderPass();
 	void destroyRenderPass();
@@ -35,6 +38,7 @@ private:
 	gfx::BufferHandle m_cameraUniformBuffer;
 	gfx::DescriptorSetHandle m_cameraDescriptorSet;
 	gfx::ProgramHandle m_program;
+	ProgramKey m_programKey;
 private:
 	bool m_dirty = false;
 	anglef m_rotation = anglef::radian(0.f);

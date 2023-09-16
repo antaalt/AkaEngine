@@ -284,9 +284,9 @@ ArchiveSceneID AssimpLocalImporter::processMesh(aiMesh* mesh)
 		vertex.position.z = mesh->mVertices[i].z;
 		archiveGeometry.bounds.include(vertex.position);
 
-		//vertex.normal.x = mesh->mNormals[i].x;
-		//vertex.normal.y = mesh->mNormals[i].y;
-		//vertex.normal.z = mesh->mNormals[i].z;
+		vertex.normal.x = mesh->mNormals[i].x;
+		vertex.normal.y = mesh->mNormals[i].y;
+		vertex.normal.z = mesh->mNormals[i].z;
 		if (mesh->HasTextureCoords(0))
 		{
 			vertex.uv.u = mesh->mTextureCoords[0][i].x;
@@ -294,7 +294,7 @@ ArchiveSceneID AssimpLocalImporter::processMesh(aiMesh* mesh)
 		}
 		else
 			vertex.uv = uv2f(0.f);
-		/*if (mesh->HasVertexColors(0))
+		if (mesh->HasVertexColors(0))
 		{
 			vertex.color.r = mesh->mColors[0][i].r;
 			vertex.color.g = mesh->mColors[0][i].g;
@@ -302,7 +302,7 @@ ArchiveSceneID AssimpLocalImporter::processMesh(aiMesh* mesh)
 			vertex.color.a = mesh->mColors[0][i].a;
 		}
 		else
-			vertex.color = color4f(1.f);*/
+			vertex.color = color4f(1.f);
 		mesh->mTangents; // TODO:
 		mesh->mBitangents;
 	}

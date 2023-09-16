@@ -9,9 +9,8 @@ namespace app {
 
 class StaticMesh : public Resource {
 public:
-	StaticMesh() : Resource(ResourceType::StaticMesh) {}
-	StaticMesh(ResourceID _id, const String& _name) : Resource(ResourceType::StaticMesh, _id, _name) {}
-
+	StaticMesh();
+	StaticMesh(ResourceID _id, const String& _name);
 
 	void create(AssetLibrary* _library, gfx::GraphicDevice* _device, const Archive& _archive) override;
 	void save(AssetLibrary* _library, gfx::GraphicDevice* _device, Archive& _archive) override;

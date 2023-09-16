@@ -145,7 +145,9 @@ inline ResourceHandle<T> AssetLibrary::load(ResourceID _resourceID, gfx::Graphic
 	if (it == m_resources.end())
 		return ResourceHandle<T>::invalid();
 	ArchiveTrait<T>::Archive archive(it->second);
-	archive.load(ArchiveLoadContext(this));
+	ArchiveLoadResult res = archive.load(ArchiveLoadContext(this));
+	if (res != ArchiveLoadResult::Success)
+		return ResourceHandle<T>::invalid();
 	return load<T>(_resourceID, archive, _device);
 }
 

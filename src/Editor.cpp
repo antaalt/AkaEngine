@@ -167,10 +167,11 @@ void Editor::onCreate(int argc, char* argv[])
 	const aka::ShaderKey ShaderVertex = aka::ShaderKey().setPath(ShaderVertexPath).setType(aka::ShaderType::Vertex);
 	const aka::ShaderKey ShaderFragment = aka::ShaderKey().setPath(ShaderFragmentPath).setType(aka::ShaderType::Fragment);
 
-	const aka::ProgramKey ProgramGraphic = aka::ProgramKey().add(ShaderVertex).add(ShaderFragment);
+	m_programKey = aka::ProgramKey();
+	m_programKey.add(ShaderVertex).add(ShaderFragment);
 
-	registry->add(ProgramGraphic, device);
-	m_program = registry->get(ProgramGraphic);
+	registry->add(m_programKey, device);
+	m_program = registry->get(m_programKey);
 
 	createRenderPass();
 
@@ -545,11 +546,21 @@ void Editor::onResize(uint32_t width, uint32_t height)
 
 void Editor::onReceive(const app::SceneSwitchEvent& event)
 {
-	const app::Scene& scene = event.scene.get();
 	m_scene = event.scene;
-	m_sceneID = scene.getID();
-	m_cameraController.set(scene.getBounds());
-	m_dirty = true;
+	if (event.scene.isLoaded())
+	{
+		const app::Scene& scene = event.scene.get();
+		m_sceneID = scene.getID();
+		m_cameraController.set(scene.getBounds());
+		m_dirty = true;
+	}
+}
+
+void Editor::onReceive(const ShaderReloadedEvent& event)
+{
+	graphic()->wait();
+	destroyRenderPass();
+	createRenderPass();
 }
 
 void Editor::createRenderPass()
@@ -559,13 +570,14 @@ void Editor::createRenderPass()
 
 	m_renderPass = device->createBackbufferRenderPass();
 	m_backbuffer = device->createBackbuffer(m_renderPass);
+	m_program = registry->get(m_programKey);
 
 	m_renderPipeline = device->createGraphicPipeline(
 		"RenderPipeline",
 		m_program,
 		gfx::PrimitiveType::Triangles,
 		device->get(m_renderPass)->state,
-		gfx::VertexAttributeState {}.add(gfx::VertexSemantic::Position, gfx::VertexFormat::Float, gfx::VertexType::Vec3).add(gfx::VertexSemantic::Normal, gfx::VertexFormat::Float, gfx::VertexType::Vec2),
+		app::Vertex::getState(),
 		gfx::ViewportState{}.size(width(), height()),
 		gfx::DepthStateLessEqual,
 		gfx::StencilStateDisabled,
