@@ -2,7 +2,7 @@
 
 #include <Aka/Aka.h>
 
-#include <imgui.h>
+#include <Aka/Layer/ImGuiLayer.h>
 
 namespace app {
 
@@ -242,6 +242,10 @@ const char* toString(gfx::BufferCPUAccess access)
 	}
 }
 
+MeshViewer::MeshViewer() :
+	AssetViewer("Mesh")
+{
+}
 
 void MeshViewer::create()
 {
@@ -297,8 +301,7 @@ void MeshViewer::drawMesh(const StaticMesh* mesh)
 
 void MeshViewer::draw(const String& name, ResourceHandle<StaticMesh>& resource)
 {
-	static const ImVec4 color = ImVec4(0.93f, 0.04f, 0.26f, 1.f);
-	ImGui::TextColored(color, name.cstr());
+	ImGui::TextColored(ImGuiLayer::Color::red, name.cstr());
 	/*auto mesh = resource.resource;
 	ImGui::Text("Vertices");
 
@@ -350,15 +353,20 @@ void MeshViewer::draw(const String& name, ResourceHandle<StaticMesh>& resource)
 	ImGui::PopStyleVar();
 }
 
-/*void TextureViewer::draw(const String& name, ResourceHandle<Texture>& resource)
+void TextureViewer::draw(const String& name, ResourceHandle<Texture>& resource)
 {
-	static const ImVec4 color = ImVec4(0.93f, 0.04f, 0.26f, 1.f);
-	ImGui::TextColored(color, name.cstr());
-	gfx::TextureHandle texture = resource.resource.get()->texture;
-	bool isRenderTarget = (texture.data->flags & gfx::TextureFlag::RenderTarget) == gfx::TextureFlag::RenderTarget;
-	bool isShaderResource = (texture.data->flags & gfx::TextureFlag::ShaderResource) == gfx::TextureFlag::ShaderResource;
-	bool hasMips = (texture.data->flags & gfx::TextureFlag::GenerateMips) == gfx::TextureFlag::GenerateMips;
-	ImGui::Text("%s - %u x %u (%s)", toString(texture.data->type), texture.data->width, texture.data->height, toString(texture.data->format));
+	ImGui::TextColored(ImGuiLayer::Color::red, name.cstr());
+	if (!resource.isLoaded() || m_needUpdate)
+	{
+		ImGui::Text("Texture not loaded");
+		return;// TODO: prevent opening if not loaded
+	}
+	Texture& texture = resource.get();
+	gfx::TextureHandle handle = texture.getGfxHandle();
+	bool isRenderTarget = (texture.getTextureUsage() & gfx::TextureUsage::RenderTarget) == gfx::TextureUsage::RenderTarget;
+	bool isShaderResource = (texture.getTextureUsage() & gfx::TextureUsage::ShaderResource) == gfx::TextureUsage::ShaderResource;
+	bool hasMips = (texture.getTextureUsage() & gfx::TextureUsage::GenerateMips) == gfx::TextureUsage::GenerateMips;
+	ImGui::Text("%s - %u x %u (%s)", toString(texture.getTextureType()), texture.getWidth(), texture.getHeight(), toString(texture.getTextureFormat()));
 	ImGui::Checkbox("Render target", &isRenderTarget); ImGui::SameLine();
 	ImGui::Checkbox("Shader resource", &isShaderResource); ImGui::SameLine();
 	ImGui::Checkbox("Mips", &hasMips);
@@ -378,7 +386,9 @@ void MeshViewer::draw(const String& name, ResourceHandle<StaticMesh>& resource)
 	ImGui::Checkbox("B", &blue); ImGui::SameLine();
 	ImGui::Checkbox("A", &alpha); ImGui::SameLine();
 	ImGui::DragInt("##Zoom", &zoomInt, 1, minZoom, maxZoom, "%d %%");
-	//ImTextureID textureID = (ImTextureID)(uintptr_t)texture->handle().value();
+
+	gfx::GraphicDevice* device = Application::app()->graphic();
+	ImTextureID textureID = ImGuiLayer::getTextureID(device, m_descriptorSet);
 	ImVec4 mask = ImVec4(
 		red ? 1.f : 0.f,
 		green ? 1.f : 0.f,
@@ -398,29 +408,78 @@ void MeshViewer::draw(const String& name, ResourceHandle<StaticMesh>& resource)
 		{
 			ImVec2 windowSize = ImGui::GetWindowSize();
 			ImVec2 maxScroll(
-				zoom * texture.data->width - windowSize.x,
-				zoom * texture.data->height - windowSize.y
+				zoom * texture.getWidth() - windowSize.x,
+				zoom * texture.getHeight() - windowSize.y
 			);
 			scrollPosition.x = fminf(fmaxf(scrollPosition.x - ImGui::GetIO().MouseDelta.x, 0.f), maxScroll.x);
 			scrollPosition.y = fminf(fmaxf(scrollPosition.y - ImGui::GetIO().MouseDelta.y, 0.f), maxScroll.y);
 		}
 		ImGui::SetScrollX(scrollPosition.x);
 		ImGui::SetScrollY(scrollPosition.y);
-		//ImGui::Image(textureID, ImVec2(zoom * texture->width, zoom * texture->height), ImVec2(0, 0), ImVec2(1, 1), mask);
+		ImGui::Image(textureID, ImVec2(zoom * texture.getWidth(), zoom * texture.getHeight()), ImVec2(0, 0), ImVec2(1, 1), mask);
 	}
 	ImGui::EndChild();
 	ImGui::PopStyleVar();
-}*/
+}
 
+void TextureViewer::onResourceChange()
+{
+	m_needUpdate = true;
+}
 
-MeshViewer::MeshViewer() :
-	AssetViewer("Mesh")
+TextureViewer::TextureViewer() :
+	AssetViewer("Texture"),
+	m_descriptorSet(gfx::DescriptorSetHandle::null),
+	m_sampler(gfx::SamplerHandle::null),
+	m_needUpdate(false)
 {
 }
 
-/*TextureViewer::TextureViewer() :
-	AssetViewer("Texture")
+void TextureViewer::create()
 {
-}*/
+	gfx::GraphicDevice* device = Application::app()->graphic();
+	gfx::ShaderBindingState state{};
+	state.add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment);
+	// TODO: add layer & mip selector
+	// There might be an issue cuz of pImmutableSamplers not being set
+
+	//ImGuiLayer::
+	m_descriptorSet = device->createDescriptorSet("ImGuiTextureViewerDescriptorSet", state);
+	m_sampler = device->createSampler("ImGuiTextureViewerSampler", 
+		gfx::Filter::Nearest, gfx::Filter::Nearest,
+		gfx::SamplerMipMapMode::None,
+		gfx::SamplerAddressMode::Repeat, gfx::SamplerAddressMode::Repeat, gfx::SamplerAddressMode::Repeat,
+		1.0);
+	if (m_resource.isLoaded())
+	{
+		gfx::DescriptorSetData data;
+		data.addSampledImage(m_resource.get().getGfxHandle(), m_sampler);
+		device->update(m_descriptorSet, data);
+		m_needUpdate = false;
+	}
+	else
+	{
+		m_needUpdate = true; // wait for a texture to be available
+	}
+}
+
+void TextureViewer::destroy()
+{
+	gfx::GraphicDevice* device = Application::app()->graphic();
+	device->destroy(m_descriptorSet);
+	device->destroy(m_sampler);
+}
+
+void TextureViewer::update(aka::Time deltaTime)
+{
+	gfx::GraphicDevice* device = Application::app()->graphic();
+	if (m_resource.isLoaded() && m_needUpdate)
+	{
+		gfx::DescriptorSetData data;
+		data.addSampledImage(m_resource.get().getGfxHandle(), m_sampler);
+		device->update(m_descriptorSet, data);
+		m_needUpdate = false;
+	}
+}
 
 };

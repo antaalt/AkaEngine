@@ -45,6 +45,7 @@ private:
 	AssetNode* m_rootNode;
 	bool m_assetUpdated = false;
 	MeshViewer m_meshViewer;
+	TextureViewer m_textureViewer;
 	Vector<AssetViewerBase*> m_viewers;
 	AssetLibrary* m_library;
 };

@@ -25,10 +25,10 @@ public:
 	AssetViewerBase() {}
 	virtual ~AssetViewerBase() {}
 
-	virtual void create() = 0;
-	virtual void destroy() = 0;
-	virtual void update(Time deltaTime) = 0;
-	virtual void render(aka::gfx::Frame* frame) = 0;
+	virtual void create() {}
+	virtual void destroy() {}
+	virtual void update(Time deltaTime) {}
+	virtual void render(aka::gfx::Frame* frame) {}
 };
 
 template <typename T>
@@ -75,18 +75,27 @@ private:
 	aka::CameraArcball m_arcball;
 };
 
-/*class TextureViewer : public AssetViewer<aka::Texture>
+class TextureViewer : public AssetViewer<app::Texture>
 {
 public:
 	TextureViewer();
+	void create() override;
+	void destroy() override;
+	void update(aka::Time deltaTime) override;
 protected:
-	void draw(const aka::String& name, app::ResourceHandle<aka::Texture>& resource) override;
-};*/
+	void draw(const aka::String& name, app::ResourceHandle<app::Texture>& resource) override;
+	void onResourceChange() override;
+private:
+	gfx::DescriptorSetHandle m_descriptorSet;
+	gfx::SamplerHandle m_sampler;
+	bool m_needUpdate;
+};
 
 template<typename T>
 inline AssetViewer<T>::AssetViewer(const char* type) :
 	m_type(type),
 	m_opened(false),
+	m_id(ResourceID::Invalid),
 	m_resource{}
 {
 }
@@ -117,13 +126,20 @@ inline void AssetViewer<T>::render(aka::gfx::Frame* frame)
 				}
 				ImGui::EndMenuBar();
 			}
-			draw("Unamed", m_resource);
+			if (m_resource.isLoaded())
+			{
+				draw(m_resource.get().getName(), m_resource);
+			}
+			else
+			{
+				ImGui::Text("Resource is not loaded");
+			}
 			ImGui::Separator();
 			if (ImGui::TreeNode("Asset"))
 			{
 				/*m_library-> m_resource.get()->getID()
-				ImGui::Text("Path : %s", m_resource.path.cstr());
-				ImGui::TreePop();*/
+				ImGui::Text("Path : %s", m_resource.path.cstr());*/
+				ImGui::TreePop();
 			}
 		}
 		ImGui::End();

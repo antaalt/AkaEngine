@@ -21,13 +21,18 @@ void Texture::create(AssetLibrary* _library, gfx::GraphicDevice* _device, const 
 	
 	// TODO custom mips
 	const void* data = imageArchive.data.data();
+	m_width = imageArchive.width;
+	m_height = imageArchive.height;
+	m_textureType = gfx::TextureType::Texture2D;
+	m_textureFormat = gfx::TextureFormat::RGBA8;
+	m_textureUsage = gfx::TextureUsage::ShaderResource | gfx::TextureUsage::GenerateMips;
 	m_textureHandle = _device->createTexture(
 		"AlbedoTexture", 
 		imageArchive.width, imageArchive.height, 1, 
-		gfx::TextureType::Texture2D,
+		m_textureType,
 		gfx::Sampler::mipLevelCount(imageArchive.width, imageArchive.height), 1,
-		gfx::TextureFormat::RGBA8, 
-		gfx::TextureUsage::ShaderResource | gfx::TextureUsage::GenerateMips,
+		m_textureFormat,
+		m_textureUsage,
 		&data
 	);
 }

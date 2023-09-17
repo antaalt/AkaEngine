@@ -454,6 +454,7 @@ void Editor::onCreate(int argc, char* argv[])
 		Logger::info("Loading resource time : ", watch.elapsed(), "ms");
 #endif
 	}*/
+	m_library.parse();
 }
 
 void Editor::onDestroy()

@@ -1,7 +1,6 @@
 #include "AssetEditorLayer.hpp"
 
-#include <imgui.h>
-#include <imguizmo.h>
+#include <Aka/Layer/ImGuiLayer.h>
 
 #include <Aka/Scene/World.h>
 
@@ -68,7 +67,11 @@ struct AssetNode
 					case AssetType::StaticMesh:
 						library->load<StaticMesh>(library->getResourceID(node.id), Application::app()->graphic());
 						break;
+					case AssetType::Image:
+						library->load<Texture>(library->getResourceID(node.id), Application::app()->graphic());
+						break;
 					default:
+						Logger::warn("Trying to load unimplemented type.");
 						break;
 					}
 				}
@@ -98,6 +101,7 @@ struct AssetNode
 AssetEditorLayer::AssetEditorLayer()
 {
 	m_viewers.append(&m_meshViewer);
+	m_viewers.append(&m_textureViewer);
 	m_rootNode = new AssetNode();
 }
 
@@ -255,14 +259,13 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 			ImGui::EndMenuBar();
 		}
 
-		static const ImVec4 color = ImVec4(0.93f, 0.04f, 0.26f, 1.f);
 		// We should list all archive from library here.
 		// We could open them in separate tab to edit their content & save them.
 
 		// -------------------------
 		// -------- ASSETS ---------
 		// -------------------------
-		ImGui::TextColored(color, "Assets");
+		ImGui::TextColored(ImGuiLayer::Color::red, "Assets");
 		// Generate asset tree.
 		if (m_assetUpdated)
 		{
@@ -294,7 +297,7 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 		// -------------------------
 		// ------- RESOURCES -------
 		// -------------------------
-		ImGui::TextColored(color, "Resources");
+		ImGui::TextColored(ImGuiLayer::Color::red, "Resources");
 
 		static ImGuiTableFlags flags = ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody;
 
@@ -309,6 +312,7 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 			ImGui::TableHeadersRow();
 			drawResource<Scene>("scenes", m_library, nullptr);
 			drawResource<StaticMesh>("meshes", m_library, &m_meshViewer);
+			drawResource<Texture>("textures", m_library, &m_textureViewer);
 			ImGui::EndTable();
 		}
 	}

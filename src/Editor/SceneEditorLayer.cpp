@@ -1,7 +1,6 @@
 #include "SceneEditorLayer.hpp"
 
-#include <imgui.h>
-#include <imguizmo.h>
+#include <Aka/Layer/ImGuiLayer.h>
 
 #include <Aka/Scene/World.h>
 
@@ -201,7 +200,6 @@ void SceneEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 		static char m_newEntityName[256];
 		if (ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_MenuBar))
 		{
-			static const ImVec4 color = ImVec4(0.93f, 0.04f, 0.26f, 1.f);
 			// --- Menu
 			Entity e = Entity(m_currentEntity, &scene.world);
 			if (ImGui::BeginMenuBar())
@@ -386,7 +384,7 @@ void SceneEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 				else
 					roots.push_back(entity);
 				});
-			ImGui::TextColored(color, "Graph");
+			ImGui::TextColored(ImGuiLayer::Color::red, "Graph");
 			if (ImGui::BeginChild("##list", ImVec2(0, 200), true))
 			{
 				for (entt::entity e : roots)
@@ -404,7 +402,7 @@ void SceneEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 			ImGui::Separator();
 
 			// --- Entity info
-			ImGui::TextColored(color, "Entity");
+			ImGui::TextColored(ImGuiLayer::Color::red, "Entity");
 			if (m_currentEntity != entt::null && scene.world.registry().valid(m_currentEntity))
 			{
 				if (scene.world.registry().orphan(m_currentEntity))

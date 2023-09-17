@@ -32,11 +32,18 @@ enum class AssetType : uint32_t
 
 const char* getAssetTypeString(AssetType type);
 
+struct AssetCache
+{
+	size_t size; // size of asset.
+	AssetType type; // Type could be cached ?
+};
+
 struct AssetInfo 
 {
 	AssetID id;
 	AssetPath path;
 	AssetType type;
+	//AssetCache* cache;
 
 	static AssetInfo invalid() {
 		return AssetInfo{
