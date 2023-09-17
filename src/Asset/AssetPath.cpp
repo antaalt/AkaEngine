@@ -26,9 +26,14 @@ bool AssetPath::operator!=(const AssetPath& _path) const
 {
 	return m_path != _path.m_path;
 }
-const aka::Path AssetPath::getAbsolutePath() const
+aka::Path AssetPath::getAbsolutePath() const
 {
 	return AssetPath::getAssetPath() + m_path;
+}
+
+const aka::Path& AssetPath::getRawPath() const
+{
+	return m_path;
 }
 
 const char* AssetPath::cstr() const

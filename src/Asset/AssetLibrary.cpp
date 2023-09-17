@@ -185,7 +185,7 @@ ResourceHandle<T> load_internal(ResourceID _resourceID, const typename ArchiveTr
 	auto itResource = _map.find(_resourceID);
 	if (itResource != _map.end())
 	{
-		Logger::warn("Trying to load a resource that is already loaded.");
+		//Logger::warn("Trying to load a resource that is already loaded.");
 		return itResource->second;
 	}
 	// Get assetID corresponding to resource.
@@ -202,8 +202,8 @@ ResourceHandle<T> load_internal(ResourceID _resourceID, const typename ArchiveTr
 		return ResourceHandle<T>::invalid();
 	}
 	const AssetInfo& assetInfo = itAssetInfo->second;
-	auto scene = std::make_shared<T>(_resourceID, assetInfo.path.cstr());
-	auto it = _map.insert(std::make_pair(_resourceID, ResourceHandle<T>(ResourceState::Loaded)));
+	String name = OS::File::basename(assetInfo.path.getRawPath());
+	auto it = _map.insert(std::make_pair(_resourceID, ResourceHandle<T>(_resourceID, name)));
 	if (it.second)
 	{
 		AKA_ASSERT(_device != nullptr, "Invalid device");

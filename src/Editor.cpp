@@ -508,7 +508,6 @@ void Editor::onRender(gfx::Frame* _frame)
 
 	gfx::FramebufferHandle backbuffer = device->get(m_backbuffer, _frame);
 
-
 	cmd->bindPipeline(m_renderPipeline);
 	cmd->bindDescriptorSet(0, m_cameraDescriptorSet);
 	cmd->bindDescriptorSet(0, m_cameraDescriptorSet);
@@ -524,7 +523,7 @@ void Editor::onRender(gfx::Frame* _frame)
 				app::StaticMesh& mesh = meshComp.mesh.get();
 				//Logger::info("Rendering", mesh.getName());
 				cmd->bindVertexBuffer(mesh.gfxVertexBuffer, 0);
-				cmd->bindIndexBuffer(mesh.gfxIndexBuffer, gfx::IndexFormat::UnsignedInt, 0);
+				cmd->bindIndexBuffer(mesh.gfxIndexBuffer, mesh.getIndexFormat(), 0);
 
 				// Should use vertex buffer instead
 				cmd->bindDescriptorSet(1, meshComp.descriptorSet);

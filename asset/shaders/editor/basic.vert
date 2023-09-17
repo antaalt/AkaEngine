@@ -11,13 +11,16 @@ layout(location = 2) out vec3 v_color;
 
 layout(binding = 0, std140) uniform CameraUniformBuffer
 {
-	mat4 u_mvp;
-};
+	mat4 model;
+	mat4 view;
+	mat4 proj;
+	mat3 normal;
+} camera;
 
 void main()
 {
-	gl_Position = u_mvp * vec4(a_position, 1.0);
-	v_normal = a_normal;
-	v_forward = mat3(u_mvp) * vec3(0, 0, -1);
+	gl_Position = camera.proj * camera.view * camera.model * vec4(a_position, 1.0);
+	v_normal = camera.normal * a_normal;
+	v_forward = camera.normal * vec3(0, 1, 0);
 	v_color = a_color.xyz;
 }

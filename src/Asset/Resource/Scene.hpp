@@ -17,11 +17,12 @@ public:
 	Scene() : Resource(ResourceType::Scene) {}
 	Scene(ResourceID _id, const String& _name) : Resource(ResourceType::Scene, _id, _name) {}
 
-	// Should be load / save instead and take library + id instead of archive directly for cache.
-	void create(AssetLibrary* library, gfx::GraphicDevice* _device, const Archive& _archive) override;
-	void save(AssetLibrary* library, gfx::GraphicDevice* _device, Archive& _archive) override;
-	void destroy(AssetLibrary* library, gfx::GraphicDevice* _device) override;
+private:
+	void create_internal(AssetLibrary* library, gfx::GraphicDevice* _device, const Archive& _archive) override;
+	void save_internal(AssetLibrary* library, gfx::GraphicDevice* _device, Archive& _archive) override;
+	void destroy_internal(AssetLibrary* library, gfx::GraphicDevice* _device) override;
 
+public:
 	void update(aka::Time time, gfx::GraphicDevice* _device);
 	void render(gfx::GraphicDevice* _device, gfx::Frame* _frame);
 

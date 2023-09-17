@@ -241,93 +241,167 @@ const char* toString(gfx::BufferCPUAccess access)
 		return "Unknown";
 	}
 }
+struct MeshViewerUBO {
+	mat4f model;
+	mat4f view;
+	mat4f proj;
+	mat4f normal;
+};
 
 MeshViewer::MeshViewer() :
-	AssetViewer("Mesh")
+	AssetViewer("Mesh"),
+	m_needCameraUpdate(false)
 {
 }
 
-void MeshViewer::create()
+void MeshViewer::create(gfx::GraphicDevice* _device)
 {
-	gfx::GraphicDevice* device = Application::app()->graphic();
 	// TODO if no data, bug ?
 	std::vector<uint8_t> data(m_width * m_height * 4, 0xff);
 	void* dataVoid = data.data();
-	m_renderTarget = device->createTexture("MeshViewerRT", m_width, m_height, 1, gfx::TextureType::Texture2D, 1, 1, gfx::TextureFormat::RGBA8, gfx::TextureUsage::RenderTarget | gfx::TextureUsage::ShaderResource, &dataVoid);
-	m_depthTarget = device->createTexture("MeshViewerDepthRT", m_width, m_height, 1, gfx::TextureType::Texture2D, 1, 1, gfx::TextureFormat::Depth, gfx::TextureUsage::RenderTarget);
+	m_renderTarget = _device->createTexture("MeshViewerRT", m_width, m_height, 1, gfx::TextureType::Texture2D, 1, 1, gfx::TextureFormat::RGBA8, gfx::TextureUsage::RenderTarget | gfx::TextureUsage::ShaderResource, &dataVoid);
+	m_depthTarget = _device->createTexture("MeshViewerDepthRT", m_width, m_height, 1, gfx::TextureType::Texture2D, 1, 1, gfx::TextureFormat::Depth, gfx::TextureUsage::RenderTarget);
 	gfx::Attachment color = { m_renderTarget, gfx::AttachmentFlag::None, 0, 0 };
 	gfx::Attachment depth = { m_depthTarget, gfx::AttachmentFlag::None, 0, 0 };
-	m_renderPass = device->createRenderPass("MeshViewerRenderPass", gfx::RenderPassState{}.addColor(gfx::TextureFormat::RGBA8).setDepth(gfx::TextureFormat::Depth));
-	m_target = device->createFramebuffer("MeshViewerFramebuffer", m_renderPass, &color, 1, &depth);
-
+	gfx::RenderPassState rpState{};
+	rpState.addColor(gfx::TextureFormat::RGBA8, gfx::AttachmentLoadOp::Clear, gfx::AttachmentStoreOp::Store, gfx::ResourceAccessType::Attachment, gfx::ResourceAccessType::Resource);
+	rpState.setDepth(gfx::TextureFormat::Depth);
+	m_renderPass = _device->createRenderPass("MeshViewerRenderPass", rpState);
+	m_target = _device->createFramebuffer("MeshViewerFramebuffer", m_renderPass, &color, 1, &depth);
 
 	const aka::ShaderKey ShaderVertex = aka::ShaderKey().setPath(app::AssetPath("../shaders/editor/basic.vert").getAbsolutePath()).setType(aka::ShaderType::Vertex);
 	const aka::ShaderKey ShaderFragment = aka::ShaderKey().setPath(app::AssetPath("../shaders/editor/basic.frag").getAbsolutePath()).setType(aka::ShaderType::Fragment);
 
 	const aka::ProgramKey ProgramGraphic = aka::ProgramKey().add(ShaderVertex).add(ShaderFragment);
 	ShaderRegistry* program = Application::app()->program();
-	program->add(ProgramGraphic, device);
+	program->add(ProgramGraphic, _device);
 	gfx::ProgramHandle p = program->get(ProgramGraphic);
-	m_descriptorSet = device->createDescriptorSet("MeshViewerDescriptorSet", device->get(p)->sets[0]);
-	m_uniform = device->createBuffer("MeshViewerUBO", gfx::BufferType::Uniform, sizeof(mat4f), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None);
-	//m_descriptorSet->setUniformBuffer(0, m_uniform);
-	// TODO update set
-	m_arcball.set(aabbox<>(point3f(-20.f), point3f(20.f)));
-	m_projection = mat4f::perspective(anglef::degree(90.f), m_width / (float)m_height, 0.1f, 100.f);
-}
-void MeshViewer::destroy()
-{
-	gfx::GraphicDevice* device = Application::app()->graphic();
-	device->destroy(m_descriptorSet);
-	device->destroy(m_uniform);
-	device->destroy(m_target);
-	device->destroy(m_renderTarget);
-	device->destroy(m_depthTarget);
-	device->destroy(m_renderPass);
-}
-void MeshViewer::update(aka::Time deltaTime)
-{
+	m_pipeline = _device->createGraphicPipeline(
+		"MeshViewerPipeline",
+		p,
+		gfx::PrimitiveType::Triangles,
+		rpState,
+		Vertex::getState(),
+		gfx::ViewportState{}.size(m_width, m_height),
+		gfx::DepthStateDefault,
+		gfx::StencilStateDefault,
+		gfx::CullStateDefault,
+		gfx::BlendStateDefault,
+		gfx::FillStateLine
+	);
 
+	m_descriptorSet = _device->createDescriptorSet("MeshViewerDescriptorSet", _device->get(p)->sets[0]);
+	{
+		m_arcball.set(aabbox<>(point3f(-20.f), point3f(20.f)));
+		m_projection.nearZ = 0.1f;
+		m_projection.farZ = 1000.f;
+		m_projection.ratio = m_width / (float)m_height;
+		m_projection.hFov = anglef::degree(90.f);
+
+		MeshViewerUBO ubo{};
+		ubo.model = mat4f::identity();
+		ubo.view = m_arcball.view();
+		ubo.proj = m_projection.projection();
+		ubo.normal = mat4f::transpose(mat4f::inverse(ubo.view * ubo.model));
+		m_uniform = _device->createBuffer("MeshViewerUBO", gfx::BufferType::Uniform, sizeof(MeshViewerUBO), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, &ubo);
+
+		gfx::DescriptorSetData desc;
+		desc.addUniformBuffer(m_uniform);
+		_device->update(m_descriptorSet, desc);
+	}
+
+	{
+		gfx::ShaderBindingState state{};
+		state.add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment);
+		m_imguiDescriptorSet = _device->createDescriptorSet("ImGuiMeshViewerDescriptorSet", state);
+		m_imguiSampler = _device->createSampler("ImGuiTextureViewerSampler",
+			gfx::Filter::Nearest, gfx::Filter::Nearest,
+			gfx::SamplerMipMapMode::None,
+			gfx::SamplerAddressMode::Repeat, gfx::SamplerAddressMode::Repeat, gfx::SamplerAddressMode::Repeat,
+			1.0);
+		gfx::DescriptorSetData desc;
+		desc.addSampledTexture2D(m_renderTarget, m_imguiSampler);
+		_device->update(m_imguiDescriptorSet, desc);
+	}
+}
+void MeshViewer::destroy(gfx::GraphicDevice* _device)
+{
+	_device->destroy(m_imguiDescriptorSet);
+	_device->destroy(m_descriptorSet);
+	_device->destroy(m_uniform);
+	_device->destroy(m_target);
+	_device->destroy(m_renderTarget);
+	_device->destroy(m_depthTarget);
+	_device->destroy(m_renderPass);
+}
+void MeshViewer::update(gfx::GraphicDevice* _device, aka::Time deltaTime)
+{
+	// This is run one frame late though...
+	if (m_needCameraUpdate)
+	{
+		_device->wait();
+		m_arcball.update(deltaTime);
+		MeshViewerUBO ubo{};
+		ubo.model = mat4f::identity();
+		ubo.view = m_arcball.view();
+		ubo.proj = m_projection.projection();
+		ubo.normal = mat4f::transpose(mat4f::inverse(ubo.view*ubo.model));
+		_device->upload(m_uniform, &ubo, 0, sizeof(MeshViewerUBO));
+		m_needCameraUpdate = false;
+	}
 }
 void MeshViewer::onResourceChange()
-{
-	// TODO compute mesh bounds from mesh
-	m_arcball.set(aabbox<>(point3f(-20.f), point3f(20.f)));
+{	
+	m_arcball.set(m_resource.get().getBounds());
 }
 
-void MeshViewer::drawMesh(const StaticMesh* mesh)
+void MeshViewer::drawMesh(const StaticMesh& mesh)
 {
+	gfx::GraphicDevice* device = Application::app()->graphic();
+
+	gfx::CommandList* cmd = device->acquireCommandList(gfx::QueueType::Graphic); // TODO use standard queue...
+	cmd->begin();
+
+	cmd->transition(m_renderTarget, gfx::ResourceAccessType::Resource, gfx::ResourceAccessType::Attachment);
+	cmd->beginRenderPass(m_renderPass, m_target, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f}, 1.f, 0 });
+
+	cmd->bindPipeline(m_pipeline);
+	cmd->bindIndexBuffer(mesh.gfxIndexBuffer, mesh.getIndexFormat());
+	cmd->bindVertexBuffer(mesh.gfxVertexBuffer, 0);
+	cmd->bindDescriptorSet(0, m_descriptorSet);
+
+	for (const auto& batch : mesh.batches)
+	{
+		// TODO material
+		cmd->drawIndexed(batch.indexCount, batch.indexOffset, batch.vertexOffset, 1);
+	}
+	cmd->endRenderPass();
+
+	cmd->end();
+	device->submit(cmd);
 }
 
-void MeshViewer::draw(const String& name, ResourceHandle<StaticMesh>& resource)
+void MeshViewer::draw(const String& name, const StaticMesh& mesh)
 {
 	ImGui::TextColored(ImGuiLayer::Color::red, name.cstr());
-	/*auto mesh = resource.resource;
 	ImGui::Text("Vertices");
-
-	for (uint32_t i = 0; i < mesh->bindings.count; i++)
+	for (uint32_t i = 0; i < mesh.attributes.count; i++)
 	{
 		char buffer[256];
 		snprintf(buffer, 256, "Attribute %u", i);
 		if (ImGui::TreeNode(buffer))
 		{
-			Buffer b{ mesh->vertices[i] };
-			ImGui::BulletText("Format : %s", toString(mesh->bindings.attributes[i].format));
-			ImGui::BulletText("Semantic : %s", toString(mesh->bindings.attributes[i].semantic));
-			ImGui::BulletText("Type : %s", toString(mesh->bindings.attributes[i].type));
-			ImGui::BulletText("Count : %u", 0);
-			ImGui::BulletText("Offset : %u", mesh->bindings.offsets[i]);
-			ImGui::BulletText("Buffer : %s", resources->name<Buffer>(&b).cstr());
+			ImGui::BulletText("Format : %s", toString(mesh.attributes.attributes[i].format));
+			ImGui::BulletText("Semantic : %s", toString(mesh.attributes.attributes[i].semantic));
+			ImGui::BulletText("Type : %s", toString(mesh.attributes.attributes[i].type));
+			ImGui::BulletText("Offset : %u", mesh.attributes.offsets[i]);
 			ImGui::TreePop();
 		}
 	}
-	Buffer b{ mesh->indices };
 	ImGui::Separator();
 	ImGui::Text("Indices");
-	ImGui::BulletText("Format : %s", toString(mesh->format));
-	ImGui::BulletText("Count : %u", mesh->count);
-	ImGui::BulletText("Buffer : %s", resources->name<Buffer>(&b).cstr());
-	ImGui::Separator();*/
+	ImGui::BulletText("Format : %s", toString(mesh.getIndexFormat()));
+	ImGui::Separator();
 
 	// Mesh viewer
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -335,43 +409,34 @@ void MeshViewer::draw(const String& name, ResourceHandle<StaticMesh>& resource)
 	{
 		if (ImGui::IsWindowHovered() && (ImGui::IsMouseDragging(0, 0.0f) || ImGui::IsMouseDragging(1, 0.0f) || !ImGui::IsAnyItemActive()))
 		{
-			// TODO use real deltatime
-			m_arcball.update(Time::milliseconds(10));
+			m_needCameraUpdate = true;
 		}
-		if (resource.isLoaded())
-		{
-			drawMesh(&resource.get());
-		}
-		else
-		{
-			ImGui::Text("Mesh not loaded");
-		}
-
-		//ImGui::Image((ImTextureID)(uintptr_t)m_renderTarget->handle().value(), ImVec2((float)m_width, (float)m_height), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
+		drawMesh(mesh);
+		gfx::GraphicDevice* device = Application::app()->graphic();
+		ImTextureID texID = ImGuiLayer::getTextureID(device, m_imguiDescriptorSet);
+		ImGui::Image(texID, ImVec2((float)m_width, (float)m_height), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1));
 	}
 	ImGui::EndChild();
 	ImGui::PopStyleVar();
 }
 
-void TextureViewer::draw(const String& name, ResourceHandle<Texture>& resource)
+void TextureViewer::draw(const String& name, const Texture& texture)
 {
 	ImGui::TextColored(ImGuiLayer::Color::red, name.cstr());
-	if (!resource.isLoaded() || m_needUpdate)
+	if (m_needUpdate)
 	{
-		ImGui::Text("Texture not loaded");
-		return;// TODO: prevent opening if not loaded
+		ImGui::Text("Texture need update");
+		return;
 	}
-	Texture& texture = resource.get();
 	gfx::TextureHandle handle = texture.getGfxHandle();
 	bool isRenderTarget = (texture.getTextureUsage() & gfx::TextureUsage::RenderTarget) == gfx::TextureUsage::RenderTarget;
 	bool isShaderResource = (texture.getTextureUsage() & gfx::TextureUsage::ShaderResource) == gfx::TextureUsage::ShaderResource;
 	bool hasMips = (texture.getTextureUsage() & gfx::TextureUsage::GenerateMips) == gfx::TextureUsage::GenerateMips;
-	ImGui::Text("%s - %u x %u (%s)", toString(texture.getTextureType()), texture.getWidth(), texture.getHeight(), toString(texture.getTextureFormat()));
+	ImGui::Text("%s - %u x %u (%s)", toString(texture.getTextureType()), texture.getWidth() >> m_mipSelected, texture.getHeight() >> m_mipSelected, toString(texture.getTextureFormat()));
 	ImGui::Checkbox("Render target", &isRenderTarget); ImGui::SameLine();
 	ImGui::Checkbox("Shader resource", &isShaderResource); ImGui::SameLine();
 	ImGui::Checkbox("Mips", &hasMips);
 
-	// TODO add zoom and mip viewer
 	ImGui::Separator();
 	static bool red = true;
 	static bool green = true;
@@ -385,8 +450,13 @@ void TextureViewer::draw(const String& name, ResourceHandle<Texture>& resource)
 	ImGui::Checkbox("G", &green); ImGui::SameLine();
 	ImGui::Checkbox("B", &blue); ImGui::SameLine();
 	ImGui::Checkbox("A", &alpha); ImGui::SameLine();
-	ImGui::DragInt("##Zoom", &zoomInt, 1, minZoom, maxZoom, "%d %%");
+	bool zoomChanged = ImGui::DragInt("##Zoom", &zoomInt, 1, minZoom, maxZoom, "%d %%");
 
+	ImGui::Separator();
+	m_needUpdate |= ImGui::SliderInt("Layer", &m_layerSelected, 0, texture.getLayerCount() - 1);
+	m_needUpdate |= ImGui::SliderInt("Mip", &m_mipSelected, 0, texture.getMipCount() - 1);
+
+	// Image explorer
 	gfx::GraphicDevice* device = Application::app()->graphic();
 	ImTextureID textureID = ImGuiLayer::getTextureID(device, m_descriptorSet);
 	ImVec4 mask = ImVec4(
@@ -395,13 +465,12 @@ void TextureViewer::draw(const String& name, ResourceHandle<Texture>& resource)
 		blue ? 1.f : 0.f,
 		alpha ? 1.f : 0.f
 	);
-	// Image explorer
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	if (ImGui::BeginChild("TextureDisplayChild", ImVec2(0, 0), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar))
 	{
-		if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive())
+		if (!zoomChanged && ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::GetIO().MouseWheel != 0.f)
 		{
-			zoomInt = min(max(zoomInt + (int)(ImGui::GetIO().MouseWheel * 2.f), minZoom), maxZoom);
+			zoomInt = clamp(zoomInt + (int)(ImGui::GetIO().MouseWheel * 2.f), minZoom, maxZoom);
 		}
 		float zoom = zoomInt / 100.f;
 		if (ImGui::IsWindowHovered() && (ImGui::IsMouseDragging(0, 0.0f) || ImGui::IsMouseDragging(1, 0.0f)))
@@ -431,21 +500,19 @@ TextureViewer::TextureViewer() :
 	AssetViewer("Texture"),
 	m_descriptorSet(gfx::DescriptorSetHandle::null),
 	m_sampler(gfx::SamplerHandle::null),
-	m_needUpdate(false)
+	m_needUpdate(false),
+	m_layerSelected(0),
+	m_mipSelected(0)
 {
 }
 
-void TextureViewer::create()
+void TextureViewer::create(gfx::GraphicDevice* _device)
 {
-	gfx::GraphicDevice* device = Application::app()->graphic();
 	gfx::ShaderBindingState state{};
 	state.add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment);
-	// TODO: add layer & mip selector
-	// There might be an issue cuz of pImmutableSamplers not being set
 
-	//ImGuiLayer::
-	m_descriptorSet = device->createDescriptorSet("ImGuiTextureViewerDescriptorSet", state);
-	m_sampler = device->createSampler("ImGuiTextureViewerSampler", 
+	m_descriptorSet = _device->createDescriptorSet("ImGuiTextureViewerDescriptorSet", state);
+	m_sampler = _device->createSampler("ImGuiTextureViewerSampler",
 		gfx::Filter::Nearest, gfx::Filter::Nearest,
 		gfx::SamplerMipMapMode::None,
 		gfx::SamplerAddressMode::Repeat, gfx::SamplerAddressMode::Repeat, gfx::SamplerAddressMode::Repeat,
@@ -453,8 +520,8 @@ void TextureViewer::create()
 	if (m_resource.isLoaded())
 	{
 		gfx::DescriptorSetData data;
-		data.addSampledImage(m_resource.get().getGfxHandle(), m_sampler);
-		device->update(m_descriptorSet, data);
+		data.addSampledTexture2D(m_resource.get().getGfxHandle(), m_sampler, m_layerSelected, m_mipSelected);
+		_device->update(m_descriptorSet, data);
 		m_needUpdate = false;
 	}
 	else
@@ -463,21 +530,20 @@ void TextureViewer::create()
 	}
 }
 
-void TextureViewer::destroy()
+void TextureViewer::destroy(gfx::GraphicDevice* _device)
 {
-	gfx::GraphicDevice* device = Application::app()->graphic();
-	device->destroy(m_descriptorSet);
-	device->destroy(m_sampler);
+	_device->destroy(m_descriptorSet);
+	_device->destroy(m_sampler);
 }
 
-void TextureViewer::update(aka::Time deltaTime)
+void TextureViewer::update(gfx::GraphicDevice* _device, aka::Time deltaTime)
 {
-	gfx::GraphicDevice* device = Application::app()->graphic();
 	if (m_resource.isLoaded() && m_needUpdate)
 	{
+		_device->wait();
 		gfx::DescriptorSetData data;
-		data.addSampledImage(m_resource.get().getGfxHandle(), m_sampler);
-		device->update(m_descriptorSet, data);
+		data.addSampledTexture2D(m_resource.get().getGfxHandle(), m_sampler, m_layerSelected, m_mipSelected);
+		_device->update(m_descriptorSet, data);
 		m_needUpdate = false;
 	}
 }

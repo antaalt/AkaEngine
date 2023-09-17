@@ -20,7 +20,7 @@ layout(set = 2, binding = 2) uniform sampler2D u_normalTexture;
 void main()
 {
 	vec3 sunDir = vec3(0, 1, 0);
-	float cosTheta = dot(sunDir, v_worldNormal);
+	float cosTheta = dot(sunDir, normalize(v_worldNormal));
 
 	vec4 albedo = texture(u_albedoTexture, v_uv) * u_material.color * v_color;
 	vec4 ambientLight = albedo * 0.2;

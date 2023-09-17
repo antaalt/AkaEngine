@@ -25,9 +25,9 @@ public:
 	AssetViewerBase() {}
 	virtual ~AssetViewerBase() {}
 
-	virtual void create() {}
-	virtual void destroy() {}
-	virtual void update(Time deltaTime) {}
+	virtual void create(gfx::GraphicDevice* _device) {}
+	virtual void destroy(gfx::GraphicDevice* _device) {}
+	virtual void update(gfx::GraphicDevice* _device, Time deltaTime) {}
 	virtual void render(aka::gfx::Frame* frame) {}
 };
 
@@ -42,7 +42,7 @@ public:
 	// Set the resource for the viewer.
 	void set(ResourceID id, const ResourceHandle<T>& resource) { m_opened = true; m_id = id; m_resource = resource; onResourceChange(); }
 protected:
-	virtual void draw(const aka::String& name, ResourceHandle<T>& resource) = 0;
+	virtual void draw(const aka::String& name, const T& resource) = 0;
 	virtual void onResourceChange() {}
 protected:
 	const char* m_type;
@@ -55,40 +55,46 @@ class MeshViewer : public AssetViewer<app::StaticMesh>
 {
 public:
 	MeshViewer();
-	void create() override;
-	void destroy() override;
-	void update(aka::Time deltaTime) override;
+	void create(gfx::GraphicDevice* _device) override;
+	void destroy(gfx::GraphicDevice* _device) override;
+	void update(gfx::GraphicDevice* _device, aka::Time deltaTime) override;
 protected:
-	void draw(const aka::String& name, app::ResourceHandle<StaticMesh>& resource) override;
+	void draw(const aka::String& name, const StaticMesh& resource) override;
 	void onResourceChange() override;
-	void drawMesh(const StaticMesh* mesh);
+	void drawMesh(const StaticMesh& mesh);
 private:
 	const uint32_t m_width = 512;
 	const uint32_t m_height = 512;
-	aka::mat4f m_projection;
 	aka::gfx::TextureHandle m_renderTarget;
 	aka::gfx::TextureHandle m_depthTarget;
 	aka::gfx::FramebufferHandle m_target;
 	aka::gfx::RenderPassHandle m_renderPass;
+	aka::gfx::GraphicPipelineHandle m_pipeline;
 	aka::gfx::DescriptorSetHandle m_descriptorSet;
+	aka::gfx::DescriptorSetHandle m_imguiDescriptorSet;
+	aka::gfx::SamplerHandle m_imguiSampler;
 	aka::gfx::BufferHandle m_uniform;
 	aka::CameraArcball m_arcball;
+	aka::CameraPerspective m_projection;
+	bool m_needCameraUpdate;
 };
 
 class TextureViewer : public AssetViewer<app::Texture>
 {
 public:
 	TextureViewer();
-	void create() override;
-	void destroy() override;
-	void update(aka::Time deltaTime) override;
+	void create(gfx::GraphicDevice* _device) override;
+	void destroy(gfx::GraphicDevice* _device) override;
+	void update(gfx::GraphicDevice* _device, aka::Time deltaTime) override;
 protected:
-	void draw(const aka::String& name, app::ResourceHandle<app::Texture>& resource) override;
+	void draw(const aka::String& name, const app::Texture& resource) override;
 	void onResourceChange() override;
 private:
-	gfx::DescriptorSetHandle m_descriptorSet;
-	gfx::SamplerHandle m_sampler;
+	aka::gfx::DescriptorSetHandle m_descriptorSet;
+	aka::gfx::SamplerHandle m_sampler;
 	bool m_needUpdate;
+	int m_layerSelected;
+	int m_mipSelected;
 };
 
 template<typename T>
@@ -128,19 +134,19 @@ inline void AssetViewer<T>::render(aka::gfx::Frame* frame)
 			}
 			if (m_resource.isLoaded())
 			{
-				draw(m_resource.get().getName(), m_resource);
+				draw(m_resource.get().getName(), m_resource.get());
 			}
 			else
 			{
 				ImGui::Text("Resource is not loaded");
 			}
-			ImGui::Separator();
+			/*ImGui::Separator();
 			if (ImGui::TreeNode("Asset"))
 			{
-				/*m_library-> m_resource.get()->getID()
-				ImGui::Text("Path : %s", m_resource.path.cstr());*/
+				m_library-> m_resource.get()->getID()
+				ImGui::Text("Path : %s", m_resource.path.cstr());
 				ImGui::TreePop();
-			}
+			}*/
 		}
 		ImGui::End();
 	}

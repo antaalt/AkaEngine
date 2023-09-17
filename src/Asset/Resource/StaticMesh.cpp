@@ -18,7 +18,7 @@ StaticMesh::StaticMesh(ResourceID _id, const String& _name) :
 {
 }
 
-void StaticMesh::create(AssetLibrary* _library, gfx::GraphicDevice* _device, const Archive& _archive)
+void StaticMesh::create_internal(AssetLibrary* _library, gfx::GraphicDevice* _device, const Archive& _archive)
 {
 	AKA_ASSERT(_archive.type() == AssetType::StaticMesh, "Invalid archive");
 	const ArchiveStaticMesh& meshArchive = reinterpret_cast<const ArchiveStaticMesh&>(_archive);
@@ -59,8 +59,8 @@ void StaticMesh::create(AssetLibrary* _library, gfx::GraphicDevice* _device, con
 
 		gfx::DescriptorSetData data;
 		data.addUniformBuffer(gfxUniformBuffer);
-		data.addSampledImage(albedo.get().getGfxHandle(), this->gfxAlbedoSampler);
-		data.addSampledImage(normal.get().getGfxHandle(), this->gfxNormalSampler);
+		data.addSampledTexture2D(albedo.get().getGfxHandle(), this->gfxAlbedoSampler);
+		data.addSampledTexture2D(normal.get().getGfxHandle(), this->gfxNormalSampler);
 		_device->update(gfxDescriptorSet, data);
 		
 		this->batches.append(DrawCallIndexed{
@@ -75,18 +75,20 @@ void StaticMesh::create(AssetLibrary* _library, gfx::GraphicDevice* _device, con
 
 		vertices.append(batch.geometry.vertices);
 		indices.append(batch.geometry.indices);
+		this->m_bounds.include(batch.geometry.bounds);
 	}
+	this->m_indexFormat = gfx::IndexFormat::UnsignedInt;
 	this->attributes = Vertex::getState();
 	this->gfxVertexBuffer = _device->createBuffer("VertexBuffer", gfx::BufferType::Vertex, (uint32_t)(sizeof(Vertex) * vertices.size()), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, vertices.data());
 	this->gfxIndexBuffer = _device->createBuffer("IndexBuffer", gfx::BufferType::Index, (uint32_t)(sizeof(uint32_t) * indices.size()), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, indices.data());;
 }
 
-void StaticMesh::save(AssetLibrary* _library, gfx::GraphicDevice* _device, Archive& _archive)
+void StaticMesh::save_internal(AssetLibrary* _library, gfx::GraphicDevice* _device, Archive& _archive)
 {
 	AKA_NOT_IMPLEMENTED;
 }
 
-void StaticMesh::destroy(AssetLibrary* _library, gfx::GraphicDevice* _device)
+void StaticMesh::destroy_internal(AssetLibrary* _library, gfx::GraphicDevice* _device)
 {
 	_device->destroy(this->gfxAlbedoSampler);
 	_device->destroy(this->gfxNormalSampler);

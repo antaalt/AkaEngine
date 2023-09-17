@@ -1,4 +1,4 @@
-﻿cmake_minimum_required (VERSION 3.10)
+﻿cmake_minimum_required (VERSION 3.13)
 
 project(AkaEditor)
 
@@ -24,6 +24,7 @@ add_executable(AkaEditor
 	"src/Asset/Archive/ArchiveImage.cpp"
 	"src/Asset/Archive/ArchiveScene.cpp" 
 	"src/Asset/Archive/Archive.cpp"
+	"src/Asset/Resource/Resource.cpp"
 	"src/Asset/Resource/Scene.cpp"
 	"src/Asset/Resource/StaticMesh.cpp"
 	"src/Asset/Resource/Texture.cpp"

@@ -12,10 +12,14 @@ public:
 	StaticMesh();
 	StaticMesh(ResourceID _id, const String& _name);
 
-	void create(AssetLibrary* _library, gfx::GraphicDevice* _device, const Archive& _archive) override;
-	void save(AssetLibrary* _library, gfx::GraphicDevice* _device, Archive& _archive) override;
-	void destroy(AssetLibrary* _library, gfx::GraphicDevice* _device) override;
+private:
+	void create_internal(AssetLibrary* _library, gfx::GraphicDevice* _device, const Archive& _archive) override;
+	void save_internal(AssetLibrary* _library, gfx::GraphicDevice* _device, Archive& _archive) override;
+	void destroy_internal(AssetLibrary* _library, gfx::GraphicDevice* _device) override;
 
+public:
+	gfx::IndexFormat getIndexFormat() const { return m_indexFormat; }
+	aabbox<> getBounds() const { return m_bounds; }
 public: // Optionnal data for runtime operations
 	gfx::VertexAttributeState attributes;
 public: // Mandatory data for rendering & co
@@ -24,6 +28,8 @@ public: // Mandatory data for rendering & co
 	gfx::BufferHandle gfxIndexBuffer;
 	gfx::SamplerHandle gfxAlbedoSampler;
 	gfx::SamplerHandle gfxNormalSampler;
+	gfx::IndexFormat m_indexFormat;
+	aabbox<> m_bounds;
 
 	struct DrawCallIndexed {
 		uint32_t vertexOffset;

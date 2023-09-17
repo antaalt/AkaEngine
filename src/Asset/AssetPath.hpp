@@ -20,7 +20,9 @@ struct AssetPath
 	bool operator!=(const AssetPath& _path) const;
 
 	// Get the absolute path of the data
-	const aka::Path getAbsolutePath() const;
+	aka::Path getAbsolutePath() const;
+	// Get the asset path as a raw aka::Path
+	const aka::Path& getRawPath() const;
 
 	const char* cstr() const;
 	size_t size() const;

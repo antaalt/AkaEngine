@@ -23,7 +23,7 @@ mat4f getParentTransform(Entity e)
 	}
 }
 
-void Scene::create(AssetLibrary* _library, gfx::GraphicDevice* _device, const Archive& _archive)
+void Scene::create_internal(AssetLibrary* _library, gfx::GraphicDevice* _device, const Archive& _archive)
 {
 	AKA_ASSERT(_archive.type() == AssetType::Scene, "Invalid archive");
 	const ArchiveScene& scene = reinterpret_cast<const ArchiveScene&>(_archive);
@@ -89,12 +89,12 @@ void Scene::create(AssetLibrary* _library, gfx::GraphicDevice* _device, const Ar
 	}
 }
 
-void Scene::save(AssetLibrary* library, gfx::GraphicDevice* _device, Archive& _archive)
+void Scene::save_internal(AssetLibrary* library, gfx::GraphicDevice* _device, Archive& _archive)
 {
 	AKA_NOT_IMPLEMENTED;
 }
 
-void Scene::destroy(AssetLibrary* _library, gfx::GraphicDevice* _device)
+void Scene::destroy_internal(AssetLibrary* _library, gfx::GraphicDevice* _device)
 {
 	world.registry().view<StaticMeshComponent>().each([_device](entt::entity entity, StaticMeshComponent& meshComp) {
 		_device->destroy(meshComp.descriptorSet);

@@ -29,30 +29,6 @@ enum class ResourceType : uint32_t
 	Last = AudioSource,
 };
 
-// This could be Component directly for ECS.
-// Might cause issue with component which are not directly droppable -> could have droppable resource to inherit from 
-class Resource
-{
-public:
-	Resource(ResourceType _type) : Resource(_type, ResourceID::Invalid, "") {}
-	Resource(ResourceType _type, ResourceID id, const aka::String& _name) : m_type(_type), m_id(id), m_name(_name) {}
-
-	const aka::String& getName() const { return m_name; }
-	ResourceID getID() const { return m_id; }
-	ResourceType getType() const { return m_type; }
-
-	virtual void create(AssetLibrary* _library, aka::gfx::GraphicDevice* _device, const Archive& _archive) = 0;
-	virtual void save(AssetLibrary* _library, aka::gfx::GraphicDevice* _device, Archive& _archive) = 0;
-	virtual void destroy(AssetLibrary* _library, aka::gfx::GraphicDevice* _device) = 0;
-
-	// We need to be able to clone a resource ?
-	//virtual Resource* clone() = 0;
-private:
-	ResourceType m_type;
-	ResourceID m_id;
-	aka::String m_name;
-};
-
 enum class ResourceState {
 	Unknown,
 	Disk,
@@ -60,36 +36,110 @@ enum class ResourceState {
 	Loaded,
 };
 
+// This could be Component directly for ECS.
+// Might cause issue with component which are not directly droppable -> could have droppable resource to inherit from 
+class Resource
+{
+public:
+	Resource(ResourceType _type);
+	Resource(ResourceType _type, ResourceID id, const aka::String& _name);
+
+	const aka::String& getName() const { return m_name; }
+	ResourceID getID() const { return m_id; }
+	ResourceType getType() const { return m_type; }
+	ResourceState getState() const { return m_state; }
+
+	void create(AssetLibrary* _library, aka::gfx::GraphicDevice* _device, const Archive& _archive);
+	void save(AssetLibrary* _library, aka::gfx::GraphicDevice* _device, Archive& _archive);
+	void destroy(AssetLibrary* _library, aka::gfx::GraphicDevice* _device);
+protected:
+	virtual void create_internal(AssetLibrary* _library, aka::gfx::GraphicDevice* _device, const Archive& _archive) = 0;
+	virtual void save_internal(AssetLibrary* _library, aka::gfx::GraphicDevice* _device, Archive& _archive) = 0;
+	virtual void destroy_internal(AssetLibrary* _library, aka::gfx::GraphicDevice* _device) = 0;
+private:
+	ResourceState m_state;
+	ResourceType m_type;
+	ResourceID m_id;
+	aka::String m_name;
+};
+
 
 template <typename T>
 struct ResourceHandle {
 	static_assert(std::is_base_of<Resource, T>::value, "Type should inherit Resource");
-private:
-	struct ResourceHandleInner {
-		T resource;
-		std::atomic<ResourceState> state; // Tracking
-	};
 public:
-	ResourceHandle() : m_resource(nullptr) {
+	ResourceHandle();
+	ResourceHandle(ResourceID _id, const aka::String& _name);
 
-	}
-	ResourceHandle(ResourceState _state) : m_resource(std::make_shared<ResourceHandleInner>()) 
-	{
-		m_resource->state = _state;
-	}
-	bool isValid() const { return m_resource != nullptr; }
-	bool isLoaded() const { return isValid() && m_resource->state == ResourceState::Loaded; }
-	ResourceState getState() const { return !isValid() ? ResourceState::Unknown : m_resource->state.load(); }
+	bool isValid() const;
+	bool isLoaded() const;
+	ResourceState getState() const;
+	size_t getCount() const;
 
-	size_t getCount() const { return m_resource.use_count(); }
+	const T& get() const;
+	T& get();
 
-	const T& get() const { return m_resource->resource; }
-	T& get() { return m_resource->resource; }
-
-	static ResourceHandle<T> invalid() { return ResourceHandle<T>(); }
-
+public:
+	static ResourceHandle<T> invalid();
 private:
-	std::shared_ptr<ResourceHandleInner> m_resource;
+	std::shared_ptr<T> m_resource;
 };
+
+template<typename T>
+inline ResourceHandle<T>::ResourceHandle() : 
+	m_resource(nullptr)
+{
+}
+
+template<typename T>
+inline ResourceHandle<T>::ResourceHandle(ResourceID _id, const aka::String& _name) :
+	m_resource(std::make_shared<T>(_id, _name))
+{
+}
+
+template<typename T>
+inline bool ResourceHandle<T>::isValid() const
+{
+	return m_resource != nullptr;
+}
+
+template<typename T>
+inline bool ResourceHandle<T>::isLoaded() const
+{
+	return isValid() && m_resource->getState() == ResourceState::Loaded;
+}
+
+template<typename T>
+inline ResourceState ResourceHandle<T>::getState() const
+{
+	if (!isValid())
+		return ResourceState::Unknown;
+	return m_resource->getState();
+}
+
+template<typename T>
+inline size_t ResourceHandle<T>::getCount() const
+{
+	return m_resource.use_count();
+}
+
+template<typename T>
+inline const T& ResourceHandle<T>::get() const
+{
+	AKA_ASSERT(isValid(), "Accessing not valid resource");
+	return *m_resource;
+}
+template<typename T>
+inline T& ResourceHandle<T>::get()
+{
+	AKA_ASSERT(isValid(), "Accessing not valid resource");
+	return *m_resource;
+}
+
+template<typename T>
+inline ResourceHandle<T> ResourceHandle<T>::invalid()
+{
+	return ResourceHandle<T>();
+}
 
 }
