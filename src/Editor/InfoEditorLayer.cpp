@@ -11,14 +11,12 @@ InfoEditorLayer::InfoEditorLayer()
 {
 }
 
-void InfoEditorLayer::onLayerCreate()
+void InfoEditorLayer::onLayerCreate(gfx::GraphicDevice* _device)
 {
-	aka::Application* app = aka::Application::app();
-	aka::gfx::GraphicDevice* graphic = app->graphic();
-	graphic->getBackbufferSize(m_width, m_height);
+	_device->getBackbufferSize(m_width, m_height);
 }
 
-void InfoEditorLayer::onLayerDestroy()
+void InfoEditorLayer::onLayerDestroy(gfx::GraphicDevice* _device)
 {
 }
 

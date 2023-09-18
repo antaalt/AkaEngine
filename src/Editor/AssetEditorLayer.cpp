@@ -110,22 +110,22 @@ AssetEditorLayer::~AssetEditorLayer()
 	delete m_rootNode;
 }
 
-void AssetEditorLayer::onLayerCreate()
+void AssetEditorLayer::onLayerCreate(gfx::GraphicDevice* _device)
 {
 	for (AssetViewerBase* viewer : m_viewers)
-		viewer->create();
+		viewer->onCreate(_device);
 }
 
-void AssetEditorLayer::onLayerDestroy()
+void AssetEditorLayer::onLayerDestroy(gfx::GraphicDevice* _device)
 {
 	for (AssetViewerBase* viewer : m_viewers)
-		viewer->destroy();
+		viewer->onDestroy(_device);
 }
 
 void AssetEditorLayer::onLayerUpdate(Time deltaTime)
 {
 	for (AssetViewerBase* viewer : m_viewers)
-		viewer->update(deltaTime);
+		viewer->onUpdate(deltaTime);
 }
 
 void AssetEditorLayer::onLayerFrame()
@@ -404,6 +404,8 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 		}
 	}
 
+	for (AssetViewerBase* viewer : m_viewers)
+		viewer->onRender(Application::app()->graphic(), frame);
 	for (AssetViewerBase* viewer : m_viewers)
 		viewer->render(frame);
 }

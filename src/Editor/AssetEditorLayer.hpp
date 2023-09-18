@@ -23,8 +23,8 @@ public:
 	AssetEditorLayer();
 	~AssetEditorLayer();
 
-	void onLayerCreate() override;
-	void onLayerDestroy() override;
+	void onLayerCreate(gfx::GraphicDevice* _device) override;
+	void onLayerDestroy(gfx::GraphicDevice* _device) override;
 
 	void onLayerUpdate(Time deltaTime) override;
 	void onLayerFrame() override;

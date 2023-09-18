@@ -14,11 +14,11 @@ SceneEditorLayer::SceneEditorLayer()
 {
 }
 
-void SceneEditorLayer::onLayerCreate()
+void SceneEditorLayer::onLayerCreate(aka::gfx::GraphicDevice* _device)
 {
 }
 
-void SceneEditorLayer::onLayerDestroy()
+void SceneEditorLayer::onLayerDestroy(aka::gfx::GraphicDevice* _device)
 {
 }
 

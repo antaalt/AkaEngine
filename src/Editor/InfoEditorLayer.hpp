@@ -11,8 +11,8 @@ class InfoEditorLayer : public aka::Layer {
 public:
 	InfoEditorLayer();
 
-	void onLayerCreate() override;
-	void onLayerDestroy() override;
+	void onLayerCreate(aka::gfx::GraphicDevice* _device) override;
+	void onLayerDestroy(aka::gfx::GraphicDevice* _device) override;
 
 	void onLayerFrame() override;
 	void onLayerRender(aka::gfx::Frame* frame) override;

@@ -25,10 +25,11 @@ public:
 	AssetViewerBase() {}
 	virtual ~AssetViewerBase() {}
 
-	virtual void create(gfx::GraphicDevice* _device) {}
-	virtual void destroy(gfx::GraphicDevice* _device) {}
-	virtual void update(gfx::GraphicDevice* _device, Time deltaTime) {}
-	virtual void render(aka::gfx::Frame* frame) {}
+	virtual void onCreate(gfx::GraphicDevice* _device) {}
+	virtual void onDestroy(gfx::GraphicDevice* _device) {}
+	virtual void onUpdate(Time deltaTime) {}
+	virtual void onRender(gfx::GraphicDevice* _device, gfx::Frame* frame) {}
+	virtual void render(gfx::Frame* frame) {}
 };
 
 template <typename T>
@@ -38,7 +39,7 @@ public:
 	AssetViewer(const char* type);
 	virtual ~AssetViewer() {}
 
-	void render(aka::gfx::Frame* frame) override;
+	void render(aka::gfx::Frame* frame) override final;
 	// Set the resource for the viewer.
 	void set(ResourceID id, const ResourceHandle<T>& resource) { m_opened = true; m_id = id; m_resource = resource; onResourceChange(); }
 protected:
@@ -55,9 +56,10 @@ class MeshViewer : public AssetViewer<app::StaticMesh>
 {
 public:
 	MeshViewer();
-	void create(gfx::GraphicDevice* _device) override;
-	void destroy(gfx::GraphicDevice* _device) override;
-	void update(gfx::GraphicDevice* _device, aka::Time deltaTime) override;
+	void onCreate(gfx::GraphicDevice* _device) override;
+	void onDestroy(gfx::GraphicDevice* _device) override;
+	void onUpdate(aka::Time deltaTime) override;
+	void onRender(gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override;
 protected:
 	void draw(const aka::String& name, const StaticMesh& resource) override;
 	void onResourceChange() override;
@@ -74,6 +76,7 @@ private:
 	aka::gfx::DescriptorSetHandle m_imguiDescriptorSet;
 	aka::gfx::SamplerHandle m_imguiSampler;
 	aka::gfx::BufferHandle m_uniform;
+	aka::gfx::CommandList* m_commandList;
 	aka::CameraArcball m_arcball;
 	aka::CameraPerspective m_projection;
 	bool m_needCameraUpdate;
@@ -83,9 +86,10 @@ class TextureViewer : public AssetViewer<app::Texture>
 {
 public:
 	TextureViewer();
-	void create(gfx::GraphicDevice* _device) override;
-	void destroy(gfx::GraphicDevice* _device) override;
-	void update(gfx::GraphicDevice* _device, aka::Time deltaTime) override;
+	void onCreate(gfx::GraphicDevice* _device) override;
+	void onDestroy(gfx::GraphicDevice* _device) override;
+	void onUpdate(aka::Time deltaTime) override;
+	void onRender(gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override;
 protected:
 	void draw(const aka::String& name, const app::Texture& resource) override;
 	void onResourceChange() override;

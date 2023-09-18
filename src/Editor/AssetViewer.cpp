@@ -254,7 +254,7 @@ MeshViewer::MeshViewer() :
 {
 }
 
-void MeshViewer::create(gfx::GraphicDevice* _device)
+void MeshViewer::onCreate(gfx::GraphicDevice* _device)
 {
 	// TODO if no data, bug ?
 	std::vector<uint8_t> data(m_width * m_height * 4, 0xff);
@@ -323,9 +323,13 @@ void MeshViewer::create(gfx::GraphicDevice* _device)
 		desc.addSampledTexture2D(m_renderTarget, m_imguiSampler);
 		_device->update(m_imguiDescriptorSet, desc);
 	}
+	m_commandList = _device->acquireCommandList(gfx::QueueType::Graphic); // TODO use standard queue...
 }
-void MeshViewer::destroy(gfx::GraphicDevice* _device)
+void MeshViewer::onDestroy(gfx::GraphicDevice* _device)
 {
+	_device->release(m_commandList);
+	_device->destroy(m_pipeline);
+	_device->destroy(m_imguiSampler);
 	_device->destroy(m_imguiDescriptorSet);
 	_device->destroy(m_descriptorSet);
 	_device->destroy(m_uniform);
@@ -334,20 +338,26 @@ void MeshViewer::destroy(gfx::GraphicDevice* _device)
 	_device->destroy(m_depthTarget);
 	_device->destroy(m_renderPass);
 }
-void MeshViewer::update(gfx::GraphicDevice* _device, aka::Time deltaTime)
+void MeshViewer::onUpdate(aka::Time deltaTime)
+{
+	// This is run one frame late though...
+	if (m_needCameraUpdate)
+	{
+		m_arcball.update(deltaTime);
+	}
+}
+void MeshViewer::onRender(gfx::GraphicDevice* _device, aka::gfx::Frame* frame)
 {
 	// This is run one frame late though...
 	if (m_needCameraUpdate)
 	{
 		_device->wait();
-		m_arcball.update(deltaTime);
 		MeshViewerUBO ubo{};
 		ubo.model = mat4f::identity();
 		ubo.view = m_arcball.view();
 		ubo.proj = m_projection.projection();
-		ubo.normal = mat4f::transpose(mat4f::inverse(ubo.view*ubo.model));
+		ubo.normal = mat4f::transpose(mat4f::inverse(ubo.view * ubo.model));
 		_device->upload(m_uniform, &ubo, 0, sizeof(MeshViewerUBO));
-		m_needCameraUpdate = false;
 	}
 }
 void MeshViewer::onResourceChange()
@@ -359,26 +369,25 @@ void MeshViewer::drawMesh(const StaticMesh& mesh)
 {
 	gfx::GraphicDevice* device = Application::app()->graphic();
 
-	gfx::CommandList* cmd = device->acquireCommandList(gfx::QueueType::Graphic); // TODO use standard queue...
-	cmd->begin();
+	m_commandList->begin();
 
-	cmd->transition(m_renderTarget, gfx::ResourceAccessType::Resource, gfx::ResourceAccessType::Attachment);
-	cmd->beginRenderPass(m_renderPass, m_target, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f}, 1.f, 0 });
+	m_commandList->transition(m_renderTarget, gfx::ResourceAccessType::Resource, gfx::ResourceAccessType::Attachment);
+	m_commandList->beginRenderPass(m_renderPass, m_target, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f}, 1.f, 0 });
 
-	cmd->bindPipeline(m_pipeline);
-	cmd->bindIndexBuffer(mesh.gfxIndexBuffer, mesh.getIndexFormat());
-	cmd->bindVertexBuffer(mesh.gfxVertexBuffer, 0);
-	cmd->bindDescriptorSet(0, m_descriptorSet);
+	m_commandList->bindPipeline(m_pipeline);
+	m_commandList->bindIndexBuffer(mesh.gfxIndexBuffer, mesh.getIndexFormat());
+	m_commandList->bindVertexBuffer(mesh.gfxVertexBuffer, 0);
+	m_commandList->bindDescriptorSet(0, m_descriptorSet);
 
 	for (const auto& batch : mesh.batches)
 	{
 		// TODO material
-		cmd->drawIndexed(batch.indexCount, batch.indexOffset, batch.vertexOffset, 1);
+		m_commandList->drawIndexed(batch.indexCount, batch.indexOffset, batch.vertexOffset, 1);
 	}
-	cmd->endRenderPass();
+	m_commandList->endRenderPass();
 
-	cmd->end();
-	device->submit(cmd);
+	m_commandList->end();
+	device->submit(m_commandList);
 }
 
 void MeshViewer::draw(const String& name, const StaticMesh& mesh)
@@ -410,6 +419,10 @@ void MeshViewer::draw(const String& name, const StaticMesh& mesh)
 		if (ImGui::IsWindowHovered() && (ImGui::IsMouseDragging(0, 0.0f) || ImGui::IsMouseDragging(1, 0.0f) || !ImGui::IsAnyItemActive()))
 		{
 			m_needCameraUpdate = true;
+		}
+		else
+		{
+			m_needCameraUpdate = false;
 		}
 		drawMesh(mesh);
 		gfx::GraphicDevice* device = Application::app()->graphic();
@@ -506,7 +519,7 @@ TextureViewer::TextureViewer() :
 {
 }
 
-void TextureViewer::create(gfx::GraphicDevice* _device)
+void TextureViewer::onCreate(gfx::GraphicDevice* _device)
 {
 	gfx::ShaderBindingState state{};
 	state.add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment);
@@ -530,13 +543,13 @@ void TextureViewer::create(gfx::GraphicDevice* _device)
 	}
 }
 
-void TextureViewer::destroy(gfx::GraphicDevice* _device)
+void TextureViewer::onDestroy(gfx::GraphicDevice* _device)
 {
 	_device->destroy(m_descriptorSet);
 	_device->destroy(m_sampler);
 }
 
-void TextureViewer::update(gfx::GraphicDevice* _device, aka::Time deltaTime)
+void TextureViewer::onRender(gfx::GraphicDevice* _device, aka::gfx::Frame* frame)
 {
 	if (m_resource.isLoaded() && m_needUpdate)
 	{
@@ -546,6 +559,10 @@ void TextureViewer::update(gfx::GraphicDevice* _device, aka::Time deltaTime)
 		_device->update(m_descriptorSet, data);
 		m_needUpdate = false;
 	}
+}
+
+void TextureViewer::onUpdate(aka::Time deltaTime)
+{
 }
 
 };
