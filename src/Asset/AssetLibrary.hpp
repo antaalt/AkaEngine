@@ -94,7 +94,8 @@ struct AssetAddedEvent
 	AssetID asset;
 };
 
-class AssetLibrary {
+class AssetLibrary
+{
 public:
 	// parse library.json & store AssetInfo with AssetID
 	// Or parse whole folder looking for asset, with headers, we can id them
@@ -111,32 +112,57 @@ public:
 	template <typename T> ResourceHandle<T> get(ResourceID _resourceID);
 	template <typename T> ResourceHandle<T> load(ResourceID _resourceID, gfx::GraphicDevice* _device);
 	template <typename T> ResourceHandle<T> load(ResourceID _resourceID, const typename ArchiveTrait<T>::Archive& _archive, gfx::GraphicDevice* _device);
+	template <typename T> ArchiveSaveResult save(ResourceID _resourceID, gfx::GraphicDevice* _device);
+	template <typename T> void unload(ResourceID _resourceID, gfx::GraphicDevice* _device);
+	
+	// Update the library, handle streaming & unload useless assets
+	void update();
 
+	// Destroy all assets from library.
 	void destroy(gfx::GraphicDevice* _device);
 
 public:
+	// Iterate a resource
 	template<typename T> ResourceRange<T> getRange();
+	// Iterate assets
 	AssetRange getAssetRange() { return AssetRange(m_assets); }
 
+private:
+	template <typename T>
+	using ResourceMap = std::map<ResourceID, ResourceHandle<T>>;
+	template <typename T>
+	ResourceMap<T>& getResourceMap();
 private:
 	std::map<AssetID, AssetInfo> m_assets;
 	std::map<ResourceID, AssetID> m_resources;
 private:
-	std::map<ResourceID, ResourceHandle<StaticMesh>> m_staticMeshes;
-	std::map<ResourceID, ResourceHandle<Scene>> m_scenes;
-	std::map<ResourceID, ResourceHandle<Texture>> m_textures;
+	ResourceMap<StaticMesh> m_staticMeshes;
+	ResourceMap<Scene> m_scenes;
+	ResourceMap<Texture> m_textures;
 };
 
-template<> ResourceHandle<Scene> AssetLibrary::get(ResourceID _resourceID);
-template<> ResourceHandle<StaticMesh> AssetLibrary::get(ResourceID _resourceID);
-template<> ResourceHandle<Texture> AssetLibrary::get(ResourceID _resourceID);
-template<> ResourceHandle<Scene> AssetLibrary::load(ResourceID _resourceID, const ArchiveScene& _archive, gfx::GraphicDevice* _device);
-template<> ResourceHandle<StaticMesh> AssetLibrary::load(ResourceID _resourceID, const ArchiveStaticMesh& _archive, gfx::GraphicDevice* _device);
-template<> ResourceHandle<Texture> AssetLibrary::load(ResourceID _resourceID, const ArchiveImage& _archive, gfx::GraphicDevice* _device);
-template<> ResourceRange<Scene> AssetLibrary::getRange();
-template<> ResourceRange<StaticMesh> AssetLibrary::getRange();
-template<> ResourceRange<Texture> AssetLibrary::getRange();
+template<> AssetLibrary::ResourceMap<Scene>& AssetLibrary::getResourceMap();
+template<> AssetLibrary::ResourceMap<StaticMesh>& AssetLibrary::getResourceMap();
+template<> AssetLibrary::ResourceMap<Texture>& AssetLibrary::getResourceMap();
 
+template<typename T>
+ResourceRange<T> AssetLibrary::getRange()
+{ 
+	return ResourceRange<T>(getResourceMap<T>()); 
+}
+
+template<typename T>
+ResourceHandle<T> AssetLibrary::get(ResourceID _resourceID)
+{
+	static_assert(std::is_base_of<Resource, T>::value, "Invalid resource type");
+	ResourceMap<T>& map = getResourceMap<T>();
+	auto itResource = map.find(_resourceID);
+	if (itResource != map.end())
+	{
+		return itResource->second;
+	}
+	return ResourceHandle<T>::invalid();
+}
 
 template<typename T>
 inline ResourceHandle<T> AssetLibrary::load(ResourceID _resourceID, gfx::GraphicDevice* _device)
@@ -149,6 +175,80 @@ inline ResourceHandle<T> AssetLibrary::load(ResourceID _resourceID, gfx::Graphic
 	if (res != ArchiveLoadResult::Success)
 		return ResourceHandle<T>::invalid();
 	return load<T>(_resourceID, archive, _device);
+}
+
+template<typename T>
+inline ResourceHandle<T> AssetLibrary::load(ResourceID _resourceID, const typename ArchiveTrait<T>::Archive& _archive, gfx::GraphicDevice* _device)
+{
+	static_assert(std::is_base_of<Resource, T>::value, "Invalid resource type");
+	static_assert(std::is_base_of<Archive, ArchiveTrait<T>::Archive>::value, "Invalid archive type");
+	ResourceMap<T>& map = getResourceMap<T>();
+	// Check if resource already exist.
+	auto itResource = map.find(_resourceID);
+	if (itResource != map.end())
+	{
+		//Logger::warn("Trying to load a resource that is already loaded.");
+		return itResource->second;
+	}
+	// Get assetID corresponding to resource.
+	auto itAssetID = m_resources.find(_resourceID);
+	if (itAssetID == m_resources.end())
+	{
+		return ResourceHandle<T>::invalid();
+	}
+	AssetID assetID = itAssetID->second;
+	// Get assetInfo
+	auto itAssetInfo = m_assets.find(assetID);
+	if (itAssetInfo == m_assets.end())
+	{
+		return ResourceHandle<T>::invalid();
+	}
+	const AssetInfo& assetInfo = itAssetInfo->second;
+	String name = OS::File::basename(assetInfo.path.getRawPath());
+	auto it = map.insert(std::make_pair(_resourceID, ResourceHandle<T>(_resourceID, name)));
+	if (it.second)
+	{
+		AKA_ASSERT(_device != nullptr, "Invalid device");
+		ResourceHandle<T> handle = it.first->second;
+		handle.get().create(this, _device, _archive);
+		return handle;
+	}
+	else
+	{
+		// If we reach this code, it means the resource does not exist & could not be added.
+		AKA_UNREACHABLE;
+		return ResourceHandle<T>::invalid();
+	}
+}
+
+template<typename T>
+inline ArchiveSaveResult AssetLibrary::save(ResourceID _resourceID, gfx::GraphicDevice* _device)
+{
+	auto it = m_resources.find(_resourceID);
+	if (it == m_resources.end())
+		return ArchiveSaveResult::Failed;
+	ResourceMap<T>& map = getResourceMap<T>();
+	auto itResource = map.find(_resourceID);
+	if (itResource == map.end())
+		return ArchiveSaveResult::Failed;
+	if (!itResource->second.isLoaded())
+		return ArchiveSaveResult::Failed;
+	ArchiveTrait<T>::Archive archive(it->second);
+	itResource->second.get().save(this, _device, archive);
+	ArchiveSaveResult res = archive.save(ArchiveSaveContext(this));
+	return res;
+}
+
+template<typename T>
+inline void AssetLibrary::unload(ResourceID _resourceID, gfx::GraphicDevice* _device)
+{
+	ResourceMap<T>& map = getResourceMap<T>();
+	auto itResource = map.find(_resourceID);
+	if (itResource == map.end())
+		return;
+	if (!itResource->second.isLoaded())
+		return; // resource not loaded
+	itResource->second.destroy(this, _device);
 }
 
 }
