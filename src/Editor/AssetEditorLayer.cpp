@@ -6,7 +6,6 @@
 
 #include "../Asset/AssetLibrary.hpp"
 #include "../Importer/AssimpImporter.hpp"
-#include "AssetViewer.hpp"
 
 namespace app {
 
@@ -100,8 +99,6 @@ struct AssetNode
 
 AssetEditorLayer::AssetEditorLayer()
 {
-	m_viewers.append(&m_meshViewer);
-	m_viewers.append(&m_textureViewer);
 	m_rootNode = new AssetNode();
 }
 
@@ -112,20 +109,17 @@ AssetEditorLayer::~AssetEditorLayer()
 
 void AssetEditorLayer::onLayerCreate(gfx::GraphicDevice* _device)
 {
-	for (AssetViewerBase* viewer : m_viewers)
-		viewer->onCreate(_device);
+	m_viewerManager.onCreate(_device);
 }
 
 void AssetEditorLayer::onLayerDestroy(gfx::GraphicDevice* _device)
 {
-	for (AssetViewerBase* viewer : m_viewers)
-		viewer->onDestroy(_device);
+	m_viewerManager.onDestroy(_device);
 }
 
 void AssetEditorLayer::onLayerUpdate(Time deltaTime)
 {
-	for (AssetViewerBase* viewer : m_viewers)
-		viewer->onUpdate(deltaTime);
+	m_viewerManager.onUpdate(deltaTime);
 }
 
 void AssetEditorLayer::onLayerFrame()
@@ -147,7 +141,7 @@ static void PopStyleCompact()
 
 
 template <typename T>
-static void drawResource(const char* type, AssetLibrary* library, AssetViewer<T>* viewer)
+static void drawResource(const char* type, AssetLibrary* library, AssetViewerManager& viewerManager)
 {
 	Application* app = Application::app();
 
@@ -168,14 +162,14 @@ static void drawResource(const char* type, AssetLibrary* library, AssetViewer<T>
 	ImGui::TextDisabled("--");
 	if (open)
 	{
-		auto getStatusString = [](app::ResourceState state) -> const char* {
+		auto getStatusString = [](ResourceState state) -> const char* {
 			switch (state)
 			{
-			case app::ResourceState::Disk: return "Disk";
-			case app::ResourceState::Loaded: return "Loaded";
-			case app::ResourceState::Pending: return "Pending";
+			case ResourceState::Disk: return "Disk";
+			case ResourceState::Loaded: return "Loaded";
+			case ResourceState::Pending: return "Pending";
 			default:
-			case app::ResourceState::Unknown: return "Unknown";
+			case ResourceState::Unknown: return "Unknown";
 			}
 			};
 		for (std::pair<ResourceID, ResourceHandle<T>>& element : library->getRange<T>())
@@ -208,8 +202,8 @@ static void drawResource(const char* type, AssetLibrary* library, AssetViewer<T>
 		}
 		ImGui::TreePop();
 	}
-	if (opened && viewer != nullptr)
-		viewer->set(pair.first, pair.second);
+	if (opened)
+		viewerManager.open<T>(pair.first, pair.second);
 }
 
 void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
@@ -310,9 +304,9 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 			ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
 			ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthFixed);
 			ImGui::TableHeadersRow();
-			drawResource<Scene>("scenes", m_library, nullptr);
-			drawResource<StaticMesh>("meshes", m_library, &m_meshViewer);
-			drawResource<Texture>("textures", m_library, &m_textureViewer);
+			drawResource<Scene>("scenes", m_library, m_viewerManager);
+			drawResource<StaticMesh>("meshes", m_library, m_viewerManager);
+			drawResource<Texture>("textures", m_library, m_viewerManager);
 			ImGui::EndTable();
 		}
 	}
@@ -404,10 +398,8 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 		}
 	}
 
-	for (AssetViewerBase* viewer : m_viewers)
-		viewer->onRender(Application::app()->graphic(), frame);
-	for (AssetViewerBase* viewer : m_viewers)
-		viewer->render(frame);
+	m_viewerManager.onRender(Application::app()->graphic(), frame);
+	m_viewerManager.render(frame);
 }
 
 void AssetEditorLayer::onLayerPresent()

@@ -3,7 +3,7 @@
 #include <Aka/Core/Layer.h>
 #include <Aka/Graphic/GraphicDevice.h>
 
-#include "AssetViewer.hpp"
+#include "AssetViewer/AssetViewerManager.hpp"
 #include "../Asset/AssetLibrary.hpp"
 
 namespace app {
@@ -44,9 +44,7 @@ private:
 private:
 	AssetNode* m_rootNode;
 	bool m_assetUpdated = false;
-	MeshViewer m_meshViewer;
-	TextureViewer m_textureViewer;
-	Vector<AssetViewerBase*> m_viewers;
+	AssetViewerManager m_viewerManager;
 	AssetLibrary* m_library;
 };
 

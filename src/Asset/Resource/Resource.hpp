@@ -29,6 +29,8 @@ enum class ResourceType : uint32_t
 	Last = AudioSource,
 };
 
+const char* getResourceTypeString(ResourceType type);
+
 enum class ResourceState {
 	Unknown,
 	Disk,

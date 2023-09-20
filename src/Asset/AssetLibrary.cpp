@@ -183,7 +183,12 @@ AssetLibrary::ResourceMap<Texture>& AssetLibrary::getResourceMap()
 
 void AssetLibrary::update()
 {
+	EventDispatcher<AssetAddedEvent>::dispatch();
+	EventDispatcher<ResourceLoadedEvent>::dispatch();
 	// TODO check which assets should be unload by ref count & stream
+	// Also run the asset indexer here, browse all files & add them to asset library.
+	// Save library in temp ? or local temp folder.
+	// Each asset has 
 }
 
 void AssetLibrary::destroy(gfx::GraphicDevice* _device)

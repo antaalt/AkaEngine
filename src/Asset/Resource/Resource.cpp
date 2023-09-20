@@ -36,4 +36,25 @@ void Resource::destroy(AssetLibrary* _library, aka::gfx::GraphicDevice* _device)
 	m_state = ResourceState::Disk;
 }
 
+const char* getResourceTypeString(ResourceType type)
+{
+	switch (type)
+	{
+
+	case ResourceType::Scene:
+		return "Scene";
+	case ResourceType::StaticMesh:
+		return "StaticMesh";
+	case ResourceType::Material:
+		return "Material";
+	case ResourceType::Texture:
+		return "Texture";
+	case ResourceType::AudioSource:
+		return "AudioSource";
+	default:
+		AKA_ASSERT(false, "Invalid resource type");
+		return nullptr;
+	}
+}
+
 }

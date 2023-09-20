@@ -93,6 +93,10 @@ struct AssetAddedEvent
 {
 	AssetID asset;
 };
+struct ResourceLoadedEvent
+{
+	ResourceID resource;
+};
 
 class AssetLibrary
 {
@@ -211,6 +215,7 @@ inline ResourceHandle<T> AssetLibrary::load(ResourceID _resourceID, const typena
 		AKA_ASSERT(_device != nullptr, "Invalid device");
 		ResourceHandle<T> handle = it.first->second;
 		handle.get().create(this, _device, _archive);
+		EventDispatcher<ResourceLoadedEvent>::emit(ResourceLoadedEvent{ _resourceID });
 		return handle;
 	}
 	else

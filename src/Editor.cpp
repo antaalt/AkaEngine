@@ -488,7 +488,7 @@ void Editor::onUpdate(aka::Time time)
 		}
 	}
 	m_rotation += aka::anglef::radian(time.seconds());
-	EventDispatcher<app::AssetAddedEvent>::dispatch();
+	m_library.update();
 }
 
 

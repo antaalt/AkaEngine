@@ -6,7 +6,6 @@ const char* getAssetTypeString(AssetType type)
 {
 	switch (type)
 	{
-	default:
 	case app::AssetType::Unknown: return "Unknown";
 	case app::AssetType::Geometry: return "Geometry";
 	case app::AssetType::Material: return "Material";
@@ -17,6 +16,9 @@ const char* getAssetTypeString(AssetType type)
 	case app::AssetType::Font:return "Font";
 	case app::AssetType::Audio:return "Audio";
 	case app::AssetType::Scene:return "Scene";
+	default:
+		AKA_ASSERT(false, "Invalid asset type");
+		return nullptr;
 	}
 }
 }
