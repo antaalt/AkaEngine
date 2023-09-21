@@ -1,23 +1,24 @@
 #pragma once
 
 #include "AssetViewer.hpp"
-#include "../../Asset/Resource/StaticMesh.hpp"
+#include <Aka/Resource/Resource/StaticMesh.hpp>
+#include <Aka/Scene/Camera.h>
 
 namespace app {
-class StaticMeshViewer : public AssetViewer<StaticMesh>
+class StaticMeshViewer : public AssetViewer<aka::StaticMesh>
 {
 public:
-	StaticMeshViewer(ResourceID _resourceID, ResourceHandle<StaticMesh> _resourceHandle);
+	StaticMeshViewer(aka::ResourceID _resourceID, aka::ResourceHandle<aka::StaticMesh> _resourceHandle);
 	~StaticMeshViewer();
 
-	void onCreate(gfx::GraphicDevice* _device) override;
-	void onDestroy(gfx::GraphicDevice* _device) override;
+	void onCreate(aka::gfx::GraphicDevice* _device) override;
+	void onDestroy(aka::gfx::GraphicDevice* _device) override;
 	void onUpdate(aka::Time deltaTime) override;
-	void onRender(gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override;
-	void onLoad(const StaticMesh& mesh) override;
+	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override;
+	void onLoad(const aka::StaticMesh& mesh) override;
 protected:
-	void drawUIResource(const StaticMesh& mesh) override;
-	void renderMesh(gfx::Frame* frame, const StaticMesh& mesh);
+	void drawUIResource(const aka::StaticMesh& mesh) override;
+	void renderMesh(aka::gfx::Frame* frame, const aka::StaticMesh& mesh);
 private:
 	const uint32_t m_width = 512;
 	const uint32_t m_height = 512;

@@ -4,12 +4,13 @@
 #include <Aka/Scene/Camera.h>
 #include <Aka/Graphic/GraphicDevice.h>
 
-#include "Asset/Asset.hpp"
-#include "Asset/Archive/ArchiveStaticMesh.hpp"
-#include "Asset/Archive/ArchiveScene.hpp"
-#include "Asset/Resource/StaticMesh.hpp"
-#include "Asset/Resource/Scene.hpp"
-#include "Asset/AssetLibrary.hpp"
+#include <Aka/Resource/Asset.hpp>
+#include <Aka/Resource/Archive/ArchiveStaticMesh.hpp>
+#include <Aka/Resource/Archive/ArchiveScene.hpp>
+#include <Aka/Resource/Resource/StaticMesh.hpp>
+#include <Aka/Resource/Resource/Scene.hpp>
+#include <Aka/Resource/AssetLibrary.hpp>
+
 #include "Editor/AssetEditorLayer.hpp"
 
 using namespace aka;
@@ -46,7 +47,6 @@ private:
 	CameraPerspective m_cameraProjection = {};
 
 private:
-	app::AssetLibrary m_library;
-	app::ResourceID m_sceneID;
-	app::ResourceHandle<app::Scene> m_scene;
+	ResourceID m_sceneID;
+	ResourceHandle<SceneAvecUnNomChelou> m_scene;
 };

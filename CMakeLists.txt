@@ -11,23 +11,7 @@ add_executable(AkaEditor
 
  	"src/Renderer/Renderer.hpp" 
 
- 	"src/Importer/Importer.hpp"
 	"src/Importer/AssimpImporter.cpp"
-
- 	"src/Asset/Asset.cpp"
-	"src/Asset/AssetLibrary.cpp"
-	"src/Asset/AssetPath.cpp"
-	"src/Asset/Archive/ArchiveGeometry.cpp" 
-	"src/Asset/Archive/ArchiveMaterial.cpp" 
-	"src/Asset/Archive/ArchiveBatch.cpp" 
-	"src/Asset/Archive/ArchiveStaticMesh.cpp"
-	"src/Asset/Archive/ArchiveImage.cpp"
-	"src/Asset/Archive/ArchiveScene.cpp" 
-	"src/Asset/Archive/Archive.cpp"
-	"src/Asset/Resource/Resource.cpp"
-	"src/Asset/Resource/Scene.cpp"
-	"src/Asset/Resource/StaticMesh.cpp"
-	"src/Asset/Resource/Texture.cpp"
 	
 	"src/Editor/SceneEditorLayer.cpp" 
 	"src/Editor/AssetEditorLayer.cpp" 

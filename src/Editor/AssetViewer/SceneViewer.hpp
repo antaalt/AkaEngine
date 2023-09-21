@@ -1,22 +1,22 @@
 #pragma once
 
+#include <Aka/Resource/Resource/Scene.hpp>
 #include "AssetViewer.hpp"
-#include "../../Asset/Resource/Scene.hpp"
 
 namespace app {
 
-class SceneViewer : public AssetViewer<Scene>
+class SceneViewer : public AssetViewer<aka::SceneAvecUnNomChelou>
 {
 public:
-	SceneViewer(ResourceID _resourceID, ResourceHandle<Scene> _resourceHandle);
+	SceneViewer(aka::ResourceID _resourceID, aka::ResourceHandle<aka::SceneAvecUnNomChelou> _resourceHandle);
 	~SceneViewer() {}
 
-	void onCreate(gfx::GraphicDevice* _device) override {}
-	void onDestroy(gfx::GraphicDevice* _device) override {}
+	void onCreate(aka::gfx::GraphicDevice* _device) override {}
+	void onDestroy(aka::gfx::GraphicDevice* _device) override {}
 	void onUpdate(aka::Time deltaTime) override {}
-	void onRender(gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override {}
+	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override {}
 protected:
-	void drawUIResource(const Scene& scene) override {}
+	void drawUIResource(const aka::SceneAvecUnNomChelou& scene) override {}
 private:
 };
 

@@ -2,12 +2,13 @@
 
 #include <Aka/Graphic/GraphicDevice.h>
 
-#include "../../Asset/Resource/Resource.hpp"
-#include "../../Asset/AssetLibrary.hpp"
+#include <Aka/Resource/Resource/Resource.hpp>
+#include <Aka/Resource/AssetLibrary.hpp>
+#include <Aka/Core/Event.h>
 
 namespace app {
 
-class AssetViewerBase : EventListener<ResourceLoadedEvent>
+class AssetViewerBase : aka::EventListener<aka::ResourceLoadedEvent>
 {
 public:
 	AssetViewerBase() {}
@@ -17,7 +18,7 @@ public:
 	void destroy(aka::gfx::GraphicDevice* _device);
 	void update(aka::Time _deltaTime);
 	void render(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* _frame);
-	void onReceive(const ResourceLoadedEvent& event);
+	void onReceive(const aka::ResourceLoadedEvent& event);
 protected:
 	virtual void onCreate(aka::gfx::GraphicDevice * _device) {}
 	virtual void onDestroy(aka::gfx::GraphicDevice* _device) {}
@@ -26,9 +27,9 @@ protected:
 	virtual void onLoad() = 0;
 public:
 	virtual const char* getResourceName() const = 0;
-	virtual ResourceType getResourceType() const = 0;
-	virtual ResourceID getResourceID() const = 0;
-	virtual const Resource* getResource() const = 0;
+	virtual aka::ResourceType getResourceType() const = 0;
+	virtual aka::ResourceID getResourceID() const = 0;
+	virtual const aka::Resource* getResource() const = 0;
 	virtual bool isLoaded() const = 0;
 	virtual void drawUI() = 0;
 	void drawUIMissingResource();
@@ -41,14 +42,14 @@ template <typename T>
 class AssetViewer : public AssetViewerBase
 {
 public:
-	AssetViewer(ResourceType _type, ResourceID _resourceID, ResourceHandle<T> _resource);
+	AssetViewer(aka::ResourceType _type, aka::ResourceID _resourceID, aka::ResourceHandle<T> _resource);
 	virtual ~AssetViewer() {}
 
 protected:
 	const char* getResourceName() const override final;
-	ResourceType getResourceType() const override final;
-	ResourceID getResourceID() const override final;
-	const Resource* getResource() const override final;
+	aka::ResourceType getResourceType() const override final;
+	aka::ResourceID getResourceID() const override final;
+	const aka::Resource* getResource() const override final;
 	bool isLoaded() const override final;
 protected:
 	void drawUI() override final;
@@ -57,14 +58,14 @@ protected:
 	void onLoad() override final;
 	virtual void onLoad(const T& res) {};
 protected:
-	ResourceType m_type;
-	ResourceID m_id;
-	ResourceHandle<T> m_resource;
+	aka::ResourceType m_type;
+	aka::ResourceID m_id;
+	aka::ResourceHandle<T> m_resource;
 };
 
 
 template<typename T>
-inline AssetViewer<T>::AssetViewer(ResourceType _type, ResourceID _resourceID, ResourceHandle<T> _resource) :
+inline AssetViewer<T>::AssetViewer(aka::ResourceType _type, aka::ResourceID _resourceID, aka::ResourceHandle<T> _resource) :
 	m_type(_type),
 	m_id(_resourceID),
 	m_resource(_resource)
@@ -80,19 +81,19 @@ inline const char* AssetViewer<T>::getResourceName() const
 }
 
 template<typename T>
-inline ResourceType AssetViewer<T>::getResourceType() const
+inline aka::ResourceType AssetViewer<T>::getResourceType() const
 {
 	return m_type;
 }
 
 template<typename T>
-inline ResourceID AssetViewer<T>::getResourceID() const
+inline aka::ResourceID AssetViewer<T>::getResourceID() const
 {
 	return m_id;
 }
 
 template<typename T>
-inline const Resource* AssetViewer<T>::getResource() const
+inline const aka::Resource* AssetViewer<T>::getResource() const
 {
 	if (m_resource.isLoaded())
 		return &m_resource.get();
@@ -122,7 +123,7 @@ template<typename T>
 inline void AssetViewer<T>::onLoad()
 {
 	AKA_ASSERT(m_loaded == false, "Already called \"onLoad\"");
-	AKA_ASSERT(m_resource.getState() == ResourceState::Loaded, "Resource not loaded when calling \"onLoad\"");
+	AKA_ASSERT(m_resource.getState() == aka::ResourceState::Loaded, "Resource not loaded when calling \"onLoad\"");
 	onLoad(m_resource.get());
 }
 

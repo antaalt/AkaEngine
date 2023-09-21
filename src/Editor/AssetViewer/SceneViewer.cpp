@@ -4,7 +4,10 @@
 #include "SceneViewer.hpp"
 
 namespace app {
-app::SceneViewer::SceneViewer(ResourceID _resourceID, ResourceHandle<Scene> _resourceHandle) :
+
+using namespace aka;
+
+SceneViewer::SceneViewer(ResourceID _resourceID, ResourceHandle<SceneAvecUnNomChelou> _resourceHandle) :
 	AssetViewer(ResourceType::Scene, _resourceID, _resourceHandle)
 {
 }

@@ -1,10 +1,9 @@
 #include "SceneEditorLayer.hpp"
 
 #include <Aka/Layer/ImGuiLayer.h>
-
+#include <Aka/Scene/Entity.h>
 #include <Aka/Scene/World.h>
-
-#include "../Asset/AssetLibrary.hpp"
+#include <Aka/Resource/AssetLibrary.hpp>
 
 namespace app {
 
@@ -33,8 +32,8 @@ struct ComponentNode {
 	static bool draw(T& component) { Logger::error("Trying to draw an undefined component"); return false; }
 };
 
-template <> const char* ComponentNode<aka::TagComponent>::name() { return "Tag"; }
-template <> bool ComponentNode<aka::TagComponent>::draw(aka::TagComponent& tag)
+template <> const char* ComponentNode<TagComponent>::name() { return "Tag"; }
+template <> bool ComponentNode<TagComponent>::draw(TagComponent& tag)
 {
 	char buffer[256];
 	String::copy(buffer, 256, tag.name.cstr());
@@ -55,8 +54,8 @@ template <> bool ComponentNode<app::Hierarchy3DComponent>::draw(app::Hierarchy3D
 	}
 	else
 	{
-		if (hierarchy.parent.has<aka::TagComponent>())
-			ImGui::Text("Parent : %s", hierarchy.parent.get<aka::TagComponent>().name.cstr());
+		if (hierarchy.parent.has<TagComponent>())
+			ImGui::Text("Parent : %s", hierarchy.parent.get<TagComponent>().name.cstr());
 		else
 			ImGui::Text("Parent : Unknown");
 	}
@@ -195,13 +194,13 @@ void SceneEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 				}
 			};
 
-		app::Scene& scene = m_scene->get();
+		SceneAvecUnNomChelou& scene = m_scene->get();
 		static entt::entity m_currentEntity;
 		static char m_newEntityName[256];
 		if (ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_MenuBar))
 		{
 			// --- Menu
-			Entity e = Entity(m_currentEntity, &scene.world);
+			Entity e = Entity(m_currentEntity, &scene.getWorld());
 			if (ImGui::BeginMenuBar())
 			{
 				if (ImGui::BeginMenu("World"))
@@ -372,10 +371,10 @@ void SceneEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 			// listen to event ?
 			std::map<entt::entity, std::vector<entt::entity>> childrens;
 			std::vector<entt::entity> roots;
-			scene.world.registry().each([&](entt::entity entity) {
-				if (scene.world.registry().has<app::Hierarchy3DComponent>(entity))
+			scene.getWorld().registry().each([&](entt::entity entity) {
+				if (scene.getWorld().registry().has<Hierarchy3DComponent>(entity))
 				{
-					const app::Hierarchy3DComponent& h = scene.world.registry().get<app::Hierarchy3DComponent>(entity);
+					const app::Hierarchy3DComponent& h = scene.getWorld().registry().get<Hierarchy3DComponent>(entity);
 					if (!h.parent.valid())
 						roots.push_back(entity);
 					else
@@ -388,7 +387,7 @@ void SceneEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 			if (ImGui::BeginChild("##list", ImVec2(0, 200), true))
 			{
 				for (entt::entity e : roots)
-					recurse(scene.world, e, childrens, m_currentEntity);
+					recurse(scene.getWorld(), e, childrens, m_currentEntity);
 			}
 			ImGui::EndChild();
 
@@ -397,25 +396,25 @@ void SceneEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 			ImGui::SameLine();
 			if (ImGui::Button("Create entity"))
 			{
-				m_currentEntity = scene.world.createEntity(m_newEntityName).handle();
+				m_currentEntity = scene.getWorld().createEntity(m_newEntityName).handle();
 			}
 			ImGui::Separator();
 
 			// --- Entity info
 			ImGui::TextColored(ImGuiLayer::Color::red, "Entity");
-			if (m_currentEntity != entt::null && scene.world.registry().valid(m_currentEntity))
+			if (m_currentEntity != entt::null && scene.getWorld().registry().valid(m_currentEntity))
 			{
-				if (scene.world.registry().orphan(m_currentEntity))
+				if (scene.getWorld().registry().orphan(m_currentEntity))
 				{
 					ImGui::Text("Add a component to the entity.");
 				}
 				else
 				{
 					// Draw every component.
-					component<aka::TagComponent>(scene.world, m_currentEntity);
-					component<app::Transform3DComponent>(scene.world, m_currentEntity);
-					component<app::Hierarchy3DComponent>(scene.world, m_currentEntity);
-					component<app::StaticMeshComponent>(scene.world, m_currentEntity);
+					component<TagComponent>(scene.getWorld(), m_currentEntity);
+					component<Transform3DComponent>(scene.getWorld(), m_currentEntity);
+					component<Hierarchy3DComponent>(scene.getWorld(), m_currentEntity);
+					component<StaticMeshComponent>(scene.getWorld(), m_currentEntity);
 				}
 			}
 		}
@@ -431,7 +430,7 @@ void SceneEditorLayer::onLayerResize(uint32_t width, uint32_t height)
 {
 }
 
-void SceneEditorLayer::setCurrentScene(ResourceHandle<Scene>* _scene)
+void SceneEditorLayer::setCurrentScene(ResourceHandle<SceneAvecUnNomChelou>* _scene)
 {
 	m_scene = _scene;
 }

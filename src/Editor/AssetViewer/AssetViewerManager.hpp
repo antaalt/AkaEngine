@@ -22,16 +22,16 @@ public:
 	void render(aka::gfx::Frame* frame);
 
 	template <typename T>
-	void open(ResourceID _resourceID, ResourceHandle<T>& _resourceHandle);
+	void open(aka::ResourceID _resourceID, aka::ResourceHandle<T>& _resourceHandle);
 private:
-	Vector<AssetViewerBase*> m_assetViewersToCreate;
-	Vector<AssetViewerBase*> m_assetViewersToDestroy;
-	Vector<AssetViewerBase*> m_assetViewers;
+	aka::Vector<AssetViewerBase*> m_assetViewersToCreate;
+	aka::Vector<AssetViewerBase*> m_assetViewersToDestroy;
+	aka::Vector<AssetViewerBase*> m_assetViewers;
 };
 
-template<> void AssetViewerManager::open(ResourceID _resourceID, ResourceHandle<Scene>& _resourceHandle);
-template<> void AssetViewerManager::open(ResourceID _resourceID, ResourceHandle<Texture>& _resourceHandle);
-template<> void AssetViewerManager::open(ResourceID _resourceID, ResourceHandle<StaticMesh>& _resourceHandle);
+template<> void AssetViewerManager::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::SceneAvecUnNomChelou>& _resourceHandle);
+template<> void AssetViewerManager::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::Texture>& _resourceHandle);
+template<> void AssetViewerManager::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::StaticMesh>& _resourceHandle);
 
 
 };

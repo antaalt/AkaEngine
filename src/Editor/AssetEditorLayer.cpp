@@ -1,10 +1,10 @@
 #include "AssetEditorLayer.hpp"
 
 #include <Aka/Layer/ImGuiLayer.h>
-
 #include <Aka/Scene/World.h>
+#include <Aka/OS/OS.h>
+#include <Aka/Resource/Importer/Importer.hpp>
 
-#include "../Asset/AssetLibrary.hpp"
 #include "../Importer/AssimpImporter.hpp"
 
 namespace app {
@@ -60,7 +60,7 @@ struct AssetNode
 					{
 					case AssetType::Scene:
 						EventDispatcher<SceneSwitchEvent>::trigger(SceneSwitchEvent{
-							library->load<Scene>(library->getResourceID(node.id), Application::app()->graphic())
+							library->load<SceneAvecUnNomChelou>(library->getResourceID(node.id), Application::app()->graphic())
 							});
 						break;
 					case AssetType::StaticMesh:
@@ -304,7 +304,7 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 			ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
 			ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthFixed);
 			ImGui::TableHeadersRow();
-			drawResource<Scene>("scenes", m_library, m_viewerManager);
+			drawResource<SceneAvecUnNomChelou>("scenes", m_library, m_viewerManager);
 			drawResource<StaticMesh>("meshes", m_library, m_viewerManager);
 			drawResource<Texture>("textures", m_library, m_viewerManager);
 			ImGui::EndTable();

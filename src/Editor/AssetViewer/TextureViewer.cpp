@@ -4,6 +4,7 @@
 
 namespace app {
 
+using namespace aka;
 
 const char* toString(gfx::TextureFormat format)
 {

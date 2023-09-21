@@ -3,11 +3,9 @@
 #include <Aka/Core/Layer.h>
 #include <Aka/Graphic/GraphicDevice.h>
 
-#include "../Asset/Resource/Resource.hpp"
+#include <Aka/Resource/Resource/Resource.hpp>
 
 namespace app {
-
-class Scene;
 
 class SceneEditorLayer : public aka::Layer {
 public:
@@ -21,9 +19,9 @@ public:
 	void onLayerPresent() override;
 	void onLayerResize(uint32_t width, uint32_t height) override;
 public:
-	void setCurrentScene(ResourceHandle<Scene>* _scene);
+	void setCurrentScene(aka::ResourceHandle<aka::SceneAvecUnNomChelou>* _scene);
 private:
-	ResourceHandle<Scene>* m_scene;
+	aka::ResourceHandle<aka::SceneAvecUnNomChelou>* m_scene;
 };
 
 };

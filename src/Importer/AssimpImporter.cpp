@@ -8,8 +8,8 @@
 
 #include <Aka/Aka.h>
 
-#include "../Asset/AssetLibrary.hpp"
-#include "../Asset/Archive/ArchiveScene.hpp"
+#include <Aka/Resource/AssetLibrary.hpp>
+#include <Aka/Resource/Archive/ArchiveScene.hpp>
 
 namespace app {
 
@@ -43,7 +43,7 @@ ArchiveSceneEntity createEntity(const char* name)
 	entity.name = name;
 	entity.components = SceneComponentMask::None;
 	for (uint32_t i = 0; i < EnumCount<SceneComponent>(); i++)
-		entity.id[i] = InvalidArchiveSceneID;
+		entity.id[i] = ArchiveSceneID::Invalid;
 	return entity;
 }
 void addComponent(ArchiveSceneEntity& entity, SceneComponent _component, ArchiveSceneID id)
@@ -173,7 +173,7 @@ void AssimpLocalImporter::process()
 {
 	ArchiveSceneEntity root = createEntity("ROOT");
 	addComponent(root, SceneComponent::Transform, addTransform(m_scene, mat4f::identity()));
-	addComponent(root, SceneComponent::Hierarchy, InvalidArchiveSceneID); // No parent here.
+	addComponent(root, SceneComponent::Hierarchy, ArchiveSceneID::Invalid); // No parent here.
 
 	ArchiveSceneID rootID = addEntity(m_scene, root);
 	processNode(rootID, m_assimpScene->mRootNode);
@@ -201,7 +201,7 @@ void AssimpLocalImporter::process()
 
 mat4f getParentTransform(ArchiveScene& _scene, ArchiveSceneID _parentID)
 {
-	if (_parentID == InvalidArchiveSceneID)
+	if (_parentID == ArchiveSceneID::Invalid)
 	{
 		return mat4f::identity();
 	}
@@ -224,7 +224,7 @@ void AssimpLocalImporter::processNode(ArchiveSceneID _parent, aiNode* _node)
 	);
 	// Inverse computed at runtime instead.
 	/*mat4f inverseParentTransform;
-	if (_parent != InvalidArchiveSceneID)
+	if (_parent != ArchiveSceneID::Invalid)
 	{
 		ArchiveSceneID transformID = m_scene.entities[toIntegral(_parent)].id[EnumToIndex(SceneComponent::Transform)];
 		mat4f parentTransform = m_scene.transforms[toIntegral(transformID)].matrix;

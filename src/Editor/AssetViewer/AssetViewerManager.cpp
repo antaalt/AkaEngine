@@ -4,6 +4,9 @@
 #include <Aka/Layer/ImGuiLayer.h>
 
 namespace app {
+
+using namespace aka;
+
 AssetViewerManager::~AssetViewerManager()
 {
 	for (AssetViewerBase*& viewer : m_assetViewers)
@@ -140,7 +143,7 @@ void AssetViewerManager::render(aka::gfx::Frame* frame)
 }
 
 template<> 
-void AssetViewerManager::open(ResourceID _resourceID, ResourceHandle<Scene>& _resourceHandle)
+void AssetViewerManager::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::SceneAvecUnNomChelou>& _resourceHandle)
 {
 	for (AssetViewerBase*& viewer : m_assetViewers)
 	{
@@ -154,7 +157,7 @@ void AssetViewerManager::open(ResourceID _resourceID, ResourceHandle<Scene>& _re
 }
 
 template<>
-void AssetViewerManager::open(ResourceID _resourceID, ResourceHandle<StaticMesh>& _resourceHandle)
+void AssetViewerManager::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::StaticMesh>& _resourceHandle)
 {
 	for (AssetViewerBase*& viewer : m_assetViewers)
 	{
@@ -168,7 +171,7 @@ void AssetViewerManager::open(ResourceID _resourceID, ResourceHandle<StaticMesh>
 }
 
 template<>
-void AssetViewerManager::open(ResourceID _resourceID, ResourceHandle<Texture>& _resourceHandle)
+void AssetViewerManager::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::Texture>& _resourceHandle)
 {
 	for (AssetViewerBase*& viewer : m_assetViewers)
 	{

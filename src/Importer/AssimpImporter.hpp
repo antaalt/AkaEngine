@@ -1,12 +1,13 @@
 #pragma once
-#include "Importer.hpp"
+
+#include <Aka/Resource/Importer/Importer.hpp>
 
 namespace app {
 
-class AssimpImporter : public Importer {
+class AssimpImporter : public aka::Importer {
 public:
-	ImportResult import(AssetLibrary * _library, const aka::Path & path) override;
-	ImportResult import(AssetLibrary * _library, const aka::Blob & blob) override;
+	aka::ImportResult import(aka::AssetLibrary * _library, const aka::Path & path) override;
+	aka::ImportResult import(aka::AssetLibrary * _library, const aka::Blob & blob) override;
 };
 
 };

@@ -1,14 +1,13 @@
 #include "AssetViewer.hpp"
 
-#include "../../Asset/Resource/Texture.hpp"
-#include "../../Asset/Resource/StaticMesh.hpp"
-
+#include <Aka/Resource/Resource/Texture.hpp>
+#include <Aka/Resource/Resource/StaticMesh.hpp>
 #include <Aka/Layer/ImGuiLayer.h>
 
 namespace app {
 
-template class AssetViewer<Texture>;
-template class AssetViewer<StaticMesh>;
+template class AssetViewer<aka::Texture>;
+template class AssetViewer<aka::StaticMesh>;
 
 void AssetViewerBase::drawUIMissingResource()
 {
@@ -44,7 +43,7 @@ void AssetViewerBase::render(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* 
 		onRender(_device, _frame);
 }
 
-void AssetViewerBase::onReceive(const ResourceLoadedEvent& event)
+void AssetViewerBase::onReceive(const aka::ResourceLoadedEvent& event)
 {
 	if (event.resource == getResourceID())
 	{

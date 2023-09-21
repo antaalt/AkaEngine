@@ -3,6 +3,8 @@
 #include <Aka/Core/Container/String.h>
 #include <Aka/OS/OS.h>
 #include <Aka/Layer/ImGuiLayer.h>
+#include <Aka/Scene/World.h>
+#include <Aka/Scene/Entity.h>
 
 #include <imgui.h>
 #include <imguizmo.h>
@@ -15,6 +17,46 @@
 #include "Editor/InfoEditorLayer.hpp"
 
 using namespace aka;
+
+/*struct Entity {
+	entt::entity entity;
+};*/
+
+// ------------------------------------
+// Systems
+// ------------------------------------
+/*struct System {
+
+};
+
+// ------------------------------------
+// Components
+// ------------------------------------
+/*struct TagComponent
+{
+	String name;
+};
+
+struct Transform3DComponent {
+	mat4f transform;
+};
+
+struct Hierarchy3DComponent {
+	Entity parent;
+	mat4f inverseTransform;
+};*/
+
+// ------------------------------------
+// World
+// ------------------------------------
+/*struct World {
+	// Each scene has a single main camera
+
+	std::vector<Scene> scenes;
+	std::vector<System*> systems; // Run systems for whole world ? We might want to ignore some scene though...
+
+	entt::dispatcher dispatcher;
+};*/
 
 // ------------ RENDERER ----------------
 struct CameraUniformBuffer
@@ -75,10 +117,10 @@ static const float s_vertices[s_vertexCount * 5] = {
 	 1.0f, -1.0f,  1.0f,	1.f, 1.f,
 };
 
-std::vector<app::Vertex> getSphereVertices(float radius, uint32_t segmentCount, uint32_t ringCount)
+std::vector<Vertex> getSphereVertices(float radius, uint32_t segmentCount, uint32_t ringCount)
 {
 	// http://www.songho.ca/opengl/gl_sphere.html
-	std::vector<app::Vertex> vertices;
+	std::vector<Vertex> vertices;
 
 	float length = 1.f / radius;
 	anglef sectorStep = 2.f * pi<float> / (float)ringCount;
@@ -96,7 +138,7 @@ std::vector<app::Vertex> getSphereVertices(float radius, uint32_t segmentCount, 
 		// the first and last vertices have same position and normal, but different uv
 		for (uint32_t j = 0; j <= ringCount; ++j)
 		{
-			app::Vertex v;
+			Vertex v;
 			ringAngle = (float)j * sectorStep; // starting from 0 to 2pi
 
 			v.position.x = xy * cos(ringAngle); // r * cos(u) * cos(v)
@@ -151,7 +193,7 @@ Editor::Editor()
 	ImGuiLayer* imgui = getRoot().addLayer<ImGuiLayer>();
 	// Editor are child of imgui to support frame
 	imgui->addLayer<app::SceneEditorLayer>()->setCurrentScene(&m_scene);
-	imgui->addLayer<app::AssetEditorLayer>()->setLibrary(&m_library);
+	imgui->addLayer<app::AssetEditorLayer>()->setLibrary(assets());
 	imgui->addLayer<app::InfoEditorLayer>();
 }
 
@@ -321,10 +363,10 @@ void Editor::onCreate(int argc, char* argv[])
 					SceneComponentMask::Transform | SceneComponentMask::Hierarchy | SceneComponentMask::StaticMesh,
 					{ 
 						ArchiveSceneID(0), // t
-						InvalidArchiveSceneID, // h
+						ArchiveSceneID::Invalid, // h
 						ArchiveSceneID(0), // sm
-						InvalidArchiveSceneID, //pl
-						InvalidArchiveSceneID // sl
+						ArchiveSceneID::Invalid, //pl
+						ArchiveSceneID::Invalid // sl
 					}
 					});
 				scene.entities.append(ArchiveSceneEntity{
@@ -332,10 +374,10 @@ void Editor::onCreate(int argc, char* argv[])
 					SceneComponentMask::Transform | SceneComponentMask::Hierarchy | SceneComponentMask::StaticMesh,
 					{
 						ArchiveSceneID(1), // t
-						InvalidArchiveSceneID, // h
+						ArchiveSceneID::Invalid, // h
 						ArchiveSceneID(0), // sm
-						InvalidArchiveSceneID, //pl
-						InvalidArchiveSceneID // sl
+						ArchiveSceneID::Invalid, //pl
+						ArchiveSceneID::Invalid // sl
 					}
 					});
 				scene.entities.append(ArchiveSceneEntity{
@@ -343,10 +385,10 @@ void Editor::onCreate(int argc, char* argv[])
 					SceneComponentMask::Transform | SceneComponentMask::Hierarchy | SceneComponentMask::StaticMesh,
 					{
 						ArchiveSceneID(2), // t
-						InvalidArchiveSceneID, // h
+						ArchiveSceneID::Invalid, // h
 						ArchiveSceneID(1), // sm
-						InvalidArchiveSceneID, //pl
-						InvalidArchiveSceneID // sl
+						ArchiveSceneID::Invalid, //pl
+						ArchiveSceneID::Invalid // sl
 					}
 					});
 				scene.entities.append(ArchiveSceneEntity{
@@ -354,10 +396,10 @@ void Editor::onCreate(int argc, char* argv[])
 					SceneComponentMask::Transform | SceneComponentMask::Hierarchy | SceneComponentMask::StaticMesh,
 					{
 						ArchiveSceneID(3), // t
-						InvalidArchiveSceneID, // h
+						ArchiveSceneID::Invalid, // h
 						ArchiveSceneID(1), // sm
-						InvalidArchiveSceneID, //pl
-						InvalidArchiveSceneID // sl
+						ArchiveSceneID::Invalid, //pl
+						ArchiveSceneID::Invalid // sl
 					}
 					});
 				scene.entities.append(ArchiveSceneEntity{
@@ -367,8 +409,8 @@ void Editor::onCreate(int argc, char* argv[])
 						ArchiveSceneID(4), // t
 						ArchiveSceneID(0), // h
 						ArchiveSceneID(1), // sm
-						InvalidArchiveSceneID, //pl
-						InvalidArchiveSceneID // sl
+						ArchiveSceneID::Invalid, //pl
+						ArchiveSceneID::Invalid // sl
 					}
 					});
 				for (ArchiveSceneEntity& entity : scene.entities)
@@ -454,7 +496,7 @@ void Editor::onCreate(int argc, char* argv[])
 		Logger::info("Loading resource time : ", watch.elapsed(), "ms");
 #endif
 	}*/
-	m_library.parse();
+	assets()->parse();
 }
 
 void Editor::onDestroy()
@@ -465,8 +507,6 @@ void Editor::onDestroy()
 	device->destroy(m_renderPipeline);
 	device->destroy(m_renderPass);
 	device->destroy(m_backbuffer);
-
-	m_library.destroy(device);
 }
 
 void Editor::onFixedUpdate(aka::Time time)
@@ -488,7 +528,6 @@ void Editor::onUpdate(aka::Time time)
 		}
 	}
 	m_rotation += aka::anglef::radian(time.seconds());
-	m_library.update();
 }
 
 
@@ -515,12 +554,12 @@ void Editor::onRender(gfx::Frame* _frame)
 	cmd->beginRenderPass(m_renderPass, backbuffer, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f }, 1.f, 0 });
 	if (m_scene.isLoaded())
 	{
-		app::Scene& scene = m_scene.get();
-		scene.world.registry().view<app::Transform3DComponent, app::StaticMeshComponent>().each([&](entt::entity entity, app::Transform3DComponent& transformComp, app::StaticMeshComponent& meshComp) {
+		SceneAvecUnNomChelou& scene = m_scene.get();
+		scene.getWorld().registry().view<Transform3DComponent, StaticMeshComponent>().each([&](entt::entity entity, Transform3DComponent& transformComp, StaticMeshComponent& meshComp) {
 
 			if (meshComp.mesh.isLoaded())
 			{
-				app::StaticMesh& mesh = meshComp.mesh.get();
+				StaticMesh& mesh = meshComp.mesh.get();
 				//Logger::info("Rendering", mesh.getName());
 				cmd->bindVertexBuffer(mesh.gfxVertexBuffer, 0);
 				cmd->bindIndexBuffer(mesh.gfxIndexBuffer, mesh.getIndexFormat(), 0);
@@ -549,7 +588,7 @@ void Editor::onReceive(const app::SceneSwitchEvent& event)
 	m_scene = event.scene;
 	if (event.scene.isLoaded())
 	{
-		const app::Scene& scene = event.scene.get();
+		const SceneAvecUnNomChelou& scene = event.scene.get();
 		m_sceneID = scene.getID();
 		m_cameraController.set(scene.getBounds());
 		m_dirty = true;
@@ -577,7 +616,7 @@ void Editor::createRenderPass()
 		m_program,
 		gfx::PrimitiveType::Triangles,
 		device->get(m_renderPass)->state,
-		app::Vertex::getState(),
+		Vertex::getState(),
 		gfx::ViewportState{}.size(width(), height()),
 		gfx::DepthStateLessEqual,
 		gfx::StencilStateDisabled,
