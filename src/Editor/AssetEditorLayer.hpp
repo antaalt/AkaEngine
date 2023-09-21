@@ -12,7 +12,7 @@ namespace app {
 
 struct SceneSwitchEvent
 {
-	aka::ResourceHandle<aka::SceneAvecUnNomChelou> scene;
+	aka::ResourceHandle<aka::Scene> scene;
 };
 
 struct AssetNode;

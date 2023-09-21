@@ -42,6 +42,10 @@ void InfoEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 			"DirectX12"
 		};
 		ImGui::Text("Api : %s", apiName[EnumToIndex(graphic->api())]);
+		if (ImGui::Button("Capture frame"))
+		{
+			graphic->capture();
+		}
 	}
 	ImGui::End();
 }

@@ -29,7 +29,7 @@ private:
 	aka::Vector<AssetViewerBase*> m_assetViewers;
 };
 
-template<> void AssetViewerManager::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::SceneAvecUnNomChelou>& _resourceHandle);
+template<> void AssetViewerManager::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::Scene>& _resourceHandle);
 template<> void AssetViewerManager::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::Texture>& _resourceHandle);
 template<> void AssetViewerManager::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::StaticMesh>& _resourceHandle);
 

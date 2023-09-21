@@ -194,7 +194,7 @@ void SceneEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 				}
 			};
 
-		SceneAvecUnNomChelou& scene = m_scene->get();
+		Scene& scene = m_scene->get();
 		static entt::entity m_currentEntity;
 		static char m_newEntityName[256];
 		if (ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_MenuBar))
@@ -430,7 +430,7 @@ void SceneEditorLayer::onLayerResize(uint32_t width, uint32_t height)
 {
 }
 
-void SceneEditorLayer::setCurrentScene(ResourceHandle<SceneAvecUnNomChelou>* _scene)
+void SceneEditorLayer::setCurrentScene(ResourceHandle<Scene>* _scene)
 {
 	m_scene = _scene;
 }

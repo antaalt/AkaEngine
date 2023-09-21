@@ -5,10 +5,10 @@
 
 namespace app {
 
-class SceneViewer : public AssetViewer<aka::SceneAvecUnNomChelou>
+class SceneViewer : public AssetViewer<aka::Scene>
 {
 public:
-	SceneViewer(aka::ResourceID _resourceID, aka::ResourceHandle<aka::SceneAvecUnNomChelou> _resourceHandle);
+	SceneViewer(aka::ResourceID _resourceID, aka::ResourceHandle<aka::Scene> _resourceHandle);
 	~SceneViewer() {}
 
 	void onCreate(aka::gfx::GraphicDevice* _device) override {}
@@ -16,7 +16,7 @@ public:
 	void onUpdate(aka::Time deltaTime) override {}
 	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override {}
 protected:
-	void drawUIResource(const aka::SceneAvecUnNomChelou& scene) override {}
+	void drawUIResource(const aka::Scene& scene) override {}
 private:
 };
 

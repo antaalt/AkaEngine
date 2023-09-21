@@ -554,7 +554,7 @@ void Editor::onRender(gfx::Frame* _frame)
 	cmd->beginRenderPass(m_renderPass, backbuffer, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f }, 1.f, 0 });
 	if (m_scene.isLoaded())
 	{
-		SceneAvecUnNomChelou& scene = m_scene.get();
+		Scene& scene = m_scene.get();
 		scene.getWorld().registry().view<Transform3DComponent, StaticMeshComponent>().each([&](entt::entity entity, Transform3DComponent& transformComp, StaticMeshComponent& meshComp) {
 
 			if (meshComp.mesh.isLoaded())
@@ -588,7 +588,7 @@ void Editor::onReceive(const app::SceneSwitchEvent& event)
 	m_scene = event.scene;
 	if (event.scene.isLoaded())
 	{
-		const SceneAvecUnNomChelou& scene = event.scene.get();
+		const Scene& scene = event.scene.get();
 		m_sceneID = scene.getID();
 		m_cameraController.set(scene.getBounds());
 		m_dirty = true;

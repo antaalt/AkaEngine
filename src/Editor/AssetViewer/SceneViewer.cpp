@@ -7,7 +7,7 @@ namespace app {
 
 using namespace aka;
 
-SceneViewer::SceneViewer(ResourceID _resourceID, ResourceHandle<SceneAvecUnNomChelou> _resourceHandle) :
+SceneViewer::SceneViewer(ResourceID _resourceID, ResourceHandle<Scene> _resourceHandle) :
 	AssetViewer(ResourceType::Scene, _resourceID, _resourceHandle)
 {
 }

@@ -19,9 +19,9 @@ public:
 	void onLayerPresent() override;
 	void onLayerResize(uint32_t width, uint32_t height) override;
 public:
-	void setCurrentScene(aka::ResourceHandle<aka::SceneAvecUnNomChelou>* _scene);
+	void setCurrentScene(aka::ResourceHandle<aka::Scene>* _scene);
 private:
-	aka::ResourceHandle<aka::SceneAvecUnNomChelou>* m_scene;
+	aka::ResourceHandle<aka::Scene>* m_scene;
 };
 
 };

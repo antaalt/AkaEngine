@@ -48,5 +48,5 @@ private:
 
 private:
 	ResourceID m_sceneID;
-	ResourceHandle<SceneAvecUnNomChelou> m_scene;
+	ResourceHandle<Scene> m_scene;
 };

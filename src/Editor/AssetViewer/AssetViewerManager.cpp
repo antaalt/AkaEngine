@@ -143,7 +143,7 @@ void AssetViewerManager::render(aka::gfx::Frame* frame)
 }
 
 template<> 
-void AssetViewerManager::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::SceneAvecUnNomChelou>& _resourceHandle)
+void AssetViewerManager::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::Scene>& _resourceHandle)
 {
 	for (AssetViewerBase*& viewer : m_assetViewers)
 	{
