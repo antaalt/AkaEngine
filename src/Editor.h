@@ -20,7 +20,7 @@ class Editor : public aka::Application,
 	EventListener<ShaderReloadedEvent>
 {
 public:
-	Editor();
+	Editor(const Config& cfg);
 	void onCreate(int argc, char* argv[]) override;
 	void onDestroy() override;
 	void onFixedUpdate(aka::Time time) override;

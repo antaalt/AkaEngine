@@ -188,7 +188,8 @@ std::vector<uint32_t> getSphereIndices(float radius, uint32_t segmentCount, uint
 }
 
 
-Editor::Editor()
+Editor::Editor(const Config& cfg) :
+	Application(cfg)
 {
 	ImGuiLayer* imgui = getRoot().addLayer<ImGuiLayer>();
 	// Editor are child of imgui to support frame
@@ -557,7 +558,7 @@ void Editor::onRender(gfx::GraphicDevice* device, gfx::Frame* _frame)
 	cmd->bindPipeline(m_renderPipeline);
 	cmd->bindDescriptorSet(0, m_cameraDescriptorSet);
 	cmd->bindDescriptorSet(0, m_cameraDescriptorSet);
-
+	gfx::ScopedCmdMarker marker(cmd, "Scene", &ImGuiLayer::Color::blue.x);
 	cmd->beginRenderPass(m_renderPass, backbuffer, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f }, 1.f, 0 });
 	if (m_scene.isLoaded())
 	{

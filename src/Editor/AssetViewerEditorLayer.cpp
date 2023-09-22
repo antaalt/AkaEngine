@@ -2,6 +2,7 @@
 
 #include <Aka/Core/Application.h>
 #include <Aka/Layer/ImGuiLayer.h>
+#include <IconsFontAwesome6.h>
 
 namespace app {
 
@@ -110,13 +111,13 @@ void AssetViewerEditorLayer::onDrawUI()
 			ResourceType type = viewer->getResourceType();
 			// TODO use custom font 
 			const char* typeLogo[EnumCount<ResourceType>()] = {
-				"🖼️",//Scene
-				"🌴",//StaticMesh
-				"M",//Material
-				"🧱",//Texture
-				"🎧",//AudioSource
+				ICON_FA_FILM, // Scene
+				ICON_FA_TREE_CITY, // StaticMesh
+				ICON_FA_IMAGES,// Material
+				ICON_FA_IMAGE,// Texture
+				ICON_FA_HEADPHONES,// AudioSource
 			};
-			String tabName = String::format("[%s] %s", typeLogo, viewer->getResourceName());
+			String tabName = String::format("%s %s", typeLogo[EnumToIndex(viewer->getResourceType())], viewer->getResourceName());
 			if (ImGui::BeginTabItem(tabName.cstr(), &open, ImGuiTabItemFlags_None))
 			{
 					

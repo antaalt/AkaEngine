@@ -4,10 +4,8 @@
 
 int main(int argc, char* argv[])
 {
-	Editor editor;
 
 	aka::Config cfg;
-	cfg.app = &editor;
 	cfg.graphic.api = aka::gfx::GraphicAPI::Vulkan;
 	cfg.platform.name = "Aka editor";
 	cfg.platform.width = 1280;
@@ -16,6 +14,8 @@ int main(int argc, char* argv[])
 	cfg.argv = argv;
 	cfg.directory = "./";
 
-	aka::Application::run(cfg);
+	Editor editor(cfg);
+
+	aka::Application::run(&editor, cfg);
 	return 0;
 }
