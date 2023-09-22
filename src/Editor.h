@@ -11,7 +11,7 @@
 #include <Aka/Resource/Resource/Scene.hpp>
 #include <Aka/Resource/AssetLibrary.hpp>
 
-#include "Editor/AssetEditorLayer.hpp"
+#include "Editor/AssetBrowserEditorLayer.hpp"
 
 using namespace aka;
 
@@ -25,7 +25,7 @@ public:
 	void onDestroy() override;
 	void onFixedUpdate(aka::Time time) override;
 	void onUpdate(aka::Time time) override;
-	void onRender(aka::gfx::Frame* frame) override;
+	void onRender(gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override;
 	void onResize(uint32_t width, uint32_t height) override;
 	void onReceive(const app::SceneSwitchEvent& event) override;
 	void onReceive(const ShaderReloadedEvent& event) override;

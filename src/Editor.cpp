@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "Importer/AssimpImporter.hpp"
-#include "Editor/AssetEditorLayer.hpp"
+#include "Editor/AssetBrowserEditorLayer.hpp"
 #include "Editor/SceneEditorLayer.hpp"
 #include "Editor/InfoEditorLayer.hpp"
 
@@ -192,9 +192,17 @@ Editor::Editor()
 {
 	ImGuiLayer* imgui = getRoot().addLayer<ImGuiLayer>();
 	// Editor are child of imgui to support frame
-	imgui->addLayer<app::SceneEditorLayer>()->setCurrentScene(&m_scene);
-	imgui->addLayer<app::AssetEditorLayer>()->setLibrary(assets());
-	imgui->addLayer<app::InfoEditorLayer>();
+	app::SceneEditorLayer*			sceneEditor			= imgui->addLayer<app::SceneEditorLayer>();
+	app::AssetViewerEditorLayer*	assetViewerEditor	= imgui->addLayer<app::AssetViewerEditorLayer>();
+	app::AssetBrowserEditorLayer*	assetBrowserEditor	= imgui->addLayer<app::AssetBrowserEditorLayer>();
+	app::InfoEditorLayer*			infoEditor			= imgui->addLayer<app::InfoEditorLayer>();
+	// Set dependencies
+	sceneEditor->setCurrentScene(m_scene);
+	assetBrowserEditor->setLibrary(assets());
+	assetBrowserEditor->setAssetViewer(assetViewerEditor);
+	infoEditor->setEditorLayer(app::EditorLayerType::AssetBrowser, assetBrowserEditor);
+	infoEditor->setEditorLayer(app::EditorLayerType::AssetViewer, assetViewerEditor);
+	infoEditor->setEditorLayer(app::EditorLayerType::SceneEditor, sceneEditor);
 }
 
 void Editor::onCreate(int argc, char* argv[])
@@ -531,9 +539,8 @@ void Editor::onUpdate(aka::Time time)
 }
 
 
-void Editor::onRender(gfx::Frame* _frame)
+void Editor::onRender(gfx::GraphicDevice* device, gfx::Frame* _frame)
 {
-	gfx::GraphicDevice* device = graphic();
 	gfx::CommandList* cmd = device->getGraphicCommandList(_frame);
 
 	if (m_dirty)

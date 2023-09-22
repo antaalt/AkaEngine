@@ -14,14 +14,14 @@ add_executable(AkaEditor
 	"src/Importer/AssimpImporter.cpp"
 	
 	"src/Editor/SceneEditorLayer.cpp" 
-	"src/Editor/AssetEditorLayer.cpp" 
+	"src/Editor/AssetBrowserEditorLayer.cpp" 
 	"src/Editor/InfoEditorLayer.cpp" 
-	"src/Editor/AssetViewer/AssetViewerManager.cpp"
+	"src/Editor/AssetViewerEditorLayer.cpp"
 	"src/Editor/AssetViewer/AssetViewer.cpp" 
 	"src/Editor/AssetViewer/StaticMeshViewer.cpp" 
 	"src/Editor/AssetViewer/SceneViewer.cpp"
 	"src/Editor/AssetViewer/TextureViewer.cpp"
-)
+ "src/Editor/EditorLayer.cpp")
 
 # ASSIMP
 set(ZLIB_LIBRARIES zlibstatic)

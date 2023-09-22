@@ -9,19 +9,20 @@ namespace app {
 
 using namespace aka;
 
-SceneEditorLayer::SceneEditorLayer()
+SceneEditorLayer::SceneEditorLayer() :
+	EditorLayer("Scene Editor")
 {
 }
 
-void SceneEditorLayer::onLayerCreate(aka::gfx::GraphicDevice* _device)
+void SceneEditorLayer::onCreate(aka::gfx::GraphicDevice* _device)
 {
 }
 
-void SceneEditorLayer::onLayerDestroy(aka::gfx::GraphicDevice* _device)
+void SceneEditorLayer::onDestroy(aka::gfx::GraphicDevice* _device)
 {
 }
 
-void SceneEditorLayer::onLayerFrame()
+void SceneEditorLayer::onFrame()
 {
 }
 
@@ -141,47 +142,29 @@ void component(World& world, entt::entity entity)
 	}
 }
 
-void SceneEditorLayer::onLayerRender(aka::gfx::Frame* frame)
+void SceneEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame)
 {
-	if (m_scene->isLoaded())
-	{
-		std::function<void(World&, entt::entity, const std::map<entt::entity, std::vector<entt::entity>>&, entt::entity&)> recurse;
-		recurse = [&recurse](World& world, entt::entity entity, const std::map<entt::entity, std::vector<entt::entity>>& childrens, entt::entity& current)
-			{
-				char buffer[256];
-				const TagComponent& tag = world.registry().get<TagComponent>(entity);
+}
 
-				auto it = childrens.find(entity);
-				if (it != childrens.end())
+void SceneEditorLayer::onDrawUI()
+{
+	std::function<void(World&, entt::entity, const std::map<entt::entity, std::vector<entt::entity>>&, entt::entity&)> recurse;
+	recurse = [&recurse](World& world, entt::entity entity, const std::map<entt::entity, std::vector<entt::entity>>& childrens, entt::entity& current)
+		{
+			char buffer[256];
+			const TagComponent& tag = world.registry().get<TagComponent>(entity);
+
+			auto it = childrens.find(entity);
+			if (it != childrens.end())
+			{
+				int err = snprintf(buffer, 256, "%s##%p", tag.name.cstr(), &tag);
+				ImGuiTreeNodeFlags flags = 0;
+				if (entity == current)
+					flags |= ImGuiTreeNodeFlags_Selected;
+				if (ImGui::TreeNodeEx(buffer, flags))
 				{
-					int err = snprintf(buffer, 256, "%s##%p", tag.name.cstr(), &tag);
-					ImGuiTreeNodeFlags flags = 0;
-					if (entity == current)
-						flags |= ImGuiTreeNodeFlags_Selected;
-					if (ImGui::TreeNodeEx(buffer, flags))
-					{
-						err = snprintf(buffer, 256, "ClosePopUp##%p", &tag);
-						if (ImGui::IsItemClicked())
-							current = entity;
-						if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(1))
-							ImGui::OpenPopup(buffer);
-						if (ImGui::BeginPopupContextItem(buffer))
-						{
-							if (ImGui::MenuItem("Delete"))
-								world.registry().destroy(entity);
-							ImGui::EndPopup();
-						}
-						for (entt::entity e : it->second)
-							recurse(world, e, childrens, current);
-						ImGui::TreePop();
-					}
-				}
-				else
-				{
-					int err = snprintf(buffer, 256, "ClosePopUp##%p", &tag);
-					ImGui::Bullet();
-					bool isSelected = current == entity;
-					if (ImGui::Selectable(tag.name.cstr(), &isSelected))
+					err = snprintf(buffer, 256, "ClosePopUp##%p", &tag);
+					if (ImGui::IsItemClicked())
 						current = entity;
 					if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(1))
 						ImGui::OpenPopup(buffer);
@@ -191,186 +174,210 @@ void SceneEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 							world.registry().destroy(entity);
 						ImGui::EndPopup();
 					}
+					for (entt::entity e : it->second)
+						recurse(world, e, childrens, current);
+					ImGui::TreePop();
 				}
-			};
-
-		Scene& scene = m_scene->get();
-		static entt::entity m_currentEntity;
-		static char m_newEntityName[256];
-		if (ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_MenuBar))
-		{
-			// --- Menu
-			Entity e = Entity(m_currentEntity, &scene.getWorld());
-			if (ImGui::BeginMenuBar())
-			{
-				if (ImGui::BeginMenu("World"))
-				{
-					if (ImGui::MenuItem("Save"))
-					{
-						//Scene::save("library/scene.json", world);
-					}
-					if (ImGui::MenuItem("Load"))
-					{
-						//Scene::load(world, "library/scene.json");
-					}
-					ImGui::EndMenu();
-				}
-				if (ImGui::BeginMenu("Entity"))
-				{
-					if (ImGui::BeginMenu("Create"))
-					{
-						mat4f id = mat4f::identity();
-						if (ImGui::BeginMenu("Mesh"))
-						{
-							if (ImGui::MenuItem("Cube"))
-							{
-								//m_currentEntity = Scene::createCubeEntity(world).handle();
-							}
-							if (ImGui::MenuItem("UV Sphere"))
-							{
-								//m_currentEntity = Scene::createSphereEntity(world, 32, 16).handle();
-							}
-							ImGui::EndMenu();
-						}
-						if (ImGui::BeginMenu("Light"))
-						{
-							if (ImGui::MenuItem("Point light"))
-							{
-								//m_currentEntity = Scene::createPointLightEntity(world).handle();
-							}
-							if (ImGui::MenuItem("Directional light"))
-							{
-								//m_currentEntity = Scene::createDirectionalLightEntity(world).handle();
-							}
-							ImGui::EndMenu();
-						}
-
-						if (ImGui::MenuItem("Camera"))
-						{
-							//m_currentEntity = Scene::createArcballCameraEntity(world).handle();
-						}
-						if (ImGui::MenuItem("Empty"))
-						{
-							//m_currentEntity = world.createEntity("New empty").handle();
-						}
-						ImGui::EndMenu();
-					}
-					if (ImGui::MenuItem("Destroy", nullptr, nullptr, e.valid()))
-						e.destroy();
-					ImGui::EndMenu();
-				}
-				if (ImGui::BeginMenu("Component", e.valid()))
-				{
-					if (ImGui::BeginMenu("Add", e.valid()))
-					{
-						if (ImGui::MenuItem("Transform", nullptr, nullptr, !e.has<app::Transform3DComponent>()))
-							e.add<app::Transform3DComponent>(app::Transform3DComponent{ mat4f::identity() });
-						if (ImGui::MenuItem("Hierarchy", nullptr, nullptr, !e.has<app::Hierarchy3DComponent>()))
-							e.add<app::Hierarchy3DComponent>(app::Hierarchy3DComponent{ Entity::null(), mat4f::identity() });
-						/*if (ImGui::MenuItem("Camera", nullptr, nullptr, !e.has<app:: >()))
-						{
-							auto p = std::make_unique<CameraPerspective>();
-							p->hFov = anglef::degree(60.f);
-							p->nearZ = 0.01f;
-							p->farZ = 100.f;
-							p->ratio = 1.f;
-							auto c = std::make_unique<CameraArcball>();
-							c->set(aabbox<>(point3f(0.f), point3f(1.f)));
-							e.add<Camera3DComponent>(Camera3DComponent{
-								mat4f::identity(),
-								std::move(p),
-								std::move(c)
-								});
-						}*/
-						if (ImGui::MenuItem("Mesh", nullptr, nullptr, !e.has<app::StaticMeshComponent>()))
-							e.add<app::StaticMeshComponent>(app::StaticMeshComponent{});
-						//if (ImGui::MenuItem("Material", nullptr, nullptr, !e.has<MaterialComponent>()))
-						//	e.add<MaterialComponent>(MaterialComponent{ color4f(1.f), false, { nullptr, TextureSampler::nearest}, { nullptr, TextureSampler::nearest}, { nullptr, TextureSampler::nearest} });
-						/*if (ImGui::MenuItem("Point light", nullptr, nullptr, !e.has<PointLightComponent>()))
-							e.add<PointLightComponent>(PointLightComponent{
-								color3f(1.f), 1.f, {}
-								});
-						if (ImGui::MenuItem("Directional light", nullptr, nullptr, !e.has<DirectionalLightComponent>()))
-							e.add<DirectionalLightComponent>(DirectionalLightComponent{
-								vec3f(0,1,0),
-								color3f(1.f), 1.f, {}
-								});
-						if (ImGui::BeginMenu("Text", !e.has<TextComponent>()))
-						{
-							FontAllocator& allocator = resources->allocator<Font>();
-							for (auto& r : allocator)
-							{
-								//if (ImGui::MenuItem(r.first.cstr(), nullptr, nullptr, !e.has<TextComponent>()))
-								//	e.add<TextComponent>(TextComponent{ r.second.resource.get(), TextureSampler::nearest, "", color4f(1.f) });
-							}
-							ImGui::EndMenu();
-						}*/
-						ImGui::EndMenu();
-					}
-					if (ImGui::BeginMenu("Remove", e.valid()))
-					{
-						if (ImGui::MenuItem("Transform", nullptr, nullptr, e.has<app::Transform3DComponent>()))
-							e.remove<app::Transform3DComponent>();
-						if (ImGui::MenuItem("Hierarchy", nullptr, nullptr, e.has<app::Hierarchy3DComponent>()))
-							e.remove<app::Hierarchy3DComponent>();
-						//if (ImGui::MenuItem("Camera", nullptr, nullptr, e.has<Camera3DComponent>()))
-						//	e.remove<Camera3DComponent>();
-						if (ImGui::MenuItem("Mesh", nullptr, nullptr, e.has<app::StaticMeshComponent>()))
-							e.remove<app::StaticMeshComponent>();
-						ImGui::EndMenu();
-					}
-					ImGui::EndMenu();
-				}
-				/*if (ImGui::BeginMenu("Transform operation"))
-				{
-					bool enabled = m_gizmoOperation == ImGuizmo::TRANSLATE;
-					if (ImGui::MenuItem("Translate", nullptr, &enabled))
-						m_gizmoOperation = ImGuizmo::TRANSLATE;
-					enabled = m_gizmoOperation == ImGuizmo::ROTATE;
-					if (ImGui::MenuItem("Rotate", nullptr, &enabled))
-						m_gizmoOperation = ImGuizmo::ROTATE;
-					enabled = m_gizmoOperation == ImGuizmo::SCALE;
-					if (ImGui::MenuItem("Scale", nullptr, &enabled))
-						m_gizmoOperation = ImGuizmo::SCALE;
-					ImGui::Separator();
-					enabled = m_gizmoOperation == ImGuizmo::TRANSLATE_X;
-					if (ImGui::MenuItem("TranslateX", nullptr, &enabled))
-						m_gizmoOperation = ImGuizmo::TRANSLATE_X;
-					enabled = m_gizmoOperation == ImGuizmo::TRANSLATE_Y;
-					if (ImGui::MenuItem("TranslateY", nullptr, &enabled))
-						m_gizmoOperation = ImGuizmo::TRANSLATE_Y;
-					enabled = m_gizmoOperation == ImGuizmo::TRANSLATE_Z;
-					if (ImGui::MenuItem("TranslateZ", nullptr, &enabled))
-						m_gizmoOperation = ImGuizmo::TRANSLATE_Z;
-					ImGui::Separator();
-					enabled = m_gizmoOperation == ImGuizmo::ROTATE_X;
-					if (ImGui::MenuItem("RotateX", nullptr, &enabled))
-						m_gizmoOperation = ImGuizmo::ROTATE_X;
-					enabled = m_gizmoOperation == ImGuizmo::ROTATE_Y;
-					if (ImGui::MenuItem("RotateY", nullptr, &enabled))
-						m_gizmoOperation = ImGuizmo::ROTATE_Y;
-					enabled = m_gizmoOperation == ImGuizmo::ROTATE_Z;
-					if (ImGui::MenuItem("RotateZ", nullptr, &enabled))
-						m_gizmoOperation = ImGuizmo::ROTATE_Z;
-					ImGui::Separator();
-					enabled = m_gizmoOperation == ImGuizmo::SCALE_X;
-					if (ImGui::MenuItem("ScaleX", nullptr, &enabled))
-						m_gizmoOperation = ImGuizmo::SCALE_X;
-					enabled = m_gizmoOperation == ImGuizmo::SCALE_Y;
-					if (ImGui::MenuItem("ScaleY", nullptr, &enabled))
-						m_gizmoOperation = ImGuizmo::SCALE_Y;
-					enabled = m_gizmoOperation == ImGuizmo::SCALE_Z;
-					if (ImGui::MenuItem("ScaleZ", nullptr, &enabled))
-						m_gizmoOperation = ImGuizmo::SCALE_Z;
-					ImGui::EndMenu();
-				}*/
-				ImGui::EndMenuBar();
 			}
-			// --- Graph
+			else
+			{
+				int err = snprintf(buffer, 256, "ClosePopUp##%p", &tag);
+				ImGui::Bullet();
+				bool isSelected = current == entity;
+				if (ImGui::Selectable(tag.name.cstr(), &isSelected))
+					current = entity;
+				if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(1))
+					ImGui::OpenPopup(buffer);
+				if (ImGui::BeginPopupContextItem(buffer))
+				{
+					if (ImGui::MenuItem("Delete"))
+						world.registry().destroy(entity);
+					ImGui::EndPopup();
+				}
+			}
+		};
+	const bool isLoaded = m_scene.isLoaded();
+	static entt::entity m_currentEntity;
+	{
+		// --- Menu
+		Entity e = Entity::null();
+		if (isLoaded)
+		{
+			e = Entity(m_currentEntity, &m_scene.get().getWorld());
+		}
+		if (ImGui::BeginMenuBar())
+		{
+			if (ImGui::BeginMenu("World"))
+			{
+				if (ImGui::MenuItem("Save"))
+				{
+					//Scene::save("library/scene.json", world);
+				}
+				if (ImGui::MenuItem("Load"))
+				{
+					//Scene::load(world, "library/scene.json");
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Entity"))
+			{
+				if (ImGui::BeginMenu("Create"))
+				{
+					mat4f id = mat4f::identity();
+					if (ImGui::BeginMenu("Mesh"))
+					{
+						if (ImGui::MenuItem("Cube", nullptr, nullptr, isLoaded))
+						{
+							//m_currentEntity = Scene::createCubeEntity(world).handle();
+						}
+						if (ImGui::MenuItem("UV Sphere", nullptr, nullptr, isLoaded))
+						{
+							//m_currentEntity = Scene::createSphereEntity(world, 32, 16).handle();
+						}
+						ImGui::EndMenu();
+					}
+					if (ImGui::BeginMenu("Light"))
+					{
+						if (ImGui::MenuItem("Point light", nullptr, nullptr, isLoaded))
+						{
+							//m_currentEntity = Scene::createPointLightEntity(world).handle();
+						}
+						if (ImGui::MenuItem("Directional light", nullptr, nullptr, isLoaded))
+						{
+							//m_currentEntity = Scene::createDirectionalLightEntity(world).handle();
+						}
+						ImGui::EndMenu();
+					}
+
+					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded))
+					{
+						//m_currentEntity = Scene::createArcballCameraEntity(world).handle();
+					}
+					if (ImGui::MenuItem("Empty", nullptr, nullptr, isLoaded))
+					{
+						//m_currentEntity = world.createEntity("New empty").handle();
+					}
+					ImGui::EndMenu();
+				}
+				if (ImGui::MenuItem("Destroy", nullptr, nullptr, isLoaded && e.valid()))
+					e.destroy();
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Component", isLoaded && e.valid()))
+			{
+				if (ImGui::BeginMenu("Add", isLoaded && e.valid()))
+				{
+					if (ImGui::MenuItem("Transform", nullptr, nullptr, isLoaded && !e.has<app::Transform3DComponent>()))
+						e.add<app::Transform3DComponent>(app::Transform3DComponent{ mat4f::identity() });
+					if (ImGui::MenuItem("Hierarchy", nullptr, nullptr, isLoaded && !e.has<app::Hierarchy3DComponent>()))
+						e.add<app::Hierarchy3DComponent>(app::Hierarchy3DComponent{ Entity::null(), mat4f::identity() });
+					/*if (ImGui::MenuItem("Camera", nullptr, nullptr, !e.has<app:: >()))
+					{
+						auto p = std::make_unique<CameraPerspective>();
+						p->hFov = anglef::degree(60.f);
+						p->nearZ = 0.01f;
+						p->farZ = 100.f;
+						p->ratio = 1.f;
+						auto c = std::make_unique<CameraArcball>();
+						c->set(aabbox<>(point3f(0.f), point3f(1.f)));
+						e.add<Camera3DComponent>(Camera3DComponent{
+							mat4f::identity(),
+							std::move(p),
+							std::move(c)
+							});
+					}*/
+					if (ImGui::MenuItem("Mesh", nullptr, nullptr, isLoaded && !e.has<app::StaticMeshComponent>()))
+						e.add<app::StaticMeshComponent>(app::StaticMeshComponent{});
+					//if (ImGui::MenuItem("Material", nullptr, nullptr, !e.has<MaterialComponent>()))
+					//	e.add<MaterialComponent>(MaterialComponent{ color4f(1.f), false, { nullptr, TextureSampler::nearest}, { nullptr, TextureSampler::nearest}, { nullptr, TextureSampler::nearest} });
+					/*if (ImGui::MenuItem("Point light", nullptr, nullptr, !e.has<PointLightComponent>()))
+						e.add<PointLightComponent>(PointLightComponent{
+							color3f(1.f), 1.f, {}
+							});
+					if (ImGui::MenuItem("Directional light", nullptr, nullptr, !e.has<DirectionalLightComponent>()))
+						e.add<DirectionalLightComponent>(DirectionalLightComponent{
+							vec3f(0,1,0),
+							color3f(1.f), 1.f, {}
+							});
+					if (ImGui::BeginMenu("Text", !e.has<TextComponent>()))
+					{
+						FontAllocator& allocator = resources->allocator<Font>();
+						for (auto& r : allocator)
+						{
+							//if (ImGui::MenuItem(r.first.cstr(), nullptr, nullptr, !e.has<TextComponent>()))
+							//	e.add<TextComponent>(TextComponent{ r.second.resource.get(), TextureSampler::nearest, "", color4f(1.f) });
+						}
+						ImGui::EndMenu();
+					}*/
+					ImGui::EndMenu();
+				}
+				if (ImGui::BeginMenu("Remove", isLoaded && e.valid()))
+				{
+					if (ImGui::MenuItem("Transform", nullptr, nullptr, isLoaded && e.has<app::Transform3DComponent>()))
+						e.remove<app::Transform3DComponent>();
+					if (ImGui::MenuItem("Hierarchy", nullptr, nullptr, isLoaded && e.has<app::Hierarchy3DComponent>()))
+						e.remove<app::Hierarchy3DComponent>();
+					//if (ImGui::MenuItem("Camera", nullptr, nullptr, e.has<Camera3DComponent>()))
+					//	e.remove<Camera3DComponent>();
+					if (ImGui::MenuItem("Mesh", nullptr, nullptr, isLoaded && e.has<app::StaticMeshComponent>()))
+						e.remove<app::StaticMeshComponent>();
+					ImGui::EndMenu();
+				}
+				ImGui::EndMenu();
+			}
+			/*if (ImGui::BeginMenu("Transform operation"))
+			{
+				bool enabled = m_gizmoOperation == ImGuizmo::TRANSLATE;
+				if (ImGui::MenuItem("Translate", nullptr, &enabled))
+					m_gizmoOperation = ImGuizmo::TRANSLATE;
+				enabled = m_gizmoOperation == ImGuizmo::ROTATE;
+				if (ImGui::MenuItem("Rotate", nullptr, &enabled))
+					m_gizmoOperation = ImGuizmo::ROTATE;
+				enabled = m_gizmoOperation == ImGuizmo::SCALE;
+				if (ImGui::MenuItem("Scale", nullptr, &enabled))
+					m_gizmoOperation = ImGuizmo::SCALE;
+				ImGui::Separator();
+				enabled = m_gizmoOperation == ImGuizmo::TRANSLATE_X;
+				if (ImGui::MenuItem("TranslateX", nullptr, &enabled))
+					m_gizmoOperation = ImGuizmo::TRANSLATE_X;
+				enabled = m_gizmoOperation == ImGuizmo::TRANSLATE_Y;
+				if (ImGui::MenuItem("TranslateY", nullptr, &enabled))
+					m_gizmoOperation = ImGuizmo::TRANSLATE_Y;
+				enabled = m_gizmoOperation == ImGuizmo::TRANSLATE_Z;
+				if (ImGui::MenuItem("TranslateZ", nullptr, &enabled))
+					m_gizmoOperation = ImGuizmo::TRANSLATE_Z;
+				ImGui::Separator();
+				enabled = m_gizmoOperation == ImGuizmo::ROTATE_X;
+				if (ImGui::MenuItem("RotateX", nullptr, &enabled))
+					m_gizmoOperation = ImGuizmo::ROTATE_X;
+				enabled = m_gizmoOperation == ImGuizmo::ROTATE_Y;
+				if (ImGui::MenuItem("RotateY", nullptr, &enabled))
+					m_gizmoOperation = ImGuizmo::ROTATE_Y;
+				enabled = m_gizmoOperation == ImGuizmo::ROTATE_Z;
+				if (ImGui::MenuItem("RotateZ", nullptr, &enabled))
+					m_gizmoOperation = ImGuizmo::ROTATE_Z;
+				ImGui::Separator();
+				enabled = m_gizmoOperation == ImGuizmo::SCALE_X;
+				if (ImGui::MenuItem("ScaleX", nullptr, &enabled))
+					m_gizmoOperation = ImGuizmo::SCALE_X;
+				enabled = m_gizmoOperation == ImGuizmo::SCALE_Y;
+				if (ImGui::MenuItem("ScaleY", nullptr, &enabled))
+					m_gizmoOperation = ImGuizmo::SCALE_Y;
+				enabled = m_gizmoOperation == ImGuizmo::SCALE_Z;
+				if (ImGui::MenuItem("ScaleZ", nullptr, &enabled))
+					m_gizmoOperation = ImGuizmo::SCALE_Z;
+				ImGui::EndMenu();
+			}*/
+			ImGui::EndMenuBar();
+		}
+		// --- Graph
+		std::vector<entt::entity> roots;
+		std::map<entt::entity, std::vector<entt::entity>> childrens;
+		if (isLoaded)
+		{
+			Scene& scene = m_scene.get();
 			// TODO do not compute child map every cycle
 			// listen to event ?
-			std::map<entt::entity, std::vector<entt::entity>> childrens;
-			std::vector<entt::entity> roots;
 			scene.getWorld().registry().each([&](entt::entity entity) {
 				if (scene.getWorld().registry().has<Hierarchy3DComponent>(entity))
 				{
@@ -384,23 +391,31 @@ void SceneEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 					roots.push_back(entity);
 				});
 			ImGui::TextColored(ImGuiLayer::Color::red, "Graph");
-			if (ImGui::BeginChild("##list", ImVec2(0, 200), true))
+		}
+		if (ImGui::BeginChild("##list", ImVec2(0, 200), true))
+		{
+			if (isLoaded)
 			{
 				for (entt::entity e : roots)
-					recurse(scene.getWorld(), e, childrens, m_currentEntity);
+					recurse(m_scene.get().getWorld(), e, childrens, m_currentEntity);
 			}
-			ImGui::EndChild();
+		}
+		ImGui::EndChild();
 
-			// --- Add entity
-			ImGui::InputTextWithHint("##entityName", "Entity name", m_newEntityName, 256);
-			ImGui::SameLine();
-			if (ImGui::Button("Create entity"))
-			{
-				m_currentEntity = scene.getWorld().createEntity(m_newEntityName).handle();
-			}
-			ImGui::Separator();
+		// --- Add entity
+		static char m_newEntityName[256];
+		ImGui::InputTextWithHint("##entityName", "Entity name", m_newEntityName, 256);
+		ImGui::SameLine();
+		if (ImGui::Button("Create entity") && isLoaded)
+		{
+			m_currentEntity = m_scene.get().getWorld().createEntity(m_newEntityName).handle();
+		}
+		ImGui::Separator();
 
-			// --- Entity info
+		// --- Entity info
+		if (isLoaded)
+		{
+			Scene& scene = m_scene.get();
 			ImGui::TextColored(ImGuiLayer::Color::red, "Entity");
 			if (m_currentEntity != entt::null && scene.getWorld().registry().valid(m_currentEntity))
 			{
@@ -418,20 +433,30 @@ void SceneEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 				}
 			}
 		}
-		ImGui::End();
 	}
 }
 
-void SceneEditorLayer::onLayerPresent()
+void SceneEditorLayer::onPresent()
 {
 }
 
-void SceneEditorLayer::onLayerResize(uint32_t width, uint32_t height)
+void SceneEditorLayer::onResize(uint32_t width, uint32_t height)
 {
 }
 
-void SceneEditorLayer::setCurrentScene(ResourceHandle<Scene>* _scene)
+void SceneEditorLayer::onReceive(const aka::ResourceLoadedEvent& event)
 {
+	if (event.type == ResourceType::Scene)
+	{
+		setCurrentScene(Application::app()->assets()->get<Scene>(event.resource));
+	}
+}
+
+void SceneEditorLayer::setCurrentScene(ResourceHandle<Scene> _scene)
+{
+	// TODO handle multiple scene with tabs ?
+	setVisible(_scene.isValid());
+	setEnabled(_scene.isValid());
 	m_scene = _scene;
 }
 

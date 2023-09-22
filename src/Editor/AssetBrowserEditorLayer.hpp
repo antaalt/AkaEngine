@@ -4,7 +4,8 @@
 #include <Aka/Graphic/GraphicDevice.h>
 #include <Aka/Resource/AssetLibrary.hpp>
 
-#include "AssetViewer/AssetViewerManager.hpp"
+#include "EditorLayer.hpp"
+#include "AssetViewerEditorLayer.hpp"
 
 #include <functional>
 
@@ -17,23 +18,27 @@ struct SceneSwitchEvent
 
 struct AssetNode;
 
-class AssetEditorLayer : public aka::Layer, aka::EventListener<aka::AssetAddedEvent>
+class AssetBrowserEditorLayer : 
+	public EditorLayer,
+	aka::EventListener<aka::AssetAddedEvent>
 {
 public:
-	AssetEditorLayer();
-	~AssetEditorLayer();
+	AssetBrowserEditorLayer();
+	~AssetBrowserEditorLayer();
 
-	void onLayerCreate(aka::gfx::GraphicDevice* _device) override;
-	void onLayerDestroy(aka::gfx::GraphicDevice* _device) override;
+	void onCreate(aka::gfx::GraphicDevice* _device) override;
+	void onDestroy(aka::gfx::GraphicDevice* _device) override;
 
-	void onLayerUpdate(aka::Time deltaTime) override;
-	void onLayerFrame() override;
-	void onLayerRender(aka::gfx::Frame* frame) override;
-	void onLayerPresent() override;
-	void onLayerResize(uint32_t width, uint32_t height) override;
+	void onUpdate(aka::Time deltaTime) override;
+	void onFrame() override;
+	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override;
+	void onPresent() override;
+	void onResize(uint32_t width, uint32_t height) override;
 	void onReceive(const aka::AssetAddedEvent& event) override;
+	void onDrawUI() override;
 public:
 	void setLibrary(aka::AssetLibrary* _library);
+	void setAssetViewer(AssetViewerEditorLayer* _viewer);
 private:
 	void importDeferred(std::function<bool(const aka::Path&)> callback);
 private:
@@ -44,7 +49,7 @@ private:
 private:
 	AssetNode* m_rootNode;
 	bool m_assetUpdated = false;
-	AssetViewerManager m_viewerManager;
+	AssetViewerEditorLayer* m_viewerEditor;
 	aka::AssetLibrary* m_library;
 };
 

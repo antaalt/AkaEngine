@@ -1,4 +1,4 @@
-#include "AssetEditorLayer.hpp"
+#include "AssetBrowserEditorLayer.hpp"
 
 #include <Aka/Layer/ImGuiLayer.h>
 #include <Aka/Scene/World.h>
@@ -97,32 +97,30 @@ struct AssetNode
 	}
 };
 
-AssetEditorLayer::AssetEditorLayer()
+AssetBrowserEditorLayer::AssetBrowserEditorLayer() :
+	EditorLayer("Asset browser")
 {
 	m_rootNode = new AssetNode();
 }
 
-AssetEditorLayer::~AssetEditorLayer()
+AssetBrowserEditorLayer::~AssetBrowserEditorLayer()
 {
 	delete m_rootNode;
 }
 
-void AssetEditorLayer::onLayerCreate(gfx::GraphicDevice* _device)
+void AssetBrowserEditorLayer::onCreate(gfx::GraphicDevice* _device)
 {
-	m_viewerManager.onCreate(_device);
 }
 
-void AssetEditorLayer::onLayerDestroy(gfx::GraphicDevice* _device)
+void AssetBrowserEditorLayer::onDestroy(gfx::GraphicDevice* _device)
 {
-	m_viewerManager.onDestroy(_device);
 }
 
-void AssetEditorLayer::onLayerUpdate(Time deltaTime)
+void AssetBrowserEditorLayer::onUpdate(Time deltaTime)
 {
-	m_viewerManager.onUpdate(deltaTime);
 }
 
-void AssetEditorLayer::onLayerFrame()
+void AssetBrowserEditorLayer::onFrame()
 {
 }
 
@@ -141,7 +139,7 @@ static void PopStyleCompact()
 
 
 template <typename T>
-static void drawResource(const char* type, AssetLibrary* library, AssetViewerManager& viewerManager)
+static void drawResource(const char* type, AssetLibrary* library, AssetViewerEditorLayer& viewerManager)
 {
 	Application* app = Application::app();
 
@@ -206,111 +204,110 @@ static void drawResource(const char* type, AssetLibrary* library, AssetViewerMan
 		viewerManager.open<T>(pair.first, pair.second);
 }
 
-void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
+void AssetBrowserEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame)
 {
-	ImGui::ShowDemoWindow();
+}
+
+void AssetBrowserEditorLayer::onDrawUI()
+{
 	bool openImportWindow = false;
-	if (ImGui::Begin("Asset Browser", nullptr, ImGuiWindowFlags_MenuBar))
+	if (ImGui::BeginMenuBar())
 	{
-		if (ImGui::BeginMenuBar())
+		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::BeginMenu("File"))
+			if (ImGui::MenuItem("Load"))
 			{
-				if (ImGui::MenuItem("Load"))
-				{
-					m_library->parse();
-				}
-				if (ImGui::MenuItem("Save"))
-				{
-					m_library->serialize();
-				}
-				ImGui::EndMenu();
+				m_library->parse();
 			}
-			if (ImGui::BeginMenu("Import"))
+			if (ImGui::MenuItem("Save"))
 			{
-				if (ImGui::MenuItem("Scene"))
-				{
-					openImportWindow = true;
-					importDeferred([&](const aka::Path& path) -> bool{
-						aka::Logger::info("Importing scene : ", path);
-
-						AssimpImporter importer;
-						ImportResult res = importer.import(m_library, path);
-						return ImportResult::Succeed == res;
-					});
-				}
-				if (ImGui::MenuItem("Mesh"))
-				{
-				}
-				if (ImGui::MenuItem("Texture"))
-				{
-				}
-				if (ImGui::MenuItem("Audio"))
-				{
-				}
-				ImGui::EndMenu();
+				m_library->serialize();
 			}
-			ImGui::EndMenuBar();
+			ImGui::EndMenu();
 		}
-
-		// We should list all archive from library here.
-		// We could open them in separate tab to edit their content & save them.
-
-		// -------------------------
-		// -------- ASSETS ---------
-		// -------------------------
-		ImGui::TextColored(ImGuiLayer::Color::red, "Assets");
-		// Generate asset tree.
-		if (m_assetUpdated)
+		if (ImGui::BeginMenu("Import"))
 		{
-			for (const auto& asset : m_library->getAssetRange())
+			if (ImGui::MenuItem("Scene"))
 			{
-				const AssetID& assetID = asset.first;
-				const AssetInfo& assetInfo = asset.second;
-				String path = assetInfo.path.cstr();
-				Vector<String> directories = path.split('/');
-				AssetNode::addNodeToTree(*m_rootNode, assetInfo, directories.data(), directories.size());
-				// if not found, add it.
-			
+				openImportWindow = true;
+				importDeferred([&](const aka::Path& path) -> bool{
+					aka::Logger::info("Importing scene : ", path);
+
+					AssimpImporter importer;
+					ImportResult res = importer.import(m_library, path);
+					return ImportResult::Succeed == res;
+				});
 			}
-			m_assetUpdated = false;
+			if (ImGui::MenuItem("Mesh"))
+			{
+			}
+			if (ImGui::MenuItem("Texture"))
+			{
+			}
+			if (ImGui::MenuItem("Audio"))
+			{
+			}
+			ImGui::EndMenu();
 		}
-		// First we need to iterate all assets & sort them by path & iterate on this.
-		if (ImGui::BeginTable("Assets", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 20)))
-		{
-			ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableHeadersRow();
-			for (const AssetNode& node : m_rootNode->childrens)
-				AssetNode::draw(m_library, node);
-			ImGui::EndTable();
-		}
-
-		ImGui::Separator();
-		// -------------------------
-		// ------- RESOURCES -------
-		// -------------------------
-		ImGui::TextColored(ImGuiLayer::Color::red, "Resources");
-
-		static ImGuiTableFlags flags = ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody;
-
-		if (ImGui::BeginTable("Resources", 6, flags))
-		{
-			ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableSetupColumn("Count", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthFixed);
-			ImGui::TableHeadersRow();
-			drawResource<Scene>("scenes", m_library, m_viewerManager);
-			drawResource<StaticMesh>("meshes", m_library, m_viewerManager);
-			drawResource<Texture>("textures", m_library, m_viewerManager);
-			ImGui::EndTable();
-		}
+		ImGui::EndMenuBar();
 	}
-	ImGui::End();
+
+	// We should list all archive from library here.
+	// We could open them in separate tab to edit their content & save them.
+
+	// -------------------------
+	// -------- ASSETS ---------
+	// -------------------------
+	ImGui::TextColored(ImGuiLayer::Color::red, "Assets");
+	// Generate asset tree.
+	if (m_assetUpdated)
+	{
+		for (const auto& asset : m_library->getAssetRange())
+		{
+			const AssetID& assetID = asset.first;
+			const AssetInfo& assetInfo = asset.second;
+			String path = assetInfo.path.cstr();
+			Vector<String> directories = path.split('/');
+			AssetNode::addNodeToTree(*m_rootNode, assetInfo, directories.data(), directories.size());
+			// if not found, add it.
+			
+		}
+		m_assetUpdated = false;
+	}
+	// First we need to iterate all assets & sort them by path & iterate on this.
+	if (ImGui::BeginTable("Assets", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 20)))
+	{
+		ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableHeadersRow();
+		for (const AssetNode& node : m_rootNode->childrens)
+			AssetNode::draw(m_library, node);
+		ImGui::EndTable();
+	}
+
+	ImGui::Separator();
+	// -------------------------
+	// ------- RESOURCES -------
+	// -------------------------
+	ImGui::TextColored(ImGuiLayer::Color::red, "Resources");
+
+	static ImGuiTableFlags flags = ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody;
+
+	if (ImGui::BeginTable("Resources", 6, flags))
+	{
+		ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("Count", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableHeadersRow();
+		drawResource<Scene>("scenes", m_library, *m_viewerEditor);
+		drawResource<StaticMesh>("meshes", m_library, *m_viewerEditor);
+		drawResource<Texture>("textures", m_library, *m_viewerEditor);
+		ImGui::EndTable();
+	}
 	// -------------------------
 	// ------- IMPORTER --------
 	// -------------------------
@@ -397,28 +394,30 @@ void AssetEditorLayer::onLayerRender(aka::gfx::Frame* frame)
 			ImGui::EndPopup();
 		}
 	}
-
-	m_viewerManager.onRender(Application::app()->graphic(), frame);
-	m_viewerManager.render(frame);
 }
 
-void AssetEditorLayer::onLayerPresent()
+void AssetBrowserEditorLayer::onPresent()
 {
 }
 
-void AssetEditorLayer::onLayerResize(uint32_t width, uint32_t height)
+void AssetBrowserEditorLayer::onResize(uint32_t width, uint32_t height)
 {
 }
-void AssetEditorLayer::onReceive(const AssetAddedEvent& event)
+void AssetBrowserEditorLayer::onReceive(const AssetAddedEvent& event)
 {
 	m_assetUpdated = true;
 }
-void AssetEditorLayer::setLibrary(AssetLibrary* _library)
+void AssetBrowserEditorLayer::setLibrary(AssetLibrary* _library)
 {
 	m_library = _library;
 }
 
-void AssetEditorLayer::importDeferred(std::function<bool(const aka::Path&)> callback)
+void AssetBrowserEditorLayer::setAssetViewer(AssetViewerEditorLayer* _viewer)
+{
+	m_viewerEditor = _viewer;
+}
+
+void AssetBrowserEditorLayer::importDeferred(std::function<bool(const aka::Path&)> callback)
 {
 	m_currentPath = AssetPath().getAbsolutePath();
 	m_selectedPath = nullptr;

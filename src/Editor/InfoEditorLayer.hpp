@@ -3,6 +3,8 @@
 #include <Aka/Core/Layer.h>
 #include <Aka/Graphic/GraphicDevice.h>
 
+#include "EditorLayer.hpp"
+
 namespace app {
 
 class AssetLibrary;
@@ -15,10 +17,13 @@ public:
 	void onLayerDestroy(aka::gfx::GraphicDevice* _device) override;
 
 	void onLayerFrame() override;
-	void onLayerRender(aka::gfx::Frame* frame) override;
+	void onLayerRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override;
 	void onLayerPresent() override;
 	void onLayerResize(uint32_t width, uint32_t height) override;
+	
+	void setEditorLayer(EditorLayerType type, EditorLayer* layer);
 private:
+	EditorLayer* m_editorLayer[aka::EnumCount<EditorLayerType>()] = { nullptr };
 	uint32_t m_width;
 	uint32_t m_height;
 };
