@@ -290,7 +290,7 @@ void StaticMeshViewer::renderMesh(gfx::Frame* frame, const StaticMesh& mesh)
 
 	cmd->bindPipeline(m_pipeline);
 	cmd->bindIndexBuffer(mesh.gfxIndexBuffer, mesh.getIndexFormat());
-	cmd->bindVertexBuffer(mesh.gfxVertexBuffer, 0);
+	cmd->bindVertexBuffer(0, mesh.gfxVertexBuffer);
 	cmd->bindDescriptorSet(0, m_descriptorSet);
 
 	for (const auto& batch : mesh.batches)

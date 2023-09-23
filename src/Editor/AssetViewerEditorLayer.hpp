@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Aka/Graphic/GraphicDevice.h>
-#include <Aka/Scene/Camera.h>
+#include <Aka/Scene/Component/CameraComponent.hpp>
 #include <Aka/Core/Container/Vector.h>
 #include <Aka/Core/Layer.h>
 

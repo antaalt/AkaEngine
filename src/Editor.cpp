@@ -3,8 +3,7 @@
 #include <Aka/Core/Container/String.h>
 #include <Aka/OS/OS.h>
 #include <Aka/Layer/ImGuiLayer.h>
-#include <Aka/Scene/World.h>
-#include <Aka/Scene/Entity.h>
+#include <Aka/Scene/Node.hpp>
 
 #include <imgui.h>
 #include <imguizmo.h>
@@ -17,46 +16,6 @@
 #include "Editor/InfoEditorLayer.hpp"
 
 using namespace aka;
-
-/*struct Entity {
-	entt::entity entity;
-};*/
-
-// ------------------------------------
-// Systems
-// ------------------------------------
-/*struct System {
-
-};
-
-// ------------------------------------
-// Components
-// ------------------------------------
-/*struct TagComponent
-{
-	String name;
-};
-
-struct Transform3DComponent {
-	mat4f transform;
-};
-
-struct Hierarchy3DComponent {
-	Entity parent;
-	mat4f inverseTransform;
-};*/
-
-// ------------------------------------
-// World
-// ------------------------------------
-/*struct World {
-	// Each scene has a single main camera
-
-	std::vector<Scene> scenes;
-	std::vector<System*> systems; // Run systems for whole world ? We might want to ignore some scene though...
-
-	entt::dispatcher dispatcher;
-};*/
 
 // ------------ RENDERER ----------------
 struct CameraUniformBuffer
@@ -199,6 +158,8 @@ Editor::Editor(const Config& cfg) :
 	app::InfoEditorLayer*			infoEditor			= imgui->addLayer<app::InfoEditorLayer>();
 	// Set dependencies
 	sceneEditor->setCurrentScene(m_scene);
+	sceneEditor->setCurrentCameraController(&m_cameraController);
+	sceneEditor->setCurrentCameraProjection(&m_cameraProjection);
 	assetBrowserEditor->setLibrary(assets());
 	assetBrowserEditor->setAssetViewer(assetViewerEditor);
 	infoEditor->setEditorLayer(app::EditorLayerType::AssetBrowser, assetBrowserEditor);
@@ -505,12 +466,14 @@ void Editor::onCreate(int argc, char* argv[])
 		Logger::info("Loading resource time : ", watch.elapsed(), "ms");
 #endif
 	}*/
+	m_view = renderer()->createView(ViewType::Color);
 	assets()->parse();
 }
 
 void Editor::onDestroy()
 {
 	gfx::GraphicDevice* device = graphic();
+	renderer()->destroyView(m_view);
 	device->destroy(m_cameraUniformBuffer);
 	device->destroy(m_cameraDescriptorSet);
 	device->destroy(m_renderPipeline);
@@ -551,13 +514,15 @@ void Editor::onRender(gfx::GraphicDevice* device, gfx::Frame* _frame)
 		ubo.projection = m_cameraProjection.projection();
 		device->upload(m_cameraUniformBuffer, &ubo, 0, sizeof(CameraUniformBuffer));
 		m_dirty = false;
+		m_view->data.projection = ubo.projection;
+		m_view->data.view = ubo.view;
 	}
 
-	gfx::FramebufferHandle backbuffer = device->get(m_backbuffer, _frame);
+	/*gfx::FramebufferHandle backbuffer = device->get(m_backbuffer, _frame);
 
 	cmd->bindPipeline(m_renderPipeline);
 	cmd->bindDescriptorSet(0, m_cameraDescriptorSet);
-	cmd->bindDescriptorSet(0, m_cameraDescriptorSet);
+	//cmd->bindDescriptorSet(0, m_cameraDescriptorSet);
 	gfx::ScopedCmdMarker marker(cmd, "Scene", &ImGuiLayer::Color::blue.x);
 	cmd->beginRenderPass(m_renderPass, backbuffer, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f }, 1.f, 0 });
 	if (m_scene.isLoaded())
@@ -582,7 +547,7 @@ void Editor::onRender(gfx::GraphicDevice* device, gfx::Frame* _frame)
 			}
 		});
 	}
-	cmd->endRenderPass();
+	cmd->endRenderPass();*/
 }
 
 void Editor::onResize(uint32_t width, uint32_t height)

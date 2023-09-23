@@ -1,9 +1,9 @@
 #include "AssetBrowserEditorLayer.hpp"
 
 #include <Aka/Layer/ImGuiLayer.h>
-#include <Aka/Scene/World.h>
 #include <Aka/OS/OS.h>
 #include <Aka/Resource/Importer/Importer.hpp>
+#include <Aka/Resource/AssetLibrary.hpp>
 
 #include "../Importer/AssimpImporter.hpp"
 
@@ -60,14 +60,14 @@ struct AssetNode
 					{
 					case AssetType::Scene:
 						EventDispatcher<SceneSwitchEvent>::trigger(SceneSwitchEvent{
-							library->load<Scene>(library->getResourceID(node.id), Application::app()->graphic())
+							library->load<Scene>(library->getResourceID(node.id), Application::app()->renderer())
 							});
 						break;
 					case AssetType::StaticMesh:
-						library->load<StaticMesh>(library->getResourceID(node.id), Application::app()->graphic());
+						library->load<StaticMesh>(library->getResourceID(node.id), Application::app()->renderer());
 						break;
 					case AssetType::Image:
-						library->load<Texture>(library->getResourceID(node.id), Application::app()->graphic());
+						library->load<Texture>(library->getResourceID(node.id), Application::app()->renderer());
 						break;
 					default:
 						Logger::warn("Trying to load unimplemented type.");
@@ -318,14 +318,14 @@ void AssetBrowserEditorLayer::onDrawUI()
 		if (ImGui::BeginPopupModal("Import##Popup", &openFlag, ImGuiWindowFlags_AlwaysAutoResize))
 		{
 			bool updated = false;
-			if (ImGui::Button("^"))
+			if (ImGui::Button(ICON_FA_ARROW_UP_LONG))
 			{
 				m_currentPath = m_currentPath.up();
 				updated = true;
 			}
 			// Refresh directory
 			ImGui::SameLine();
-			if (ImGui::Button("*"))
+			if (ImGui::Button(ICON_FA_ROTATE_RIGHT))
 			{
 				updated = true;
 			}
@@ -347,7 +347,7 @@ void AssetBrowserEditorLayer::onDrawUI()
 					bool isFolder = OS::Directory::exist(m_currentPath + path);
 					if (isFolder)
 					{
-						int err = snprintf(buffer, 256, "%s %s", "D", path.cstr());
+						int err = snprintf(buffer, 256, "%s %s", ICON_FA_FOLDER, path.cstr());
 						if (ImGui::Selectable(buffer, &selected))
 						{
 							m_selectedPath = &path;
@@ -360,7 +360,7 @@ void AssetBrowserEditorLayer::onDrawUI()
 					}
 					else
 					{
-						int err = snprintf(buffer, 256, "%s %s", "F", path.cstr());
+						int err = snprintf(buffer, 256, "%s %s", ICON_FA_FILE, path.cstr());
 						if (ImGui::Selectable(buffer, &selected))
 						{
 							m_selectedPath = &path;

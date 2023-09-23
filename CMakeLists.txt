@@ -9,8 +9,6 @@ add_executable(AkaEditor
 	"src/main.cpp"
 	"src/Editor.cpp"
 
- 	"src/Renderer/Renderer.hpp" 
-
 	"src/Importer/AssimpImporter.cpp"
 	
 	"src/Editor/SceneEditorLayer.cpp" 
@@ -21,7 +19,8 @@ add_executable(AkaEditor
 	"src/Editor/AssetViewer/StaticMeshViewer.cpp" 
 	"src/Editor/AssetViewer/SceneViewer.cpp"
 	"src/Editor/AssetViewer/TextureViewer.cpp"
- "src/Editor/EditorLayer.cpp")
+	"src/Editor/EditorLayer.cpp"
+)
 
 # ASSIMP
 set(ZLIB_LIBRARIES zlibstatic)

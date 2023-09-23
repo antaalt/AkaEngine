@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Aka/Core/Application.h>
-#include <Aka/Scene/Camera.h>
+#include <Aka/Scene/Component/CameraComponent.hpp>
 #include <Aka/Graphic/GraphicDevice.h>
 
 #include <Aka/Resource/Asset.hpp>
@@ -10,6 +10,7 @@
 #include <Aka/Resource/Resource/StaticMesh.hpp>
 #include <Aka/Resource/Resource/Scene.hpp>
 #include <Aka/Resource/AssetLibrary.hpp>
+#include <Aka/Renderer/Renderer.hpp>
 
 #include "Editor/AssetBrowserEditorLayer.hpp"
 
@@ -45,7 +46,7 @@ private:
 	anglef m_rotation = anglef::radian(0.f);
 	CameraArcball m_cameraController = {};
 	CameraPerspective m_cameraProjection = {};
-
+	View* m_view;
 private:
 	ResourceID m_sceneID;
 	ResourceHandle<Scene> m_scene;

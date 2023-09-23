@@ -175,25 +175,12 @@ void AssimpLocalImporter::process()
 	addComponent(root, SceneComponent::Transform, addTransform(m_scene, mat4f::identity()));
 	addComponent(root, SceneComponent::Hierarchy, ArchiveSceneID::Invalid); // No parent here.
 
+	// Pre process meshes to keep them instanced.
+	for (uint32_t i = 0; i < m_assimpScene->mNumMeshes; i++)
+		processMesh(m_assimpScene->mMeshes[i]);
+	
 	ArchiveSceneID rootID = addEntity(m_scene, root);
 	processNode(rootID, m_assimpScene->mRootNode);
-
-	// Compute scene bbox.
-	/*for (ArchiveSceneEntity& entity : m_scene.entities)
-	{
-		SceneComponentMask mask = SceneComponentMask::Transform | SceneComponentMask::StaticMesh;
-		if ((entity.components & mask) == mask)
-		{
-			ArchiveSceneID transformID = entity.id[EnumToIndex(SceneComponent::Transform)];
-			ArchiveSceneID meshID = entity.id[EnumToIndex(SceneComponent::StaticMesh)];
-			const mat4f& transform = scene.transforms[toIntegral(transformID)].matrix;
-			const ArchiveStaticMesh& mesh = scene.meshes[toIntegral(meshID)];
-			for (const ArchiveBatch& batch : mesh.batches)
-			{
-				scene.bounds.include(transform * batch.geometry.bounds);
-			}
-		}
-	}*/
 
 	m_scene.save(ArchiveSaveContext(m_library));
 }
@@ -222,26 +209,13 @@ void AssimpLocalImporter::processNode(ArchiveSceneID _parent, aiNode* _node)
 		col4f(_node->mTransformation[0][2], _node->mTransformation[1][2], _node->mTransformation[2][2], _node->mTransformation[3][2]),
 		col4f(_node->mTransformation[0][3], _node->mTransformation[1][3], _node->mTransformation[2][3], _node->mTransformation[3][3])
 	);
-	// Inverse computed at runtime instead.
-	/*mat4f inverseParentTransform;
-	if (_parent != ArchiveSceneID::Invalid)
-	{
-		ArchiveSceneID transformID = m_scene.entities[toIntegral(_parent)].id[EnumToIndex(SceneComponent::Transform)];
-		mat4f parentTransform = m_scene.transforms[toIntegral(transformID)].matrix;
-		transform = parentTransform * transform;
-		inverseParentTransform = mat4f::inverse(parentTransform);
-	}
-	else
-	{
-		inverseParentTransform = mat4f::identity();
-	}*/
 	// process all the node's meshes (if any)
 	// TODO: those are batches ? Return batch instead of mesh here...
 	ArchiveSceneID transformID = addTransform(m_scene, transform);
 	for (unsigned int i = 0; i < _node->mNumMeshes; i++)
 	{
 		aiMesh* aiMesh = m_assimpScene->mMeshes[_node->mMeshes[i]];
-		ArchiveSceneID meshID = processMesh(aiMesh);
+		ArchiveSceneID meshID = ArchiveSceneID(_node->mMeshes[i]);
 
 		ArchiveSceneEntity entity = createEntity(aiMesh->mName.C_Str());
 		addComponent(entity, SceneComponent::Transform, transformID);
@@ -522,6 +496,10 @@ unsigned int getAssimpFlags()
 #if defined(GEOMETRY_LEFT_HANDED)
 		aiProcess_MakeLeftHanded |
 #endif
+		//aiProcess_JoinIdenticalVertices |
+		aiProcess_RemoveRedundantMaterials |
+		aiProcess_FindInstances | 
+		//aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph |
 		aiProcess_GenSmoothNormals;
 }
 

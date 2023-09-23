@@ -1,8 +1,8 @@
 #include "SceneEditorLayer.hpp"
 
 #include <Aka/Layer/ImGuiLayer.h>
-#include <Aka/Scene/Entity.h>
-#include <Aka/Scene/World.h>
+#include <Aka/Scene/Component/CameraComponent.hpp>
+#include <Aka/Scene/Component/StaticMeshComponent.hpp>
 #include <Aka/Resource/AssetLibrary.hpp>
 
 namespace app {
@@ -27,64 +27,19 @@ void SceneEditorLayer::onFrame()
 }
 
 template <typename T>
-struct ComponentNode {
+struct ComponentNode 
+{
 	static const char* name() { return "Unknown"; }
 	//static const char* icon() { return ""; }
 	static bool draw(T& component) { Logger::error("Trying to draw an undefined component"); return false; }
 };
 
-template <> const char* ComponentNode<TagComponent>::name() { return "Tag"; }
-template <> bool ComponentNode<TagComponent>::draw(TagComponent& tag)
+template <> const char* ComponentNode<StaticMeshComponent>::name() { return "Mesh"; }
+template <> bool ComponentNode<StaticMeshComponent>::draw(StaticMeshComponent& mesh)
 {
-	char buffer[256];
-	String::copy(buffer, 256, tag.name.cstr());
-	if (ImGui::InputText("Name", buffer, 256))
+	if (mesh.getMesh().isLoaded())
 	{
-		tag.name = buffer;
-		return true;
-	}
-	return false;
-}
-
-template <> const char* ComponentNode<app::Hierarchy3DComponent>::name() { return "Hierarchy"; }
-template <> bool ComponentNode<app::Hierarchy3DComponent>::draw(app::Hierarchy3DComponent& hierarchy)
-{
-	if (hierarchy.parent.handle() == entt::null || !hierarchy.parent.valid())
-	{
-		ImGui::Text("Parent : None");
-	}
-	else
-	{
-		if (hierarchy.parent.has<TagComponent>())
-			ImGui::Text("Parent : %s", hierarchy.parent.get<TagComponent>().name.cstr());
-		else
-			ImGui::Text("Parent : Unknown");
-	}
-	return false;
-}
-
-template <> const char* ComponentNode<app::Transform3DComponent>::name() { return "Transform"; }
-template <> bool ComponentNode<app::Transform3DComponent>::draw(app::Transform3DComponent& transform)
-{
-	bool updated = false;
-	float translation[3];
-	float rotation[3];
-	float scale[3];
-	ImGuizmo::DecomposeMatrixToComponents(transform.transform.cols[0].data, translation, rotation, scale);
-	updated |= ImGui::InputFloat3("Translation", translation);
-	updated |= ImGui::InputFloat3("Rotation", rotation);
-	updated |= ImGui::InputFloat3("Scale", scale);
-	if (updated)
-		ImGuizmo::RecomposeMatrixFromComponents(translation, rotation, scale, transform.transform.cols[0].data);
-	return updated;
-}
-
-template <> const char* ComponentNode<app::StaticMeshComponent>::name() { return "Mesh"; }
-template <> bool ComponentNode<app::StaticMeshComponent>::draw(app::StaticMeshComponent& mesh)
-{
-	if (mesh.mesh.isLoaded())
-	{
-		app::StaticMesh& m = mesh.mesh.get();
+		StaticMesh& m = mesh.getMesh().get();
 		uint32_t sizeOfVertex = 0;
 
 		//ImGui::Text("Vertices : %u", mesh.mesh->vertices[0].data->size / sizeOfVertex);
@@ -115,13 +70,13 @@ template <> bool ComponentNode<app::StaticMeshComponent>::draw(app::StaticMeshCo
 }
 
 template <typename T>
-void component(World& world, entt::entity entity)
+void component(Node3D* current)
 {
 	static char buffer[256];
-	if (world.registry().has<T>(entity))
+	if (current->has<T>())
 	{
-		T& component = world.registry().get<T>(entity);
-		snprintf(buffer, 256, "%s##%p", ComponentNode<T>::name(), &component);
+		T& component = current->get<T>();
+		int res = snprintf(buffer, 256, "%s##%p", ComponentNode<T>::name(), &component);
 		if (ImGui::TreeNodeEx(buffer, ImGuiTreeNodeFlags_Bullet | ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			snprintf(buffer, 256, "ClosePopUp##%p", &component);
@@ -129,12 +84,12 @@ void component(World& world, entt::entity entity)
 				ImGui::OpenPopup(buffer);
 			if (ComponentNode<T>::draw(component))
 			{
-				world.registry().patch<T>(entity);
+				current->setDirty(ComponentTrait<T>::type);
 			}
 			if (ImGui::BeginPopupContextItem(buffer))
 			{
 				if (ImGui::MenuItem("Remove"))
-					world.registry().remove<T>(entity);
+					current->detach<T>();
 				ImGui::EndPopup();
 			}
 			ImGui::TreePop();
@@ -144,73 +99,73 @@ void component(World& world, entt::entity entity)
 
 void SceneEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame)
 {
+	if (m_nodeToDestroy)
+	{
+		m_nodeToDestroy->destroy(_device);
+		m_nodeToDestroy = nullptr;
+	}
 }
 
 void SceneEditorLayer::onDrawUI()
 {
-	std::function<void(World&, entt::entity, const std::map<entt::entity, std::vector<entt::entity>>&, entt::entity&)> recurse;
-	recurse = [&recurse](World& world, entt::entity entity, const std::map<entt::entity, std::vector<entt::entity>>& childrens, entt::entity& current)
+	std::function<void(Node3D* parent, Node3D*& current)> recurse;
+	recurse = [&recurse, this](Node3D* parent, Node3D*& current)
 		{
 			char buffer[256];
-			const TagComponent& tag = world.registry().get<TagComponent>(entity);
-
-			auto it = childrens.find(entity);
-			if (it != childrens.end())
+			uint32_t childCount = parent->getChildCount();
+			if (childCount > 0)
 			{
-				int err = snprintf(buffer, 256, "%s##%p", tag.name.cstr(), &tag);
+				int err = snprintf(buffer, 256, "%s##%p", parent->getName().cstr(), parent);
 				ImGuiTreeNodeFlags flags = 0;
-				if (entity == current)
+				if (parent == current)
 					flags |= ImGuiTreeNodeFlags_Selected;
 				if (ImGui::TreeNodeEx(buffer, flags))
 				{
-					err = snprintf(buffer, 256, "ClosePopUp##%p", &tag);
+					err = snprintf(buffer, 256, "ClosePopUp##%p", parent);
 					if (ImGui::IsItemClicked())
-						current = entity;
+						current = parent;
 					if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(1))
 						ImGui::OpenPopup(buffer);
 					if (ImGui::BeginPopupContextItem(buffer))
 					{
 						if (ImGui::MenuItem("Delete"))
-							world.registry().destroy(entity);
+							m_nodeToDestroy = parent;
 						ImGui::EndPopup();
 					}
-					for (entt::entity e : it->second)
-						recurse(world, e, childrens, current);
+					for (uint32_t iChild = 0; iChild < childCount; iChild++)
+						recurse(parent->getChild(iChild), current);
 					ImGui::TreePop();
 				}
 			}
 			else
 			{
-				int err = snprintf(buffer, 256, "ClosePopUp##%p", &tag);
+				int err = snprintf(buffer, 256, "ClosePopUp##%p", parent);
 				ImGui::Bullet();
-				bool isSelected = current == entity;
-				if (ImGui::Selectable(tag.name.cstr(), &isSelected))
-					current = entity;
+				bool isSelected = current == parent;
+				if (ImGui::Selectable(parent->getName().cstr(), &isSelected))
+					current = parent;
 				if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(1))
 					ImGui::OpenPopup(buffer);
 				if (ImGui::BeginPopupContextItem(buffer))
 				{
 					if (ImGui::MenuItem("Delete"))
-						world.registry().destroy(entity);
+						m_nodeToDestroy = parent;
 					ImGui::EndPopup();
 				}
 			}
 		};
 	const bool isLoaded = m_scene.isLoaded();
-	static entt::entity m_currentEntity;
 	{
 		// --- Menu
-		Entity e = Entity::null();
-		if (isLoaded)
-		{
-			e = Entity(m_currentEntity, &m_scene.get().getWorld());
-		}
+		Node3D* rootNode = isLoaded ? &m_scene.get().getRoot() : nullptr;
+		const bool isValid = m_currentNode != nullptr;
 		if (ImGui::BeginMenuBar())
 		{
 			if (ImGui::BeginMenu("World"))
 			{
 				if (ImGui::MenuItem("Save"))
 				{
+					//m_library->save();
 					//Scene::save("library/scene.json", world);
 				}
 				if (ImGui::MenuItem("Load"))
@@ -219,20 +174,19 @@ void SceneEditorLayer::onDrawUI()
 				}
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("Entity"))
+			if (ImGui::BeginMenu("Node"))
 			{
 				if (ImGui::BeginMenu("Create"))
 				{
-					mat4f id = mat4f::identity();
 					if (ImGui::BeginMenu("Mesh"))
 					{
 						if (ImGui::MenuItem("Cube", nullptr, nullptr, isLoaded))
 						{
-							//m_currentEntity = Scene::createCubeEntity(world).handle();
+							//m_currentNode = Scene::createCubeNode(world).handle();
 						}
 						if (ImGui::MenuItem("UV Sphere", nullptr, nullptr, isLoaded))
 						{
-							//m_currentEntity = Scene::createSphereEntity(world, 32, 16).handle();
+							//m_currentNode = Scene::createSphereNode(world, 32, 16).handle();
 						}
 						ImGui::EndMenu();
 					}
@@ -240,92 +194,50 @@ void SceneEditorLayer::onDrawUI()
 					{
 						if (ImGui::MenuItem("Point light", nullptr, nullptr, isLoaded))
 						{
-							//m_currentEntity = Scene::createPointLightEntity(world).handle();
+							//m_currentNode = Scene::createPointLightNode(world).handle();
 						}
 						if (ImGui::MenuItem("Directional light", nullptr, nullptr, isLoaded))
 						{
-							//m_currentEntity = Scene::createDirectionalLightEntity(world).handle();
+							//m_currentNode = Scene::createDirectionalLightNode(world).handle();
 						}
 						ImGui::EndMenu();
 					}
 
 					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded))
 					{
-						//m_currentEntity = Scene::createArcballCameraEntity(world).handle();
+						//m_currentNode = Scene::createArcballCameraNode(world).handle();
 					}
 					if (ImGui::MenuItem("Empty", nullptr, nullptr, isLoaded))
 					{
-						//m_currentEntity = world.createEntity("New empty").handle();
+						//m_currentNode = world.createNode("New empty").handle();
 					}
 					ImGui::EndMenu();
 				}
-				if (ImGui::MenuItem("Destroy", nullptr, nullptr, isLoaded && e.valid()))
-					e.destroy();
+				if (ImGui::MenuItem("Destroy", nullptr, nullptr, isLoaded && isValid))
+					m_nodeToDestroy = m_currentNode;
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("Component", isLoaded && e.valid()))
+			if (ImGui::BeginMenu("Component", isLoaded && isValid))
 			{
-				if (ImGui::BeginMenu("Add", isLoaded && e.valid()))
+				if (ImGui::BeginMenu("Add", isLoaded && isValid))
 				{
-					if (ImGui::MenuItem("Transform", nullptr, nullptr, isLoaded && !e.has<app::Transform3DComponent>()))
-						e.add<app::Transform3DComponent>(app::Transform3DComponent{ mat4f::identity() });
-					if (ImGui::MenuItem("Hierarchy", nullptr, nullptr, isLoaded && !e.has<app::Hierarchy3DComponent>()))
-						e.add<app::Hierarchy3DComponent>(app::Hierarchy3DComponent{ Entity::null(), mat4f::identity() });
-					/*if (ImGui::MenuItem("Camera", nullptr, nullptr, !e.has<app:: >()))
-					{
-						auto p = std::make_unique<CameraPerspective>();
-						p->hFov = anglef::degree(60.f);
-						p->nearZ = 0.01f;
-						p->farZ = 100.f;
-						p->ratio = 1.f;
-						auto c = std::make_unique<CameraArcball>();
-						c->set(aabbox<>(point3f(0.f), point3f(1.f)));
-						e.add<Camera3DComponent>(Camera3DComponent{
-							mat4f::identity(),
-							std::move(p),
-							std::move(c)
-							});
-					}*/
-					if (ImGui::MenuItem("Mesh", nullptr, nullptr, isLoaded && !e.has<app::StaticMeshComponent>()))
-						e.add<app::StaticMeshComponent>(app::StaticMeshComponent{});
-					//if (ImGui::MenuItem("Material", nullptr, nullptr, !e.has<MaterialComponent>()))
-					//	e.add<MaterialComponent>(MaterialComponent{ color4f(1.f), false, { nullptr, TextureSampler::nearest}, { nullptr, TextureSampler::nearest}, { nullptr, TextureSampler::nearest} });
-					/*if (ImGui::MenuItem("Point light", nullptr, nullptr, !e.has<PointLightComponent>()))
-						e.add<PointLightComponent>(PointLightComponent{
-							color3f(1.f), 1.f, {}
-							});
-					if (ImGui::MenuItem("Directional light", nullptr, nullptr, !e.has<DirectionalLightComponent>()))
-						e.add<DirectionalLightComponent>(DirectionalLightComponent{
-							vec3f(0,1,0),
-							color3f(1.f), 1.f, {}
-							});
-					if (ImGui::BeginMenu("Text", !e.has<TextComponent>()))
-					{
-						FontAllocator& allocator = resources->allocator<Font>();
-						for (auto& r : allocator)
-						{
-							//if (ImGui::MenuItem(r.first.cstr(), nullptr, nullptr, !e.has<TextComponent>()))
-							//	e.add<TextComponent>(TextComponent{ r.second.resource.get(), TextureSampler::nearest, "", color4f(1.f) });
-						}
-						ImGui::EndMenu();
-					}*/
+					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CameraComponent>()))
+						m_currentNode->attach<CameraComponent>();
+					if (ImGui::MenuItem("Mesh", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<StaticMeshComponent>()))
+						m_currentNode->attach<StaticMeshComponent>();
 					ImGui::EndMenu();
 				}
-				if (ImGui::BeginMenu("Remove", isLoaded && e.valid()))
+				if (ImGui::BeginMenu("Remove", isLoaded && isValid))
 				{
-					if (ImGui::MenuItem("Transform", nullptr, nullptr, isLoaded && e.has<app::Transform3DComponent>()))
-						e.remove<app::Transform3DComponent>();
-					if (ImGui::MenuItem("Hierarchy", nullptr, nullptr, isLoaded && e.has<app::Hierarchy3DComponent>()))
-						e.remove<app::Hierarchy3DComponent>();
-					//if (ImGui::MenuItem("Camera", nullptr, nullptr, e.has<Camera3DComponent>()))
-					//	e.remove<Camera3DComponent>();
-					if (ImGui::MenuItem("Mesh", nullptr, nullptr, isLoaded && e.has<app::StaticMeshComponent>()))
-						e.remove<app::StaticMeshComponent>();
+					if (ImGui::MenuItem("Mesh", nullptr, nullptr, isLoaded && m_currentNode->has<StaticMeshComponent>()))
+						m_currentNode->detach<StaticMeshComponent>();
+					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && m_currentNode->has<CameraComponent>()))
+						m_currentNode->detach<CameraComponent>();
 					ImGui::EndMenu();
 				}
 				ImGui::EndMenu();
 			}
-			/*if (ImGui::BeginMenu("Transform operation"))
+			if (ImGui::BeginMenu("Transform operation"))
 			{
 				bool enabled = m_gizmoOperation == ImGuizmo::TRANSLATE;
 				if (ImGui::MenuItem("Translate", nullptr, &enabled))
@@ -367,37 +279,14 @@ void SceneEditorLayer::onDrawUI()
 				if (ImGui::MenuItem("ScaleZ", nullptr, &enabled))
 					m_gizmoOperation = ImGuizmo::SCALE_Z;
 				ImGui::EndMenu();
-			}*/
+			}
 			ImGui::EndMenuBar();
-		}
-		// --- Graph
-		std::vector<entt::entity> roots;
-		std::map<entt::entity, std::vector<entt::entity>> childrens;
-		if (isLoaded)
-		{
-			Scene& scene = m_scene.get();
-			// TODO do not compute child map every cycle
-			// listen to event ?
-			scene.getWorld().registry().each([&](entt::entity entity) {
-				if (scene.getWorld().registry().has<Hierarchy3DComponent>(entity))
-				{
-					const app::Hierarchy3DComponent& h = scene.getWorld().registry().get<Hierarchy3DComponent>(entity);
-					if (!h.parent.valid())
-						roots.push_back(entity);
-					else
-						childrens[h.parent.handle()].push_back(entity);
-				}
-				else
-					roots.push_back(entity);
-				});
-			ImGui::TextColored(ImGuiLayer::Color::red, "Graph");
 		}
 		if (ImGui::BeginChild("##list", ImVec2(0, 200), true))
 		{
 			if (isLoaded)
 			{
-				for (entt::entity e : roots)
-					recurse(m_scene.get().getWorld(), e, childrens, m_currentEntity);
+				recurse(rootNode, m_currentNode);
 			}
 		}
 		ImGui::EndChild();
@@ -408,7 +297,8 @@ void SceneEditorLayer::onDrawUI()
 		ImGui::SameLine();
 		if (ImGui::Button("Create entity") && isLoaded)
 		{
-			m_currentEntity = m_scene.get().getWorld().createEntity(m_newEntityName).handle();
+			Node3D* parentNode = m_currentNode ? m_currentNode : rootNode;
+			m_currentNode = parentNode->addChild(m_newEntityName);
 		}
 		ImGui::Separator();
 
@@ -417,19 +307,37 @@ void SceneEditorLayer::onDrawUI()
 		{
 			Scene& scene = m_scene.get();
 			ImGui::TextColored(ImGuiLayer::Color::red, "Entity");
-			if (m_currentEntity != entt::null && scene.getWorld().registry().valid(m_currentEntity))
+			if (m_currentNode)
 			{
-				if (scene.getWorld().registry().orphan(m_currentEntity))
+				bool updatedTransform = false;
+				mat4f& transform = m_currentNode->getLocalTransform();
+				float translation[3];
+				float rotation[3];
+				float scale[3];
+				ImGuizmo::DecomposeMatrixToComponents(transform.cols[0].data, translation, rotation, scale);
+				updatedTransform |= ImGui::InputFloat3("Translation", translation);
+				updatedTransform |= ImGui::InputFloat3("Rotation", rotation);
+				updatedTransform |= ImGui::InputFloat3("Scale", scale);
+				if (updatedTransform)
+					ImGuizmo::RecomposeMatrixFromComponents(translation, rotation, scale, transform.cols[0].data);
+
+				mat4f view = m_cameraController->view();
+				mat4f projection = m_cameraProjection->projection();
+				// Draw gizmo axis
+				ImGuiIO& io = ImGui::GetIO();
+				ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+				updatedTransform |= ImGuizmo::Manipulate(view[0].data, projection[0].data, (ImGuizmo::OPERATION)m_gizmoOperation, ImGuizmo::MODE::WORLD, transform[0].data);
+				
+
+				if (m_currentNode->isOrphan())
 				{
 					ImGui::Text("Add a component to the entity.");
 				}
 				else
 				{
 					// Draw every component.
-					component<TagComponent>(scene.getWorld(), m_currentEntity);
-					component<Transform3DComponent>(scene.getWorld(), m_currentEntity);
-					component<Hierarchy3DComponent>(scene.getWorld(), m_currentEntity);
-					component<StaticMeshComponent>(scene.getWorld(), m_currentEntity);
+					component<StaticMeshComponent>(m_currentNode);
+					component<CameraComponent>(m_currentNode);
 				}
 			}
 		}

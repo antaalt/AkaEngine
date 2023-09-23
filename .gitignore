@@ -4,7 +4,8 @@
 ### Custom ###
 out/
 asset/library/
-asset/Sponza/
+asset/SponzaOBJ/
+asset/SponzaGLTF/
 
 ### CMake ###
 CMakeLists.txt.user

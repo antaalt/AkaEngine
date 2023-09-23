@@ -2,7 +2,7 @@
 
 #include "AssetViewer.hpp"
 #include <Aka/Resource/Resource/StaticMesh.hpp>
-#include <Aka/Scene/Camera.h>
+#include <Aka/Scene/Component/CameraComponent.hpp>
 
 namespace app {
 class StaticMeshViewer : public AssetViewer<aka::StaticMesh>

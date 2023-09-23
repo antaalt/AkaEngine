@@ -40,9 +40,9 @@ void EditorLayer::onLayerRender(aka::gfx::GraphicDevice* _device, gfx::Frame* fr
 		bool open = true;
 		if (ImGui::Begin(getName(), &open, ImGuiWindowFlags_MenuBar))
 		{
-			setVisible(open);
 			onDrawUI();
 		}
+		setVisible(open);
 		ImGui::End();
 	}
 }
