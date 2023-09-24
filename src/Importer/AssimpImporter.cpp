@@ -78,8 +78,6 @@ const char* getAssetTypeFolder(AssetType type)
 	switch (type)
 	{
 	default:
-	case app::AssetType::Unknown:
-		AKA_UNREACHABLE;
 		return nullptr;
 	case app::AssetType::Geometry: return "geometries";
 	case app::AssetType::Material: return "materials";
@@ -87,8 +85,6 @@ const char* getAssetTypeFolder(AssetType type)
 	case app::AssetType::StaticMesh: return "static-meshes";
 	case app::AssetType::DynamicMesh: return "dynamic-meshes";
 	case app::AssetType::Image:return "images";
-	case app::AssetType::Font:return "fonts";
-	case app::AssetType::Audio:return "audios";
 	case app::AssetType::Scene:return "scenes";
 	}
 }
@@ -137,8 +133,11 @@ AssimpLocalImporter::AssimpLocalImporter(const Path& directory, AssetLibrary* _l
 	path.append("import/scene/");
 	for (AssetType type : EnumRange<AssetType>())
 	{
+		const char* folder = getAssetTypeFolder(type);
+		if (folder == nullptr)
+			continue; // Do not need this folder.
 		Path copyPath = path;
-		copyPath.append(getAssetTypeFolder(type));
+		copyPath.append(folder);
 		copyPath.append("/");
 		bool created = OS::Directory::create(copyPath);
 	}

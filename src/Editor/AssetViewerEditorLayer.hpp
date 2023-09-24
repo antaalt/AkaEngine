@@ -25,16 +25,16 @@ public:
 	void onDrawUI();
 
 	template <typename T>
-	void open(aka::ResourceID _resourceID, aka::ResourceHandle<T>& _resourceHandle);
+	void open(aka::AssetID _assetID, aka::ResourceHandle<T>& _resourceHandle);
 private:
 	aka::Vector<AssetViewerBase*> m_assetViewersToCreate;
 	aka::Vector<AssetViewerBase*> m_assetViewersToDestroy;
 	aka::Vector<AssetViewerBase*> m_assetViewers;
 };
 
-template<> void AssetViewerEditorLayer::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::Scene>& _resourceHandle);
-template<> void AssetViewerEditorLayer::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::Texture>& _resourceHandle);
-template<> void AssetViewerEditorLayer::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::StaticMesh>& _resourceHandle);
+template<> void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka::Scene>& _resourceHandle);
+template<> void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka::Texture>& _resourceHandle);
+template<> void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka::StaticMesh>& _resourceHandle);
 
 
 };

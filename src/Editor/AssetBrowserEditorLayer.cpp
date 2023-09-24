@@ -3,6 +3,7 @@
 #include <Aka/Layer/ImGuiLayer.h>
 #include <Aka/OS/OS.h>
 #include <Aka/Resource/Importer/Importer.hpp>
+#include <Aka/Resource/Importer/TextureImporter.hpp>
 #include <Aka/Resource/AssetLibrary.hpp>
 
 #include "../Importer/AssimpImporter.hpp"
@@ -60,14 +61,14 @@ struct AssetNode
 					{
 					case AssetType::Scene:
 						EventDispatcher<SceneSwitchEvent>::trigger(SceneSwitchEvent{
-							library->load<Scene>(library->getResourceID(node.id), Application::app()->renderer())
+							library->load<Scene>(node.id, Application::app()->renderer())
 							});
 						break;
 					case AssetType::StaticMesh:
-						library->load<StaticMesh>(library->getResourceID(node.id), Application::app()->renderer());
+						library->load<StaticMesh>(node.id, Application::app()->renderer());
 						break;
 					case AssetType::Image:
-						library->load<Texture>(library->getResourceID(node.id), Application::app()->renderer());
+						library->load<Texture>(node.id, Application::app()->renderer());
 						break;
 					default:
 						Logger::warn("Trying to load unimplemented type.");
@@ -144,7 +145,7 @@ static void drawResource(const char* type, AssetLibrary* library, AssetViewerEdi
 	Application* app = Application::app();
 
 	bool opened = false;
-	std::pair<ResourceID, ResourceHandle<T>> pair;
+	std::pair<AssetID, ResourceHandle<T>> pair;
 	ImGui::TableNextRow();
 	ImGui::TableNextColumn();
 	bool open = ImGui::TreeNodeEx(type, ImGuiTreeNodeFlags_SpanFullWidth);
@@ -170,12 +171,12 @@ static void drawResource(const char* type, AssetLibrary* library, AssetViewerEdi
 			case ResourceState::Unknown: return "Unknown";
 			}
 			};
-		for (std::pair<ResourceID, ResourceHandle<T>>& element : library->getRange<T>())
+		for (std::pair<AssetID, ResourceHandle<T>>& element : library->getRange<T>())
 		{
 			if (element.second.isLoaded())
 			{
 				T& e = element.second.get();
-				AssetID assetID = library->getAssetID(element.first);
+				AssetID assetID = element.first;
 				AssetInfo assetInfo = library->getAssetInfo(assetID);
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
@@ -232,7 +233,6 @@ void AssetBrowserEditorLayer::onDrawUI()
 				openImportWindow = true;
 				importDeferred([&](const aka::Path& path) -> bool{
 					aka::Logger::info("Importing scene : ", path);
-
 					AssimpImporter importer;
 					ImportResult res = importer.import(m_library, path);
 					return ImportResult::Succeed == res;
@@ -243,6 +243,13 @@ void AssetBrowserEditorLayer::onDrawUI()
 			}
 			if (ImGui::MenuItem("Texture"))
 			{
+				openImportWindow = true;
+				importDeferred([&](const aka::Path& path) -> bool {
+					aka::Logger::info("Importing texture : ", path);
+					TextureImporter importer;
+					ImportResult res = importer.import(m_library, path);
+					return ImportResult::Succeed == res;
+				});
 			}
 			if (ImGui::MenuItem("Audio"))
 			{

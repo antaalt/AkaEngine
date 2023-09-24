@@ -28,7 +28,7 @@ protected:
 public:
 	virtual const char* getResourceName() const = 0;
 	virtual aka::ResourceType getResourceType() const = 0;
-	virtual aka::ResourceID getResourceID() const = 0;
+	virtual aka::AssetID getAssetID() const = 0;
 	virtual const aka::Resource* getResource() const = 0;
 	virtual bool isLoaded() const = 0;
 	virtual void drawUI() = 0;
@@ -42,13 +42,13 @@ template <typename T>
 class AssetViewer : public AssetViewerBase
 {
 public:
-	AssetViewer(aka::ResourceType _type, aka::ResourceID _resourceID, aka::ResourceHandle<T> _resource);
+	AssetViewer(aka::ResourceType _type, aka::AssetID _resourceID, aka::ResourceHandle<T> _resource);
 	virtual ~AssetViewer() {}
 
 protected:
 	const char* getResourceName() const override final;
 	aka::ResourceType getResourceType() const override final;
-	aka::ResourceID getResourceID() const override final;
+	aka::AssetID getAssetID() const override final;
 	const aka::Resource* getResource() const override final;
 	bool isLoaded() const override final;
 protected:
@@ -59,13 +59,13 @@ protected:
 	virtual void onLoad(const T& res) {};
 protected:
 	aka::ResourceType m_type;
-	aka::ResourceID m_id;
+	aka::AssetID m_id;
 	aka::ResourceHandle<T> m_resource;
 };
 
 
 template<typename T>
-inline AssetViewer<T>::AssetViewer(aka::ResourceType _type, aka::ResourceID _resourceID, aka::ResourceHandle<T> _resource) :
+inline AssetViewer<T>::AssetViewer(aka::ResourceType _type, aka::AssetID _resourceID, aka::ResourceHandle<T> _resource) :
 	m_type(_type),
 	m_id(_resourceID),
 	m_resource(_resource)
@@ -87,7 +87,7 @@ inline aka::ResourceType AssetViewer<T>::getResourceType() const
 }
 
 template<typename T>
-inline aka::ResourceID AssetViewer<T>::getResourceID() const
+inline aka::AssetID AssetViewer<T>::getAssetID() const
 {
 	return m_id;
 }

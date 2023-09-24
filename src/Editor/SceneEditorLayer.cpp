@@ -174,7 +174,7 @@ AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer)
 	sphereMesh.batches.append(batch);
 	ArchiveSaveResult res = sphereMesh.save(ArchiveSaveContext(_library));
 
-	_library->load<StaticMesh>(_library->getResourceID(meshID), sphereMesh, _renderer);
+	_library->load<StaticMesh>(meshID, sphereMesh, _renderer);
 	return meshID;
 }
 
@@ -228,7 +228,7 @@ AssetID createCubeMesh(AssetLibrary* _library, Renderer* _renderer)
 	ArchiveStaticMesh sphereMesh(meshID);
 	sphereMesh.batches.append(batch);
 	ArchiveSaveResult res = sphereMesh.save(ArchiveSaveContext(_library));
-	_library->load<StaticMesh>(_library->getResourceID(meshID), sphereMesh, _renderer);
+	_library->load<StaticMesh>(meshID, sphereMesh, _renderer);
 	return meshID;
 }
 
@@ -408,9 +408,7 @@ void SceneEditorLayer::onDrawUI()
 				{
 					if (isLoaded)
 					{
-						ResourceID resID = m_scene.get().getID();
-						AssetID assetID = m_library->getAssetID(resID);
-						ArchiveScene archive(assetID);
+						ArchiveScene archive(m_scene.get().getID());
 						m_scene.get().save(m_library, Application::app()->renderer(), archive);
 						ArchiveSaveResult res = archive.save(ArchiveSaveContext(m_library));
 					}

@@ -150,8 +150,8 @@ struct StaticMeshViewerUBO {
 	mat4f normal;
 };
 
-StaticMeshViewer::StaticMeshViewer(ResourceID _resourceID, ResourceHandle<app::StaticMesh> _resourceHandle) :
-	AssetViewer(ResourceType::StaticMesh, _resourceID, _resourceHandle),
+StaticMeshViewer::StaticMeshViewer(AssetID _assetID, ResourceHandle<app::StaticMesh> _resourceHandle) :
+	AssetViewer(ResourceType::StaticMesh, _assetID, _resourceHandle),
 	m_needCameraUpdate(false)
 {
 }

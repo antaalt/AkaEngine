@@ -45,7 +45,7 @@ void AssetViewerBase::render(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* 
 
 void AssetViewerBase::onReceive(const aka::ResourceLoadedEvent& event)
 {
-	if (event.resource == getResourceID())
+	if (event.resource == getAssetID())
 	{
 		onLoad();
 		m_loaded = true;

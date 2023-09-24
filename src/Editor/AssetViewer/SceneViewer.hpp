@@ -8,7 +8,7 @@ namespace app {
 class SceneViewer : public AssetViewer<aka::Scene>
 {
 public:
-	SceneViewer(aka::ResourceID _resourceID, aka::ResourceHandle<aka::Scene> _resourceHandle);
+	SceneViewer(aka::AssetID _assetID, aka::ResourceHandle<aka::Scene> _resourceHandle);
 	~SceneViewer() {}
 
 	void onCreate(aka::gfx::GraphicDevice* _device) override {}

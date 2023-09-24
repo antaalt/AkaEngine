@@ -96,8 +96,8 @@ const char* toString(gfx::TextureType type)
 	}
 }
 
-TextureViewer::TextureViewer(ResourceID _resourceID, ResourceHandle<Texture> _resourceHandle) :
-	AssetViewer(ResourceType::Texture, _resourceID, _resourceHandle),
+TextureViewer::TextureViewer(AssetID _assetID, ResourceHandle<Texture> _resourceHandle) :
+	AssetViewer(ResourceType::Texture, _assetID, _resourceHandle),
 	m_descriptorSet(gfx::DescriptorSetHandle::null),
 	m_sampler(gfx::SamplerHandle::null),
 	m_needUpdate(false),

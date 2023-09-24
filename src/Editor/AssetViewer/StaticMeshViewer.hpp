@@ -8,7 +8,7 @@ namespace app {
 class StaticMeshViewer : public AssetViewer<aka::StaticMesh>
 {
 public:
-	StaticMeshViewer(aka::ResourceID _resourceID, aka::ResourceHandle<aka::StaticMesh> _resourceHandle);
+	StaticMeshViewer(aka::AssetID _assetID, aka::ResourceHandle<aka::StaticMesh> _resourceHandle);
 	~StaticMeshViewer();
 
 	void onCreate(aka::gfx::GraphicDevice* _device) override;

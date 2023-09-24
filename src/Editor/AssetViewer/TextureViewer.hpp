@@ -8,7 +8,7 @@ namespace app {
 class TextureViewer : public AssetViewer<aka::Texture>
 {
 public:
-	TextureViewer(aka::ResourceID _resourceID, aka::ResourceHandle<aka::Texture> _resourceHandle);
+	TextureViewer(aka::AssetID _assetID, aka::ResourceHandle<aka::Texture> _resourceHandle);
 	~TextureViewer();
 
 	void onCreate(aka::gfx::GraphicDevice* _device) override;

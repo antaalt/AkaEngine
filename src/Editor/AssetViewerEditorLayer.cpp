@@ -143,48 +143,48 @@ void AssetViewerEditorLayer::onDrawUI()
 }
 
 template<> 
-void AssetViewerEditorLayer::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::Scene>& _resourceHandle)
+void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka::Scene>& _resourceHandle)
 {
 	setVisible(true);
 	for (AssetViewerBase*& viewer : m_assetViewers)
 	{
-		if (_resourceID == viewer->getResourceID())
+		if (_assetID == viewer->getAssetID())
 		{
 			// Resource already opened.
 			return;
 		}
 	}
-	m_assetViewersToCreate.append(new SceneViewer(_resourceID, _resourceHandle));
+	m_assetViewersToCreate.append(new SceneViewer(_assetID, _resourceHandle));
 }
 
 template<>
-void AssetViewerEditorLayer::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::StaticMesh>& _resourceHandle)
+void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka::StaticMesh>& _resourceHandle)
 {
 	setVisible(true);
 	for (AssetViewerBase*& viewer : m_assetViewers)
 	{
-		if (_resourceID == viewer->getResourceID())
+		if (_assetID == viewer->getAssetID())
 		{
 			// Resource already opened.
 			return;
 		}
 	}
-	m_assetViewersToCreate.append(new StaticMeshViewer(_resourceID, _resourceHandle));
+	m_assetViewersToCreate.append(new StaticMeshViewer(_assetID, _resourceHandle));
 }
 
 template<>
-void AssetViewerEditorLayer::open(aka::ResourceID _resourceID, aka::ResourceHandle<aka::Texture>& _resourceHandle)
+void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka::Texture>& _resourceHandle)
 {
 	setVisible(true);
 	for (AssetViewerBase*& viewer : m_assetViewers)
 	{
-		if (_resourceID == viewer->getResourceID())
+		if (_assetID == viewer->getAssetID())
 		{
 			// Resource already opened.
 			return;
 		}
 	}
-	m_assetViewersToCreate.append(new TextureViewer(_resourceID, _resourceHandle));
+	m_assetViewersToCreate.append(new TextureViewer(_assetID, _resourceHandle));
 }
 
 };
