@@ -339,9 +339,11 @@ void SceneEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Fram
 {
 	if (m_nodeToDestroy)
 	{
-		AKA_ASSERT(false, "");
-		//m_nodeToDestroy->destroy(_device);
-		//m_nodeToDestroy = nullptr;
+		//AKA_ASSERT(false, "");
+		m_nodeToDestroy->unlink();
+		m_nodeToDestroy->destroy(m_library, Application::app()->renderer());
+		m_scene.get().destroyChild(m_nodeToDestroy);
+		m_nodeToDestroy = nullptr;
 	}
 }
 
@@ -406,7 +408,6 @@ void SceneEditorLayer::onDrawUI()
 				{
 					if (isLoaded)
 					{
-						
 						ResourceID resID = m_scene.get().getID();
 						AssetID assetID = m_library->getAssetID(resID);
 						ArchiveScene archive(assetID);
@@ -538,7 +539,10 @@ void SceneEditorLayer::onDrawUI()
 		{
 			if (isLoaded)
 			{
-				recurse(rootNode, m_currentNode);
+				for (uint32_t iChild = 0; iChild < rootNode->getChildCount(); iChild++)
+				{
+					recurse(rootNode->getChild(iChild), m_currentNode);
+				}
 			}
 		}
 		ImGui::EndChild();
@@ -558,9 +562,9 @@ void SceneEditorLayer::onDrawUI()
 		if (isLoaded)
 		{
 			Scene& scene = m_scene.get();
-			ImGui::TextColored(ImGuiLayer::Color::red, "Entity");
 			if (m_currentNode)
 			{
+				ImGui::TextColored(ImGuiLayer::Color::red, "%s", m_currentNode->getName().cstr());
 				bool updatedTransform = false;
 				mat4f& transform = m_currentNode->getLocalTransform();
 				float translation[3];
@@ -594,6 +598,10 @@ void SceneEditorLayer::onDrawUI()
 					component<CameraComponent>(m_currentNode);
 					component<CustomComponent>(m_currentNode);
 				}
+			}
+			else
+			{
+				ImGui::TextColored(ImGuiLayer::Color::red, "No node selected");
 			}
 		}
 	}
