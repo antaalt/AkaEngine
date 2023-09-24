@@ -58,12 +58,6 @@ const char* toString(gfx::VertexType type)
 		return "vec3";
 	case gfx::VertexType::Vec4:
 		return "vec4";
-	case gfx::VertexType::Mat2:
-		return "mat2";
-	case gfx::VertexType::Mat3:
-		return "mat3";
-	case gfx::VertexType::Mat4:
-		return "mat4";
 	case gfx::VertexType::Scalar:
 		return "scalar";
 	default:
@@ -193,7 +187,7 @@ void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 		p,
 		gfx::PrimitiveType::Triangles,
 		rpState,
-		Vertex::getState(),
+		gfx::VertexState{}.add(StaticVertex::getState()),
 		gfx::ViewportState{}.size(m_width, m_height),
 		gfx::DepthStateDefault,
 		gfx::StencilStateDefault,

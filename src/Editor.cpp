@@ -14,6 +14,7 @@
 #include "Editor/AssetBrowserEditorLayer.hpp"
 #include "Editor/SceneEditorLayer.hpp"
 #include "Editor/InfoEditorLayer.hpp"
+#include "Component/CustomComponent.hpp"
 
 using namespace aka;
 
@@ -30,122 +31,6 @@ struct MaterialUniformBuffer
 };
 // ------------ / RENDERER ----------------
 
-static const uint32_t s_vertexCount = 36;
-
-static const float s_vertices[s_vertexCount * 5] = {
-	-1.0f,  1.0f, -1.0f,	0.f, 1.f,
-	-1.0f, -1.0f, -1.0f,	0.f, 0.f,
-	 1.0f, -1.0f, -1.0f,	1.f, 0.f,
-	 1.0f, -1.0f, -1.0f,	1.f, 0.f,
-	 1.0f,  1.0f, -1.0f,	1.f, 1.f,
-	-1.0f,  1.0f, -1.0f,	0.f, 1.f,
-
-	-1.0f, -1.0f,  1.0f,	0.f, 1.f,
-	-1.0f, -1.0f, -1.0f,	0.f, 0.f,
-	-1.0f,  1.0f, -1.0f,	1.f, 0.f,
-	-1.0f,  1.0f, -1.0f,	1.f, 0.f,
-	-1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	-1.0f, -1.0f,  1.0f,	0.f, 1.f,
-
-	 1.0f, -1.0f, -1.0f,	0.f, 0.f,
-	 1.0f, -1.0f,  1.0f,	0.f, 1.f,
-	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	 1.0f,  1.0f, -1.0f,	1.f, 0.f,
-	 1.0f, -1.0f, -1.0f,	0.f, 0.f,
-
-	-1.0f, -1.0f,  1.0f,	0.f, 0.f,
-	-1.0f,  1.0f,  1.0f,	0.f, 1.f,
-	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	 1.0f, -1.0f,  1.0f,	1.f, 0.f,
-	-1.0f, -1.0f,  1.0f,	0.f, 0.f,
-
-	-1.0f,  1.0f, -1.0f,	0.f, 0.f,
-	 1.0f,  1.0f, -1.0f,	1.f, 0.f,
-	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	-1.0f,  1.0f,  1.0f,	0.f, 1.f,
-	-1.0f,  1.0f, -1.0f,	0.f, 0.f,
-
-	-1.0f, -1.0f, -1.0f,	0.f, 0.f,
-	-1.0f, -1.0f,  1.0f,	0.f, 1.f,
-	 1.0f, -1.0f, -1.0f,	1.f, 0.f,
-	 1.0f, -1.0f, -1.0f,	1.f, 0.f,
-	-1.0f, -1.0f,  1.0f,	0.f, 1.f,
-	 1.0f, -1.0f,  1.0f,	1.f, 1.f,
-};
-
-std::vector<Vertex> getSphereVertices(float radius, uint32_t segmentCount, uint32_t ringCount)
-{
-	// http://www.songho.ca/opengl/gl_sphere.html
-	std::vector<Vertex> vertices;
-
-	float length = 1.f / radius;
-	anglef sectorStep = 2.f * pi<float> / (float)ringCount;
-	anglef stackStep = pi<float> / (float)segmentCount;
-	anglef ringAngle, segmentAngle;
-	aabbox<> bounds;
-
-	for (uint32_t i = 0; i <= segmentCount; ++i)
-	{
-		segmentAngle = pi<float> / 2.f - (float)i * stackStep; // starting from pi/2 to -pi/2
-		float xy = radius * cos(segmentAngle); // r * cos(u)
-		float z = radius * sin(segmentAngle); // r * sin(u)
-
-		// add (ringCount+1) vertices per segment
-		// the first and last vertices have same position and normal, but different uv
-		for (uint32_t j = 0; j <= ringCount; ++j)
-		{
-			Vertex v;
-			ringAngle = (float)j * sectorStep; // starting from 0 to 2pi
-
-			v.position.x = xy * cos(ringAngle); // r * cos(u) * cos(v)
-			v.position.y = xy * sin(ringAngle); // r * cos(u) * sin(v)
-			v.position.z = z;
-
-			//v.normal = norm3f(v.position / radius);
-
-			v.uv.u = (float)j / ringCount;
-			v.uv.v = (float)i / segmentCount;
-			//v.color = color4f(1.f);
-			vertices.push_back(v);
-			bounds.include(v.position);
-		}
-	}
-	return vertices;
-}
-
-std::vector<uint32_t> getSphereIndices(float radius, uint32_t segmentCount, uint32_t ringCount)
-{
-	std::vector<uint32_t> indices;
-	for (uint32_t i = 0; i < segmentCount; ++i)
-	{
-		uint32_t k1 = i * (ringCount + 1);     // beginning of current stack
-		uint32_t k2 = k1 + ringCount + 1;      // beginning of next stack
-
-		for (uint32_t j = 0; j < ringCount; ++j, ++k1, ++k2)
-		{
-			// 2 triangles per sector excluding first and last stacks
-			// k1 => k2 => k1+1
-			if (i != 0)
-			{
-				indices.push_back(k1);
-				indices.push_back(k2);
-				indices.push_back(k1 + 1);
-			}
-			// k1+1 => k2 => k2+1
-			if (i != (segmentCount - 1))
-			{
-				indices.push_back(k1 + 1);
-				indices.push_back(k2);
-				indices.push_back(k2 + 1);
-			}
-		}
-	}
-	return indices;
-}
-
 
 Editor::Editor(const Config& cfg) :
 	Application(cfg)
@@ -160,6 +45,7 @@ Editor::Editor(const Config& cfg) :
 	sceneEditor->setCurrentScene(m_scene);
 	sceneEditor->setCurrentCameraController(&m_cameraController);
 	sceneEditor->setCurrentCameraProjection(&m_cameraProjection);
+	sceneEditor->setLibrary(assets());
 	assetBrowserEditor->setLibrary(assets());
 	assetBrowserEditor->setAssetViewer(assetViewerEditor);
 	infoEditor->setEditorLayer(app::EditorLayerType::AssetBrowser, assetBrowserEditor);
@@ -505,6 +391,10 @@ void Editor::onUpdate(aka::Time time)
 
 void Editor::onRender(gfx::GraphicDevice* device, gfx::Frame* _frame)
 {
+	if (m_scene.isLoaded())
+	{
+		m_scene.get().getRoot().update(assets(), renderer());
+	}
 	gfx::CommandList* cmd = device->getGraphicCommandList(_frame);
 
 	if (m_dirty)
@@ -589,7 +479,7 @@ void Editor::createRenderPass()
 		m_program,
 		gfx::PrimitiveType::Triangles,
 		device->get(m_renderPass)->state,
-		Vertex::getState(),
+		gfx::VertexState{}.add(StaticVertex::getState()),
 		gfx::ViewportState{}.size(width(), height()),
 		gfx::DepthStateLessEqual,
 		gfx::StencilStateDisabled,

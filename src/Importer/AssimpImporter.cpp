@@ -171,7 +171,7 @@ AssetID AssimpLocalImporter::registerAsset(AssetType type, const String& name)
 
 void AssimpLocalImporter::process()
 {
-	ArchiveSceneEntity root = createEntity("ROOT");
+	ArchiveSceneEntity root = createEntity("ImporterRoot");
 	addComponent(root, SceneComponent::Transform, addTransform(m_scene, mat4f::identity()));
 	addComponent(root, SceneComponent::Hierarchy, ArchiveSceneID::Invalid); // No parent here.
 
@@ -251,7 +251,7 @@ ArchiveSceneID AssimpLocalImporter::processMesh(aiMesh* mesh)
 	archiveGeometry.vertices.resize(mesh->mNumVertices);
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 	{
-		Vertex& vertex = archiveGeometry.vertices[i];
+		StaticVertex& vertex = archiveGeometry.vertices[i];
 		// process vertex positions, normals and texture coordinates
 		vertex.position.x = mesh->mVertices[i].x;
 		vertex.position.y = mesh->mVertices[i].y;

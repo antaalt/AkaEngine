@@ -20,6 +20,8 @@ add_executable(AkaEditor
 	"src/Editor/AssetViewer/SceneViewer.cpp"
 	"src/Editor/AssetViewer/TextureViewer.cpp"
 	"src/Editor/EditorLayer.cpp"
+	
+	"src/Component/CustomComponent.cpp"
 )
 
 # ASSIMP

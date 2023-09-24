@@ -4,7 +4,7 @@
 #include <Aka/Graphic/GraphicDevice.h>
 #include <Aka/Resource/Resource/Resource.hpp>
 #include <Aka/Core/Event.h>
-#include <Aka/Scene/Node3D.hpp>
+#include <Aka/Scene/Node.hpp>
 #include <Aka/Scene/Component/CameraComponent.hpp>
 #include <Aka/Layer/ImGuiLayer.h>
 
@@ -28,13 +28,15 @@ public:
 	void onResize(uint32_t width, uint32_t height) override;
 	void onReceive(const aka::ResourceLoadedEvent& event);
 public:
+	void setLibrary(aka::AssetLibrary* library);
 	void setCurrentScene(aka::ResourceHandle<aka::Scene> _scene);
 	void setCurrentCameraController(aka::CameraController* _camera) { m_cameraController = _camera; }
 	void setCurrentCameraProjection(aka::CameraProjection* _camera) { m_cameraProjection = _camera; }
 private:
+	aka::AssetLibrary* m_library;
 	ImGuizmo::OPERATION m_gizmoOperation = ImGuizmo::TRANSLATE;
-	aka::Node3D* m_nodeToDestroy = nullptr;
-	aka::Node3D* m_currentNode = nullptr;
+	aka::Node* m_nodeToDestroy = nullptr;
+	aka::Node* m_currentNode = nullptr;
 	aka::ResourceHandle<aka::Scene> m_scene;
 	aka::CameraController* m_cameraController = nullptr;
 	aka::CameraProjection* m_cameraProjection = nullptr;
