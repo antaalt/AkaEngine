@@ -48,6 +48,7 @@ private:
 	std::function<bool(const aka::Path& path)> m_importCallback;
 private:
 	AssetNode* m_rootNode;
+	const AssetNode* m_currentNode = nullptr;
 	bool m_assetUpdated = false;
 	AssetViewerEditorLayer* m_viewerEditor;
 	aka::AssetLibrary* m_library;

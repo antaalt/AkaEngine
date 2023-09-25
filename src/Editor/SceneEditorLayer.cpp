@@ -395,6 +395,8 @@ void SceneEditorLayer::onDrawUI()
 				}
 			}
 		};
+	bool resetScene = false;
+	bool newScene = false;
 	const bool isLoaded = m_scene.isLoaded();
 	{
 		// --- Menu
@@ -404,6 +406,15 @@ void SceneEditorLayer::onDrawUI()
 		{
 			if (ImGui::BeginMenu("File"))
 			{
+				if (ImGui::MenuItem("New"))
+				{
+					newScene = true;
+				}
+				if (ImGui::MenuItem("Close"))
+				{
+					resetScene = true;
+				}
+				ImGui::Separator();
 				if (ImGui::MenuItem("Save", nullptr, nullptr, isLoaded))
 				{
 					if (isLoaded)
@@ -415,7 +426,6 @@ void SceneEditorLayer::onDrawUI()
 				}
 				if (ImGui::MenuItem("Load"))
 				{
-					//Scene::load(world, "library/scene.json");
 				}
 				ImGui::EndMenu();
 			}
@@ -452,11 +462,12 @@ void SceneEditorLayer::onDrawUI()
 
 					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded))
 					{
-						//m_currentNode = Scene::createArcballCameraNode(world).handle();
+						m_currentNode = m_scene.get().createChild(m_currentNode, "Camera");
+						m_currentNode->attach<CameraComponent>();
 					}
 					if (ImGui::MenuItem("Empty", nullptr, nullptr, isLoaded))
 					{
-						//m_currentNode = world.createNode("New empty").handle();
+						m_currentNode = m_scene.get().createChild(m_currentNode, "Empty");
 					}
 					ImGui::EndMenu();
 				}
@@ -563,28 +574,32 @@ void SceneEditorLayer::onDrawUI()
 			if (m_currentNode)
 			{
 				ImGui::TextColored(ImGuiLayer::Color::red, "%s", m_currentNode->getName().cstr());
-				bool updatedTransform = false;
-				mat4f& transform = m_currentNode->getLocalTransform();
-				float translation[3];
-				float rotation[3];
-				float scale[3];
-				ImGuizmo::DecomposeMatrixToComponents(transform.cols[0].data, translation, rotation, scale);
-				updatedTransform |= ImGui::InputFloat3("Translation", translation);
-				updatedTransform |= ImGui::InputFloat3("Rotation", rotation);
-				updatedTransform |= ImGui::InputFloat3("Scale", scale);
-				if (updatedTransform)
-					ImGuizmo::RecomposeMatrixFromComponents(translation, rotation, scale, transform.cols[0].data);
+				if (ImGui::TreeNodeEx("Transform", ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_DefaultOpen))
+				{
+					bool updatedTransform = false;
+					mat4f& transform = m_currentNode->getLocalTransform();
+					float translation[3];
+					float rotation[3];
+					float scale[3];
+					ImGuizmo::DecomposeMatrixToComponents(transform.cols[0].data, translation, rotation, scale);
+					updatedTransform |= ImGui::InputFloat3("Translation", translation);
+					updatedTransform |= ImGui::InputFloat3("Rotation", rotation);
+					updatedTransform |= ImGui::InputFloat3("Scale", scale);
+					if (updatedTransform)
+						ImGuizmo::RecomposeMatrixFromComponents(translation, rotation, scale, transform.cols[0].data);
 
-				mat4f view = m_cameraController->view();
-				mat4f projection = m_cameraProjection->projection();
-				// Draw gizmo axis
-				ImGuiIO& io = ImGui::GetIO();
-				ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-				updatedTransform |= ImGuizmo::Manipulate(view[0].data, projection[0].data, m_gizmoOperation, ImGuizmo::MODE::LOCAL, transform[0].data);
-				
-				if (updatedTransform)
-					m_currentNode->setFlag(NodeUpdateFlag::Transform);
+					mat4f view = m_cameraController->view();
+					mat4f projection = m_cameraProjection->projection();
+					// Draw gizmo axis
+					ImGuiIO& io = ImGui::GetIO();
+					ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+					updatedTransform |= ImGuizmo::Manipulate(view[0].data, projection[0].data, m_gizmoOperation, ImGuizmo::MODE::LOCAL, transform[0].data);
 
+					if (updatedTransform)
+						m_currentNode->setFlag(NodeUpdateFlag::Transform);
+
+					ImGui::TreePop();
+				}
 				if (m_currentNode->isOrphan())
 				{
 					ImGui::Text("Add a component to the entity.");
@@ -602,6 +617,20 @@ void SceneEditorLayer::onDrawUI()
 				ImGui::TextColored(ImGuiLayer::Color::red, "No node selected");
 			}
 		}
+	}
+	if (resetScene && m_scene.isLoaded())
+	{
+		AssetID assetID = m_scene.get().getID();
+		m_scene = ResourceHandle<Scene>::invalid();
+		m_library->unload<Scene>(assetID, Application::app()->renderer());
+		m_currentNode = nullptr;
+		m_nodeToDestroy = nullptr;
+	}
+	if (newScene)
+	{
+		// If we want to create a new scene, letsss go.
+		// Asset ID based on path, so...
+		// Should have an asset ID based on something else
 	}
 }
 
@@ -632,6 +661,8 @@ void SceneEditorLayer::setCurrentScene(ResourceHandle<Scene> _scene)
 	setVisible(true);
 	setEnabled(true);
 	m_scene = _scene;
+	m_currentNode = nullptr;
+	m_nodeToDestroy = nullptr;
 }
 
 };
