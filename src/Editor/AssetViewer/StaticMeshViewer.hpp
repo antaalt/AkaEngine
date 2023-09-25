@@ -27,7 +27,9 @@ private:
 	aka::gfx::FramebufferHandle m_target;
 	aka::gfx::RenderPassHandle m_renderPass;
 	aka::gfx::GraphicPipelineHandle m_pipeline;
+	aka::gfx::DescriptorPoolHandle m_descriptorPool;
 	aka::gfx::DescriptorSetHandle m_descriptorSet;
+	aka::gfx::DescriptorPoolHandle m_imguiDescriptorPool;
 	aka::gfx::DescriptorSetHandle m_imguiDescriptorSet;
 	aka::gfx::SamplerHandle m_imguiSampler;
 	aka::gfx::BufferHandle m_uniform;

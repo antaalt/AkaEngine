@@ -19,6 +19,7 @@ public:
 protected:
 	void drawUIResource(const aka::Texture& texture) override;
 private:
+	aka::gfx::DescriptorPoolHandle m_descriptorPool;
 	aka::gfx::DescriptorSetHandle m_descriptorSet;
 	aka::gfx::SamplerHandle m_sampler;
 	bool m_needUpdate = false;

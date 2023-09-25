@@ -195,8 +195,9 @@ void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 		gfx::BlendStateDefault,
 		gfx::FillStateLine
 	);
-
-	m_descriptorSet = _device->createDescriptorSet("StaticMeshViewerDescriptorSet", _device->get(p)->sets[0]);
+	// TODO 1 by gfx::MaxFrameInFlight
+	m_descriptorPool = _device->createDescriptorPool("StaticMeshViewerDescriptorPool", _device->get(p)->sets[0], 1);
+	m_descriptorSet = _device->allocateDescriptorSet("StaticMeshViewerDescriptorSet", _device->get(p)->sets[0], m_descriptorPool);
 	{
 		m_arcball.set(aabbox<>(point3f(-20.f), point3f(20.f)));
 		m_projection.nearZ = 0.1f;
@@ -219,7 +220,8 @@ void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 	{
 		gfx::ShaderBindingState state{};
 		state.add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment);
-		m_imguiDescriptorSet = _device->createDescriptorSet("ImGuiStaticMeshViewerDescriptorSet", state);
+		m_imguiDescriptorPool = _device->createDescriptorPool("StaticMeshViewerDescriptorPool", _device->get(p)->sets[0], 1);
+		m_imguiDescriptorSet = _device->allocateDescriptorSet("ImGuiStaticMeshViewerDescriptorSet", state, m_imguiDescriptorPool);
 		m_imguiSampler = _device->createSampler("ImGuiTextureViewerSampler",
 			gfx::Filter::Nearest, gfx::Filter::Nearest,
 			gfx::SamplerMipMapMode::None,
@@ -234,8 +236,10 @@ void StaticMeshViewer::onDestroy(gfx::GraphicDevice* _device)
 {
 	_device->destroy(m_pipeline);
 	_device->destroy(m_imguiSampler);
-	_device->destroy(m_imguiDescriptorSet);
-	_device->destroy(m_descriptorSet);
+	_device->free(m_imguiDescriptorSet);
+	_device->destroy(m_imguiDescriptorPool);
+	_device->free(m_descriptorSet);
+	_device->destroy(m_descriptorPool);
 	_device->destroy(m_uniform);
 	_device->destroy(m_target);
 	_device->destroy(m_renderTarget);

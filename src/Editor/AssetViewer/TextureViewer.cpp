@@ -115,7 +115,9 @@ void TextureViewer::onCreate(gfx::GraphicDevice* _device)
 	gfx::ShaderBindingState state{};
 	state.add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment);
 
-	m_descriptorSet = _device->createDescriptorSet("ImGuiTextureViewerDescriptorSet", state);
+	// TODO should share descriptor pool between texture viewer.
+	m_descriptorPool = _device->createDescriptorPool("ImGuiTextureViewerDescriptorPool", state, 1);
+	m_descriptorSet = _device->allocateDescriptorSet("ImGuiTextureViewerDescriptorSet", state, m_descriptorPool);
 	m_sampler = _device->createSampler("ImGuiTextureViewerSampler",
 		gfx::Filter::Nearest, gfx::Filter::Nearest,
 		gfx::SamplerMipMapMode::None,
@@ -137,7 +139,8 @@ void TextureViewer::onCreate(gfx::GraphicDevice* _device)
 
 void TextureViewer::onDestroy(gfx::GraphicDevice* _device)
 {
-	_device->destroy(m_descriptorSet);
+	_device->free(m_descriptorSet);
+	_device->destroy(m_descriptorPool);
 	_device->destroy(m_sampler);
 }
 
