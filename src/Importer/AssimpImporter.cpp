@@ -15,18 +15,18 @@ namespace app {
 
 using namespace aka;
 
-struct AssimpLocalImporter
+class AssimpImporterImpl
 {
-	AssimpLocalImporter(const Path& directory, AssetLibrary* _library, const aiScene* scene);
-
-	AssetID registerAsset(AssetType type, const String& name);
+public:
+	AssimpImporterImpl(AssimpImporter* importer, const Path& directory, const aiScene* scene);
 
 	void process();
 	void processNode(ArchiveSceneID parent, aiNode* node);
 	ArchiveSceneID processMesh(aiMesh* mesh);
+	ArchiveMaterial processMaterial(aiMaterial* material);
 	ArchiveImage processImage(const Path& path);
 private:
-	AssetLibrary* m_library;
+	AssimpImporter* m_importer;
 	Path m_directory;
 	const aiScene* m_assimpScene;
 	ArchiveScene m_scene;
@@ -35,6 +35,9 @@ private:
 	ArchiveImage m_blankColorTexture;
 	ArchiveImage m_missingNormalTexture;
 	ArchiveImage m_missingRoughnessTexture;
+	ArchiveMaterial m_dummyMaterial;
+	std::map<AssetID, ArchiveImage> m_imageCache;
+	std::map<AssetID, ArchiveMaterial> m_materialCache;
 };
 
 ArchiveSceneEntity createEntity(const char* name)
@@ -73,67 +76,28 @@ void addTextureData(ArchiveImage& image, uint32_t width, uint32_t height, uint32
 	image.height = height;
 	image.data = Vector<uint8_t>(data, width * height * channels);
 }
-const char* getAssetTypeFolder(AssetType type)
+
+String getSceneName(const aiScene* scene, const String backupName)
 {
-	switch (type)
-	{
-	default:
-		return nullptr;
-	case app::AssetType::Geometry: return "geometries";
-	case app::AssetType::Material: return "materials";
-	case app::AssetType::Batch: return "batches";
-	case app::AssetType::StaticMesh: return "static-meshes";
-	case app::AssetType::DynamicMesh: return "dynamic-meshes";
-	case app::AssetType::Image:return "images";
-	case app::AssetType::Scene:return "scenes";
-	}
-}
-const char* getAssetExtension(AssetType type)
-{
-	switch (type)
-	{
-	default:
-	case app::AssetType::Unknown:
-		AKA_UNREACHABLE;
-		return nullptr;
-	case app::AssetType::Geometry: return "geo";
-	case app::AssetType::Material: return "mat";
-	case app::AssetType::Batch: return "bat";
-	case app::AssetType::StaticMesh: return "smesh";
-	case app::AssetType::DynamicMesh: return "dmesh";
-	case app::AssetType::Image:return "img";
-	case app::AssetType::Font:return "fnt";
-	case app::AssetType::Audio:return "odio";
-	case app::AssetType::Scene:return "sce";
-	}
-}
-AssetPath getAssetPath(const String& sceneName, AssetType type, const String& name)
-{
-	String path;
-	path.append("import/");
-	path.append(sceneName);
-	path.append("/");
-	path.append(getAssetTypeFolder(type));
-	path.append("/");
-	path.append(name);
-	path.append(".");
-	path.append(getAssetExtension(type));
-	return AssetPath(path);
+	if (scene->mName.length > 0)
+		return scene->mName.C_Str();
+	else if (scene->mRootNode->mName.length > 0)
+		return scene->mRootNode->mName.C_Str();
+	else
+		return backupName;
 }
 
-AssimpLocalImporter::AssimpLocalImporter(const Path& directory, AssetLibrary* _library, const aiScene* aiScene) :
-	m_library(_library),
+AssimpImporterImpl::AssimpImporterImpl(AssimpImporter* _importer, const Path& directory, const aiScene* aiScene) :
+	m_importer(_importer),
 	m_directory(directory),
 	m_assimpScene(aiScene),
-	m_scene(registerAsset(AssetType::Scene, aiScene->mName.C_Str()))
+	m_scene(m_importer->registerAsset(AssetType::Scene, getSceneName(aiScene, _importer->getName())))
 {
 	// Create folder for saving
-	Path path;
-	path.append(AssetPath::getAssetPath());
-	path.append("import/scene/");
+	Path path = m_importer->getAssetPath().getAbsolutePath();
 	for (AssetType type : EnumRange<AssetType>())
 	{
-		const char* folder = getAssetTypeFolder(type);
+		const char* folder = Importer::getAssetTypeName(type);
 		if (folder == nullptr)
 			continue; // Do not need this folder.
 		Path copyPath = path;
@@ -141,10 +105,10 @@ AssimpLocalImporter::AssimpLocalImporter(const Path& directory, AssetLibrary* _l
 		copyPath.append("/");
 		bool created = OS::Directory::create(copyPath);
 	}
-	m_missingColorTexture = ArchiveImage(registerAsset(AssetType::Image, "missingColorTexture"));
-	m_blankColorTexture = ArchiveImage(registerAsset(AssetType::Image, "blankColorTexture"));
-	m_missingNormalTexture = ArchiveImage(registerAsset(AssetType::Image, "missingNormalTexture"));
-	m_missingRoughnessTexture = ArchiveImage(registerAsset(AssetType::Image, "missingRoughnessTexture"));
+	m_missingColorTexture = ArchiveImage(m_importer->registerAsset(AssetType::Image, "missingColorTexture"));
+	m_blankColorTexture = ArchiveImage(m_importer->registerAsset(AssetType::Image, "blankColorTexture"));
+	m_missingNormalTexture = ArchiveImage(m_importer->registerAsset(AssetType::Image, "missingNormalTexture"));
+	m_missingRoughnessTexture = ArchiveImage(m_importer->registerAsset(AssetType::Image, "missingRoughnessTexture"));
 
 	uint8_t bytesMissingColor[4] = { 255, 0, 255, 255 };
 	uint8_t bytesBlankColor[4] = { 255, 255, 255, 255 };
@@ -155,20 +119,19 @@ AssimpLocalImporter::AssimpLocalImporter(const Path& directory, AssetLibrary* _l
 	addTextureData(m_missingNormalTexture, 1, 1, 4, bytesNormal);
 	addTextureData(m_missingRoughnessTexture, 1, 1, 4, bytesRoughness);
 
+	m_dummyMaterial = ArchiveMaterial(m_importer->registerAsset(AssetType::Material, "DummyMaterial"));
+	m_dummyMaterial.color = color4f(1.f);
+	m_dummyMaterial.flags = ArchiveMaterialFlag::DoubleSided;
+	m_dummyMaterial.albedo = m_blankColorTexture;
+	m_dummyMaterial.normal = m_missingNormalTexture;
+	//m_dummyMaterial.roughness = m_missingRoughnessTexture;
+
 	// Reserve vector to avoid rellocation
 	m_scene.meshes.reserve(m_assimpScene->mNumMeshes);
 	m_scene.transforms.reserve(m_assimpScene->mNumMeshes);
 }
 
-AssetID AssimpLocalImporter::registerAsset(AssetType type, const String& name)
-{
-	String finalName = name;
-	if (finalName == "")
-		finalName = "unnamed";
-	return m_library->registerAsset(getAssetPath("scene", type, finalName), type);
-}
-
-void AssimpLocalImporter::process()
+void AssimpImporterImpl::process()
 {
 	ArchiveSceneEntity root = createEntity("ImporterRoot");
 	addComponent(root, SceneComponent::Transform, addTransform(m_scene, mat4f::identity()));
@@ -181,7 +144,7 @@ void AssimpLocalImporter::process()
 	ArchiveSceneID rootID = addEntity(m_scene, root);
 	processNode(rootID, m_assimpScene->mRootNode);
 
-	m_scene.save(ArchiveSaveContext(m_library));
+	m_scene.save(ArchiveSaveContext(m_importer->getAssetLibrary()));
 }
 
 
@@ -200,7 +163,7 @@ mat4f getParentTransform(ArchiveScene& _scene, ArchiveSceneID _parentID)
 	}
 }
 
-void AssimpLocalImporter::processNode(ArchiveSceneID _parent, aiNode* _node)
+void AssimpImporterImpl::processNode(ArchiveSceneID _parent, aiNode* _node)
 {
 	mat4f transform = mat4f(
 		col4f(_node->mTransformation[0][0], _node->mTransformation[1][0], _node->mTransformation[2][0], _node->mTransformation[3][0]),
@@ -240,13 +203,13 @@ void AssimpLocalImporter::processNode(ArchiveSceneID _parent, aiNode* _node)
 	}
 }
 
-ArchiveSceneID AssimpLocalImporter::processMesh(aiMesh* mesh)
+ArchiveSceneID AssimpImporterImpl::processMesh(aiMesh* mesh)
 {
 	AKA_ASSERT(mesh->HasPositions(), "Mesh need positions");
 	AKA_ASSERT(mesh->HasNormals(), "Mesh needs normals");
 
 	// process vertices
-	ArchiveGeometry archiveGeometry = ArchiveGeometry(registerAsset(AssetType::Geometry, mesh->mName.C_Str()));
+	ArchiveGeometry archiveGeometry = ArchiveGeometry(m_importer->registerAsset(AssetType::Geometry, mesh->mName.C_Str()));
 	archiveGeometry.vertices.resize(mesh->mNumVertices);
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 	{
@@ -291,138 +254,140 @@ ArchiveSceneID AssimpLocalImporter::processMesh(aiMesh* mesh)
 	ArchiveMaterial archiveMaterial;
 	if (mesh->mMaterialIndex >= 0)
 	{
-		//aiTextureType_EMISSION_COLOR = 14,
-		//aiTextureType_METALNESS = 15,
-		//aiTextureType_DIFFUSE_ROUGHNESS = 16,
-		//aiTextureType_AMBIENT_OCCLUSION = 17,
 		aiMaterial* material = m_assimpScene->mMaterials[mesh->mMaterialIndex];
-		archiveMaterial = ArchiveMaterial(registerAsset(AssetType::Material, material->GetName().C_Str()));
-		aiColor4D c;
-		bool doubleSided = false;
-		material->Get(AI_MATKEY_COLOR_DIFFUSE, c);
-		material->Get(AI_MATKEY_TWOSIDED, doubleSided);
-		archiveMaterial.color = color4f(c.r, c.g, c.b, c.a);
-		if (doubleSided)
-			archiveMaterial.flags |= ArchiveMaterialFlag::DoubleSided;
-
-		// Albedo
-		if (material->GetTextureCount(aiTextureType_BASE_COLOR) > 0)
-		{
-			aiTextureType type = aiTextureType_BASE_COLOR;
-			for (unsigned int i = 0; i < material->GetTextureCount(type); i++)
-			{
-				aiString str;
-				material->GetTexture(type, i, &str);
-				archiveMaterial.albedo = processImage(Path(m_directory + str.C_Str()));
-				if (archiveMaterial.albedo.size() == 0)
-					archiveMaterial.albedo = m_missingColorTexture;
-				break; // Ignore others textures for now.
-			}
-		}
-		else if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
-		{
-			aiTextureType type = aiTextureType_DIFFUSE;
-			for (unsigned int i = 0; i < material->GetTextureCount(type); i++)
-			{
-				aiString str;
-				material->GetTexture(type, i, &str);
-				archiveMaterial.albedo = processImage(Path(m_directory + str.C_Str()));
-				if (archiveMaterial.albedo.size() == 0)
-					archiveMaterial.albedo = m_missingColorTexture;
-				break; // Ignore others textures for now.
-			}
-		}
-		else
-		{
-			archiveMaterial.albedo = m_blankColorTexture;
-		}
-
-		// Normal
-		if (material->GetTextureCount(aiTextureType_NORMAL_CAMERA) > 0)
-		{
-			aiTextureType type = aiTextureType_NORMAL_CAMERA;
-			for (unsigned int i = 0; i < material->GetTextureCount(type); i++)
-			{
-				aiString str;
-				material->GetTexture(type, i, &str);
-				archiveMaterial.normal = processImage(Path(m_directory + str.C_Str()));
-				if (archiveMaterial.normal.size() == 0)
-					archiveMaterial.normal = m_missingNormalTexture;
-				break; // Ignore others textures for now.
-			}
-		}
-		else if (material->GetTextureCount(aiTextureType_NORMALS) > 0)
-		{
-			aiTextureType type = aiTextureType_NORMALS;
-			for (unsigned int i = 0; i < material->GetTextureCount(type); i++)
-			{
-				aiString str;
-				material->GetTexture(type, i, &str);
-				archiveMaterial.normal = processImage(Path(m_directory + str.C_Str()));
-				if (archiveMaterial.normal.size() == 0)
-					archiveMaterial.normal = m_missingNormalTexture;
-				break; // Ignore others textures for now.
-			}
-		}
-		else
-		{
-			archiveMaterial.normal = m_missingNormalTexture;
-		}
-
-		// PBR textures
-		/*if (material->GetTextureCount(aiTextureType_UNKNOWN) > 0) // GLTF pbr texture is retrieved this way (?)
-		{
-			aiTextureType type = aiTextureType_UNKNOWN;
-			for (unsigned int i = 0; i < material->GetTextureCount(type); i++)
-			{
-				aiString str;
-				material->GetTexture(type, 0, &str);
-				archiveMaterial.material = processImage(Path(m_directory + str.C_Str()));
-				if (archiveMaterial.material.size() == 0)
-					archiveMaterial.material = m_missingRoughnessTexture;
-				break; // Ignore others textures for now.
-			}
-		}
-		else if (material->GetTextureCount(aiTextureType_SHININESS) > 0)
-		{
-			aiTextureType type = aiTextureType_SHININESS;
-			for (unsigned int i = 0; i < material->GetTextureCount(type); i++)
-			{
-				aiString str;
-				material->GetTexture(type, i, &str);
-				archiveMaterial.material = processImage(Path(m_directory + str.C_Str()));
-				if (archiveMaterial.material.size() == 0)
-					archiveMaterial.material = m_missingRoughnessTexture;
-				break; // Ignore others textures for now.
-			}
-		}
-		else
-		{
-			archiveMaterial.material = m_missingRoughnessTexture;
-		}*/
+		archiveMaterial = processMaterial(material);
 	}
 	else
 	{
 		// No material !
-		archiveMaterial = ArchiveMaterial(registerAsset(AssetType::Material, "DummyMaterial"));
-		archiveMaterial.color = color4f(1.f);
-		archiveMaterial.flags = ArchiveMaterialFlag::DoubleSided;
-		archiveMaterial.albedo = m_blankColorTexture;
-		archiveMaterial.normal = m_missingNormalTexture;
-		//archiveMaterial.material = m_missingRoughnessTexture;
+		archiveMaterial = m_dummyMaterial;
 	}
-	ArchiveBatch archiveBatch = ArchiveBatch(registerAsset(AssetType::Batch, mesh->mName.C_Str()));
+	ArchiveBatch archiveBatch = ArchiveBatch(m_importer->registerAsset(AssetType::Batch, mesh->mName.C_Str()));
 	archiveBatch.geometry = std::move(archiveGeometry);
 	archiveBatch.material = std::move(archiveMaterial);
-	ArchiveStaticMesh archiveMesh = ArchiveStaticMesh(registerAsset(AssetType::StaticMesh, mesh->mName.C_Str()));
+	ArchiveStaticMesh archiveMesh = ArchiveStaticMesh(m_importer->registerAsset(AssetType::StaticMesh, mesh->mName.C_Str()));
 	archiveMesh.batches.append(std::move(archiveBatch));
 	
 	return addStaticMesh(m_scene, std::move(archiveMesh));
 }
 
-ArchiveImage AssimpLocalImporter::processImage(const Path& path)
+ArchiveMaterial AssimpImporterImpl::processMaterial(aiMaterial* material)
 {
-	ArchiveImage image(registerAsset(AssetType::Image, OS::File::basename(path)));
+	ArchiveMaterial archiveMaterial;
+	//aiTextureType_EMISSION_COLOR = 14,
+	//aiTextureType_METALNESS = 15,
+	//aiTextureType_DIFFUSE_ROUGHNESS = 16,
+	//aiTextureType_AMBIENT_OCCLUSION = 17,
+	archiveMaterial = ArchiveMaterial(m_importer->registerAsset(AssetType::Material, material->GetName().C_Str()));
+	aiColor4D c;
+	bool doubleSided = false;
+	material->Get(AI_MATKEY_COLOR_DIFFUSE, c);
+	material->Get(AI_MATKEY_TWOSIDED, doubleSided);
+	archiveMaterial.color = color4f(c.r, c.g, c.b, c.a);
+	if (doubleSided)
+		archiveMaterial.flags |= ArchiveMaterialFlag::DoubleSided;
+
+	// Albedo
+	if (material->GetTextureCount(aiTextureType_BASE_COLOR) > 0)
+	{
+		aiTextureType type = aiTextureType_BASE_COLOR;
+		for (unsigned int i = 0; i < material->GetTextureCount(type); i++)
+		{
+			aiString str;
+			material->GetTexture(type, i, &str);
+			archiveMaterial.albedo = processImage(Path(m_directory + str.C_Str()));
+			if (archiveMaterial.albedo.size() == 0)
+				archiveMaterial.albedo = m_missingColorTexture;
+			break; // Ignore others textures for now.
+		}
+	}
+	else if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+	{
+		aiTextureType type = aiTextureType_DIFFUSE;
+		for (unsigned int i = 0; i < material->GetTextureCount(type); i++)
+		{
+			aiString str;
+			material->GetTexture(type, i, &str);
+			archiveMaterial.albedo = processImage(Path(m_directory + str.C_Str()));
+			if (archiveMaterial.albedo.size() == 0)
+				archiveMaterial.albedo = m_missingColorTexture;
+			break; // Ignore others textures for now.
+		}
+	}
+	else
+	{
+		archiveMaterial.albedo = m_blankColorTexture;
+	}
+
+	// Normal
+	if (material->GetTextureCount(aiTextureType_NORMAL_CAMERA) > 0)
+	{
+		aiTextureType type = aiTextureType_NORMAL_CAMERA;
+		for (unsigned int i = 0; i < material->GetTextureCount(type); i++)
+		{
+			aiString str;
+			material->GetTexture(type, i, &str);
+			archiveMaterial.normal = processImage(Path(m_directory + str.C_Str()));
+			if (archiveMaterial.normal.size() == 0)
+				archiveMaterial.normal = m_missingNormalTexture;
+			break; // Ignore others textures for now.
+		}
+	}
+	else if (material->GetTextureCount(aiTextureType_NORMALS) > 0)
+	{
+		aiTextureType type = aiTextureType_NORMALS;
+		for (unsigned int i = 0; i < material->GetTextureCount(type); i++)
+		{
+			aiString str;
+			material->GetTexture(type, i, &str);
+			archiveMaterial.normal = processImage(Path(m_directory + str.C_Str()));
+			if (archiveMaterial.normal.size() == 0)
+				archiveMaterial.normal = m_missingNormalTexture;
+			break; // Ignore others textures for now.
+		}
+	}
+	else
+	{
+		archiveMaterial.normal = m_missingNormalTexture;
+	}
+
+	// PBR textures
+	/*if (material->GetTextureCount(aiTextureType_UNKNOWN) > 0) // GLTF pbr texture is retrieved this way (?)
+	{
+		aiTextureType type = aiTextureType_UNKNOWN;
+		for (unsigned int i = 0; i < material->GetTextureCount(type); i++)
+		{
+			aiString str;
+			material->GetTexture(type, 0, &str);
+			archiveMaterial.material = processImage(Path(m_directory + str.C_Str()));
+			if (archiveMaterial.material.size() == 0)
+				archiveMaterial.material = m_missingRoughnessTexture;
+			break; // Ignore others textures for now.
+		}
+	}
+	else if (material->GetTextureCount(aiTextureType_SHININESS) > 0)
+	{
+		aiTextureType type = aiTextureType_SHININESS;
+		for (unsigned int i = 0; i < material->GetTextureCount(type); i++)
+		{
+			aiString str;
+			material->GetTexture(type, i, &str);
+			archiveMaterial.material = processImage(Path(m_directory + str.C_Str()));
+			if (archiveMaterial.material.size() == 0)
+				archiveMaterial.material = m_missingRoughnessTexture;
+			break; // Ignore others textures for now.
+		}
+	}
+	else
+	{
+		archiveMaterial.material = m_missingRoughnessTexture;
+	}*/
+	return archiveMaterial;
+}
+
+ArchiveImage AssimpImporterImpl::processImage(const Path& path)
+{
+	ArchiveImage image(m_importer->registerAsset(AssetType::Image, OS::File::basename(path)));
 
 	Image img = ImageDecoder::fromDisk(path);
 	image.channels = getImageComponentCount(img.components);
@@ -503,7 +468,12 @@ unsigned int getAssimpFlags()
 }
 
 
-ImportResult AssimpImporter::import(AssetLibrary * _library, const aka::Path & path)
+AssimpImporter::AssimpImporter(aka::AssetLibrary* _library) :
+	Importer(_library)
+{
+}
+
+ImportResult AssimpImporter::import(const aka::Path & path)
 {
 	createAssimpLogger();
 	Assimp::Importer assimpImporter;
@@ -513,13 +483,13 @@ ImportResult AssimpImporter::import(AssetLibrary * _library, const aka::Path & p
 		Logger::error("[assimp] ", assimpImporter.GetErrorString());
 		return ImportResult::CouldNotReadFile;
 	}
-	AssimpLocalImporter importer(path.up(), _library, aiScene);
+	AssimpImporterImpl importer(this, path.up(), aiScene);
 	importer.process();
 	Assimp::DefaultLogger::kill();
 	return ImportResult::Succeed;
 }
 
-ImportResult AssimpImporter::import(AssetLibrary * _library, const aka::Blob & blob)
+ImportResult AssimpImporter::import(const aka::Blob & blob)
 {
 #if 1
 	// With blob, we dont have ref folder for texture loading...
@@ -534,7 +504,7 @@ ImportResult AssimpImporter::import(AssetLibrary * _library, const aka::Blob & b
 		return ImportResult::CouldNotReadFile;
 	}
 	Path directory = path.up();
-	AssimpLocalImporter importer(directory, _library, aiScene);
+	AssimpImporterImpl importer(directory, _library, aiScene);
 	importer.process();
 	Assimp::DefaultLogger::kill();
 	return ImportResult::Succeed;

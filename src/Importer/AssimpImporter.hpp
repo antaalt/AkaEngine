@@ -6,8 +6,11 @@ namespace app {
 
 class AssimpImporter : public aka::Importer {
 public:
-	aka::ImportResult import(aka::AssetLibrary * _library, const aka::Path & path) override;
-	aka::ImportResult import(aka::AssetLibrary * _library, const aka::Blob & blob) override;
+	AssimpImporter(aka::AssetLibrary* _library);
+
+	aka::ImportResult import(const aka::Path & path) override;
+	aka::ImportResult import(const aka::Blob & blob) override;
+	friend class AssimpImporterImpl;
 };
 
 };

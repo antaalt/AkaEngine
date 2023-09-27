@@ -287,13 +287,13 @@ void StaticMeshViewer::renderMesh(gfx::Frame* frame, const StaticMesh& mesh)
 	cmd->beginRenderPass(m_renderPass, m_target, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f}, 1.f, 0 });
 
 	cmd->bindPipeline(m_pipeline);
-	cmd->bindIndexBuffer(mesh.gfxIndexBuffer, mesh.getIndexFormat());
-	cmd->bindVertexBuffer(0, mesh.gfxVertexBuffer);
+	cmd->bindIndexBuffer(mesh.getIndexBuffer(), mesh.getIndexFormat());
+	cmd->bindVertexBuffer(0, mesh.getVertexBuffer());
 	cmd->bindDescriptorSet(0, m_descriptorSet);
 
-	for (const auto& batch : mesh.batches)
+	for (uint32_t i = 0; i < mesh.getBatchCount(); i++)
 	{
-		// TODO material
+		const StaticMeshBatch& batch = mesh.getBatch(i);
 		cmd->drawIndexed(batch.indexCount, batch.indexOffset, batch.vertexOffset, 1);
 	}
 	cmd->endRenderPass();
@@ -304,16 +304,17 @@ void StaticMeshViewer::drawUIResource(const app::StaticMesh& mesh)
 	m_resource.get();
 	ImGui::TextColored(aka::ImGuiLayer::Color::red, mesh.getName().cstr());
 	ImGui::Text("Vertices");
-	for (uint32_t i = 0; i < mesh.attributes.count; i++)
+	gfx::VertexBufferLayout layout = StaticVertex::getState();
+	for (uint32_t i = 0; i < layout.count; i++)
 	{
 		char buffer[256];
 		snprintf(buffer, 256, "Attribute %u", i);
 		if (ImGui::TreeNode(buffer))
 		{
-			ImGui::BulletText("Format : %s", toString(mesh.attributes.attributes[i].format));
-			ImGui::BulletText("Semantic : %s", toString(mesh.attributes.attributes[i].semantic));
-			ImGui::BulletText("Type : %s", toString(mesh.attributes.attributes[i].type));
-			ImGui::BulletText("Offset : %u", mesh.attributes.offsets[i]);
+			ImGui::BulletText("Format : %s", toString(layout.attributes[i].format));
+			ImGui::BulletText("Semantic : %s", toString(layout.attributes[i].semantic));
+			ImGui::BulletText("Type : %s", toString(layout.attributes[i].type));
+			ImGui::BulletText("Offset : %u", layout.offsets[i]);
 			ImGui::TreePop();
 		}
 	}

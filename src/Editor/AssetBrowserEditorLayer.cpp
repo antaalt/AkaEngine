@@ -121,25 +121,22 @@ struct AssetNode
 				flags |= ImGuiTreeNodeFlags_Selected;
 			}
 			ImGui::PushStyleColor(ImGuiCol_Text, textColor);
-			if (ImGui::TreeNodeEx(node.name.cstr(), flags))
+			bool selected = currentNode == &node;
+			if (ImGui::Selectable(node.name.cstr(), &selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick))
 			{
-				if (isResource && ImGui::IsItemClicked())
+				currentNode = &node;
+				if (isResource && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 				{
-					Logger::info("Current");
-					currentNode = &node;
-					if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+					if (node.type == AssetType::Scene)
 					{
-						if (node.type == AssetType::Scene)
-						{
-							// This will load or simply get the scene if it already exist.
-							EventDispatcher<SceneSwitchEvent>::trigger(SceneSwitchEvent{
-								library->load<Scene>(node.id, Application::app()->renderer())
-								});
-						}
-						else
-						{
-							load(node.id, node.type, library);
-						}
+						// This will load or simply get the scene if it already exist.
+						EventDispatcher<SceneSwitchEvent>::trigger(SceneSwitchEvent{
+							library->load<Scene>(node.id, Application::app()->renderer())
+						});
+					}
+					else
+					{
+						load(node.id, node.type, library);
 					}
 				}
 			}
@@ -243,7 +240,7 @@ void AssetBrowserEditorLayer::onUpdate(Time deltaTime)
 {
 }
 
-void AssetBrowserEditorLayer::onFrame()
+void AssetBrowserEditorLayer::onPreRender()
 {
 }
 
@@ -288,8 +285,8 @@ void AssetBrowserEditorLayer::onDrawUI()
 				openImportWindow = true;
 				importDeferred([&](const aka::Path& path) -> bool{
 					aka::Logger::info("Importing scene : ", path);
-					AssimpImporter importer;
-					ImportResult res = importer.import(m_library, path);
+					AssimpImporter importer(m_library);
+					ImportResult res = importer.import(path);
 					return ImportResult::Succeed == res;
 				});
 			}
@@ -301,8 +298,8 @@ void AssetBrowserEditorLayer::onDrawUI()
 				openImportWindow = true;
 				importDeferred([&](const aka::Path& path) -> bool {
 					aka::Logger::info("Importing texture : ", path);
-					TextureImporter importer;
-					ImportResult res = importer.import(m_library, path);
+					TextureImporter importer(m_library);
+					ImportResult res = importer.import(path);
 					return ImportResult::Succeed == res;
 				});
 			}
@@ -344,6 +341,15 @@ void AssetBrowserEditorLayer::onDrawUI()
 		for (const AssetNode& node : m_rootNode->childrens)
 			AssetNode::draw(m_library, node, m_currentNode, *m_viewerEditor);
 		ImGui::EndTable();
+	}
+	ImGui::Separator();
+	if (m_currentNode != nullptr)
+	{
+		ImGui::TextColored(ImGuiLayer::Color::red, "%s", m_currentNode->name.cstr());
+		ImGui::Text("Path: %s", m_currentNode->path.cstr());
+		ImGui::Text("Size: %llu bytes", m_currentNode->size);
+		ImGui::Text("ID: %llu", (uint64_t)m_currentNode->id);
+		ImGui::Text("Type: %s", getAssetTypeString(m_currentNode->type));
 	}
 
 	// -------------------------
@@ -434,7 +440,7 @@ void AssetBrowserEditorLayer::onDrawUI()
 	}
 }
 
-void AssetBrowserEditorLayer::onPresent()
+void AssetBrowserEditorLayer::onPostRender()
 {
 }
 

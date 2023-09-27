@@ -33,10 +33,10 @@ protected:
 	virtual void onDestroy(aka::gfx::GraphicDevice* _device) {}
 	virtual void onUpdate(aka::Time deltaTime) {}
 	virtual void onFixedUpdate(aka::Time deltaTime) {}
-	virtual void onFrame() {}
+	virtual void onPreRender() {}
 	virtual void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) {}
 	virtual void onDrawUI() {}
-	virtual void onPresent() {}
+	virtual void onPostRender() {}
 	virtual void onResize(uint32_t width, uint32_t height) {}
 private:
 	void onLayerCreate(aka::gfx::GraphicDevice* _device) final;
@@ -44,9 +44,9 @@ private:
 
 	void onLayerUpdate(aka::Time deltaTime) final;
 	void onLayerFixedUpdate(aka::Time deltaTime) final;
-	void onLayerFrame() final;
+	void onLayerPreRender() final;
 	void onLayerRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) final;
-	void onLayerPresent() final;
+	void onLayerPostRender() final;
 
 	void onLayerResize(uint32_t width, uint32_t height) final;
 private:

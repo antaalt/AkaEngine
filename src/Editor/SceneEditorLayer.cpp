@@ -245,8 +245,22 @@ void SceneEditorLayer::onDestroy(aka::gfx::GraphicDevice* _device)
 {
 }
 
-void SceneEditorLayer::onFrame()
+void SceneEditorLayer::onPreRender()
 {
+	if (m_assetToUnload != aka::AssetID::Invalid)
+	{
+		// Should have some delay for frames in flight (gfx::MaxFrameInFlight).
+		m_library->unload<Scene>(m_assetToUnload, Application::app()->renderer());
+		m_assetToUnload = aka::AssetID::Invalid;
+	}
+	if (m_nodeToDestroy)
+	{
+		m_nodeToDestroy->unlink();
+		m_nodeToDestroy->destroy(m_library, Application::app()->renderer());
+		m_scene.get().destroyChild(m_nodeToDestroy);
+		m_nodeToDestroy = nullptr;
+		m_currentNode = nullptr;
+	}
 }
 
 template <typename T>
@@ -254,36 +268,45 @@ struct ComponentNode
 {
 	static const char* name() { return "Unknown"; }
 	//static const char* icon() { return ""; }
-	static bool draw(T& component) { AKA_ASSERT(false, "Trying to draw an undefined component"); return false; }
+	static bool draw(AssetLibrary* library, T& component) { AKA_ASSERT(false, "Trying to draw an undefined component"); return false; }
 };
 
 template <> const char* ComponentNode<StaticMeshComponent>::name() { return "MeshComponent"; }
-template <> bool ComponentNode<StaticMeshComponent>::draw(StaticMeshComponent& mesh)
+template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library, StaticMeshComponent& mesh)
 {
 	if (mesh.getMesh().isLoaded())
 	{
 		StaticMesh& m = mesh.getMesh().get();
-		uint32_t sizeOfVertex = 0;
+		mesh.getMesh();
 
-		//ImGui::Text("Vertices : %u", mesh.mesh->vertices[0].data->size / sizeOfVertex);
-		//ImGui::Text("Index count : %u", mesh.mesh->count);
-		//ImGui::Text("Index offset : %u", 0);// mesh.mesh->offset);
-		/*String type = "Undefined";
-		switch (mesh.mesh->type)
+		AssetID currentAssetID = mesh.getMesh().get().getID();
+		const String& name = mesh.getMesh().get().getName();
+		if (ImGui::BeginCombo("Mesh", name.cstr()))
 		{
-		case PrimitiveType::Lines:
-			type = "Lines";
-			break;
-		case PrimitiveType::Triangles:
-			type = "Triangles";
-			break;
-		case PrimitiveType::Points:
-			type = "Points";
-			break;
+			for (const std::pair<AssetID, AssetInfo>& asset : library->getAssetRange())
+			{
+				const AssetID& id = asset.first;
+				const AssetInfo& info = asset.second;
+				if (info.type != AssetType::StaticMesh)
+					continue;
+
+				bool isSelected = (currentAssetID == id);
+				if (ImGui::Selectable(info.path.cstr(), isSelected))
+				{
+					if (currentAssetID != id)
+					{
+						// TODO switch mesh.
+						// Should also load it if required.
+						// As we are in draw, unload & co will need to be deferred.
+					}
+				}
+				if (isSelected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
 		}
-		ImGui::Text("Primitive : %s", type.cstr());*/
-		//ImGui::Text("Bounds min : (%f, %f, %f)", mesh.bounds.min.x, mesh.bounds.min.y, mesh.bounds.min.z);
-		//ImGui::Text("Bounds max : (%f, %f, %f)", mesh.bounds.max.x, mesh.bounds.max.y, mesh.bounds.max.z);
+		// TODO: button to open viewer somehow.
+		// + combo to switch mesh
 	}
 	else
 	{
@@ -293,34 +316,103 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(StaticMeshComponent& m
 }
 
 
-template <> const char* ComponentNode<CameraComponent>::name() { return "CameraComponent"; }
-template <> bool ComponentNode<CameraComponent>::draw(CameraComponent& mesh)
+bool drawArcball(CameraArcball* arcball)
 {
-	ImGui::Text("tis a camera");
+	bool updated = false;
+	arcball->position;
+	arcball->speed;
+	arcball->target;
+	arcball->up;
+	return updated;
+
+}
+bool drawPerspective(CameraPerspective* projection)
+{
+	bool updated = false;
+	vec2 range(projection->nearZ, projection->farZ);
+	if (ImGui::DragFloat2("Range", range.data))
+	{
+		projection->nearZ = range.x;
+		projection->farZ = range.y;
+		updated = true;
+	}
+	float hFov = projection->hFov.degree();
+	if (ImGui::SliderAngle("Horizontal FOV", &hFov, 10.f, 160.f))
+	{
+		projection->hFov = anglef::degree(hFov);
+		updated = true;
+	}
+	projection->ratio; // Depend on viewport. Should not be editable.
+	return updated;
+}
+bool drawOrthographic(CameraOrthographic* projection)
+{
+	bool updated = false;
+	vec2 range(projection->nearZ, projection->farZ);
+	if (ImGui::DragFloat2("Range", range.data))
+	{
+		projection->nearZ = range.x;
+		projection->farZ = range.y;
+		updated = true;
+	}
+	projection->left;
+	projection->right;
+	projection->top;
+	projection->bottom;
+	return updated;
+}
+
+template <> const char* ComponentNode<CameraComponent>::name() { return "CameraComponent"; }
+template <> bool ComponentNode<CameraComponent>::draw(AssetLibrary* library, CameraComponent& camera)
+{
+	if (CameraController* controller = camera.getController())
+	{
+		ImGui::Text("Controller");
+		switch (controller->type())
+		{
+		case CameraControllerType::Arcball:
+			drawArcball(reinterpret_cast<CameraArcball*>(controller));
+			break;
+		}
+	}
+	if (CameraProjection* projection = camera.getProjection())
+	{
+		ImGui::Text("Projection");
+		switch (projection->type())
+		{
+		case CameraProjectionType::Perpective:
+			drawPerspective(reinterpret_cast<CameraPerspective*>(projection));
+			break;
+		case CameraProjectionType::Orthographic:
+			drawOrthographic(reinterpret_cast<CameraOrthographic*>(projection));
+			break;
+		}
+	}
 	return false;
 }
 
 template <> const char* ComponentNode<CustomComponent>::name() { return "CustomComponent"; }
-template <> bool ComponentNode<CustomComponent>::draw(CustomComponent& mesh)
+template <> bool ComponentNode<CustomComponent>::draw(AssetLibrary* library, CustomComponent& mesh)
 {
 	ImGui::Text(mesh.CustomData.cstr());
 	return false;
 }
 
 template <typename T>
-void component(Node* current)
+void component(AssetLibrary* library, Node* current)
 {
 	static char buffer[256];
 	if (current->has<T>())
 	{
+		ImGui::Separator();
 		T& component = current->get<T>();
 		int res = snprintf(buffer, 256, "%s##%p", ComponentNode<T>::name(), &component);
-		if (ImGui::TreeNodeEx(buffer, ImGuiTreeNodeFlags_Bullet | ImGuiTreeNodeFlags_DefaultOpen))
+		if (ImGui::TreeNodeEx(buffer, ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			snprintf(buffer, 256, "ClosePopUp##%p", &component);
 			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
 				ImGui::OpenPopup(buffer);
-			if (ComponentNode<T>::draw(component))
+			if (ComponentNode<T>::draw(library, component))
 			{
 				current->setDirty<T>();
 			}
@@ -337,14 +429,6 @@ void component(Node* current)
 
 void SceneEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame)
 {
-	if (m_nodeToDestroy)
-	{
-		//AKA_ASSERT(false, "");
-		m_nodeToDestroy->unlink();
-		m_nodeToDestroy->destroy(m_library, Application::app()->renderer());
-		m_scene.get().destroyChild(m_nodeToDestroy);
-		m_nodeToDestroy = nullptr;
-	}
 }
 
 void SceneEditorLayer::onDrawUI()
@@ -381,7 +465,7 @@ void SceneEditorLayer::onDrawUI()
 			else
 			{
 				int err = snprintf(buffer, 256, "ClosePopUp##%p", parent);
-				ImGui::Bullet();
+				//ImGui::Bullet(); // TODO icon instead
 				bool isSelected = current == parent;
 				if (ImGui::Selectable(parent->getName().cstr(), &isSelected))
 					current = parent;
@@ -607,9 +691,9 @@ void SceneEditorLayer::onDrawUI()
 				else
 				{
 					// Draw every component.
-					component<StaticMeshComponent>(m_currentNode);
-					component<CameraComponent>(m_currentNode);
-					component<CustomComponent>(m_currentNode);
+					component<StaticMeshComponent>(m_library, m_currentNode);
+					component<CameraComponent>(m_library, m_currentNode);
+					component<CustomComponent>(m_library, m_currentNode);
 				}
 			}
 			else
@@ -620,9 +704,8 @@ void SceneEditorLayer::onDrawUI()
 	}
 	if (resetScene && m_scene.isLoaded())
 	{
-		AssetID assetID = m_scene.get().getID();
+		m_assetToUnload = m_scene.get().getID();
 		m_scene = ResourceHandle<Scene>::invalid();
-		m_library->unload<Scene>(assetID, Application::app()->renderer());
 		m_currentNode = nullptr;
 		m_nodeToDestroy = nullptr;
 	}
@@ -634,7 +717,7 @@ void SceneEditorLayer::onDrawUI()
 	}
 }
 
-void SceneEditorLayer::onPresent()
+void SceneEditorLayer::onPostRender()
 {
 }
 

@@ -20,7 +20,7 @@ void InfoEditorLayer::onLayerDestroy(gfx::GraphicDevice* _device)
 {
 }
 
-void InfoEditorLayer::onLayerFrame()
+void InfoEditorLayer::onLayerPreRender()
 {
 }
 
@@ -112,7 +112,7 @@ void InfoEditorLayer::onLayerRender(aka::gfx::GraphicDevice* _device, aka::gfx::
 	}
 }
 
-void InfoEditorLayer::onLayerPresent()
+void InfoEditorLayer::onLayerPostRender()
 {
 }
 

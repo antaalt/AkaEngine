@@ -27,9 +27,9 @@ void EditorLayer::onLayerFixedUpdate(Time deltaTime)
 	onFixedUpdate(deltaTime);
 }
 
-void EditorLayer::onLayerFrame()
+void EditorLayer::onLayerPreRender()
 {
-	onFrame();
+	onPreRender();
 }
 
 void EditorLayer::onLayerRender(aka::gfx::GraphicDevice* _device, gfx::Frame* frame)
@@ -47,9 +47,9 @@ void EditorLayer::onLayerRender(aka::gfx::GraphicDevice* _device, gfx::Frame* fr
 	}
 }
 
-void EditorLayer::onLayerPresent()
+void EditorLayer::onLayerPostRender()
 {
-	onPresent();
+	onPostRender();
 }
 
 void EditorLayer::onLayerResize(uint32_t width, uint32_t height)

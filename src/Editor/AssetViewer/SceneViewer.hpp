@@ -16,7 +16,7 @@ public:
 	void onUpdate(aka::Time deltaTime) override {}
 	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override {}
 protected:
-	void drawUIResource(const aka::Scene& scene) override {}
+	void drawUIResource(const aka::Scene& scene) override;
 private:
 };
 
