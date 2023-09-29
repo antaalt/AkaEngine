@@ -15,6 +15,7 @@
 #include "Editor/SceneEditorLayer.hpp"
 #include "Editor/InfoEditorLayer.hpp"
 #include "Component/CustomComponent.hpp"
+#include "Component/RotatorComponent.hpp"
 
 using namespace aka;
 
@@ -37,6 +38,14 @@ Editor::Editor(const Config& cfg) :
 	infoEditor->setEditorLayer(app::EditorLayerType::AssetBrowser, assetBrowserEditor);
 	infoEditor->setEditorLayer(app::EditorLayerType::AssetViewer, assetViewerEditor);
 	infoEditor->setEditorLayer(app::EditorLayerType::SceneEditor, sceneEditor);
+	AKA_REGISTER_COMPONENT(CustomComponent);
+	AKA_REGISTER_COMPONENT(RotatorComponent);
+}
+
+Editor::~Editor()
+{
+	AKA_UNREGISTER_COMPONENT(CustomComponent);
+	AKA_UNREGISTER_COMPONENT(RotatorComponent);
 }
 
 void Editor::onCreate(int argc, char* argv[])
@@ -61,6 +70,11 @@ void Editor::onFixedUpdate(aka::Time time)
 {
 	if (platform()->keyboard().down(KeyboardKey::Escape))
 		EventDispatcher<QuitEvent>::emit();
+
+	if (m_scene.isLoaded())
+	{
+		m_scene.get().getRoot().fixedUpdate(time);
+	}
 }
 
 void Editor::onUpdate(aka::Time time)
@@ -75,7 +89,10 @@ void Editor::onUpdate(aka::Time time)
 			m_dirty = true;
 		}
 	}
-	m_rotation += aka::anglef::radian(time.seconds());
+	if (m_scene.isLoaded())
+	{
+		m_scene.get().getRoot().update(time);
+	}
 }
 
 

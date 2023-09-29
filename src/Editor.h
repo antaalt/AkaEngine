@@ -21,6 +21,7 @@ class Editor : public aka::Application,
 {
 public:
 	Editor(const Config& cfg);
+	~Editor();
 	void onCreate(int argc, char* argv[]) override;
 	void onDestroy() override;
 	void onFixedUpdate(aka::Time time) override;
@@ -30,7 +31,6 @@ public:
 	void onReceive(const app::SceneSwitchEvent& event) override;
 private:
 	bool m_dirty = false;
-	anglef m_rotation = anglef::radian(0.f);
 	CameraArcball m_cameraController = {};
 	CameraPerspective m_cameraProjection = {};
 	View* m_view;

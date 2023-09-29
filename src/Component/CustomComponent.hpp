@@ -19,7 +19,7 @@ struct ArchiveCustomComponent : ArchiveComponent
 class CustomComponent : public Component
 {
 public:
-	CustomComponent();
+	CustomComponent(Node* node);
 
 	const String& getCustomData() const { return m_customData; }
 

@@ -2,8 +2,8 @@
 
 namespace aka {
 
-CustomComponent::CustomComponent() : 
-	Component(generateComponentID<CustomComponent>()), 
+CustomComponent::CustomComponent(Node* node) :
+	Component(node, generateComponentID<CustomComponent>()), 
 	m_customData("Yoyoyo")
 {
 }
@@ -23,7 +23,7 @@ void ArchiveCustomComponent::load_internal(BinaryArchive& archive)
 
 void ArchiveCustomComponent::save_internal(BinaryArchive& archive)
 {
-	archive.write<uint32_t>(customData.length());
+	archive.write<uint32_t>((uint32_t)customData.length());
 	archive.write(customData.data(), customData.size());
 }
 

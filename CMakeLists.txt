@@ -22,6 +22,7 @@ add_executable(AkaEditor
 	"src/Editor/EditorLayer.cpp"
 	
 	"src/Component/CustomComponent.cpp"
+	"src/Component/RotatorComponent.cpp"
 )
 
 # ASSIMP

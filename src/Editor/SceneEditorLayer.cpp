@@ -6,6 +6,7 @@
 #include <Aka/Resource/AssetLibrary.hpp>
 
 #include "../Component/CustomComponent.hpp"
+#include "../Component/RotatorComponent.hpp"
 
 namespace app {
 
@@ -398,6 +399,14 @@ template <> bool ComponentNode<CustomComponent>::draw(AssetLibrary* library, Cus
 	return false;
 }
 
+template <> const char* ComponentNode<RotatorComponent>::name() { return "RotatorComponent"; }
+template <> bool ComponentNode<RotatorComponent>::draw(AssetLibrary* library, RotatorComponent& mesh)
+{
+	ImGui::DragFloat("Speed", &mesh.getSpeed(), 1.f);
+	ImGui::InputFloat3("Axis", mesh.getAxis().data);
+	return false;
+}
+
 template <typename T>
 void component(AssetLibrary* library, Node* current)
 {
@@ -506,6 +515,9 @@ void SceneEditorLayer::onDrawUI()
 						ArchiveScene archive(m_scene.get().getID());
 						m_scene.get().save(m_library, Application::app()->renderer(), archive);
 						ArchiveSaveResult res = archive.save(ArchiveSaveContext(m_library));
+						AKA_ASSERT(res == ArchiveSaveResult::Success, "");
+						// Also save library if meshes were added somehow.
+						m_library->serialize();
 					}
 				}
 				if (ImGui::MenuItem("Load"))
@@ -575,6 +587,8 @@ void SceneEditorLayer::onDrawUI()
 						m_currentNode->attach<CameraComponent>();
 					if (ImGui::MenuItem("CustomComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CustomComponent>()))
 						m_currentNode->attach<CustomComponent>();
+					if (ImGui::MenuItem("RotatorComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<RotatorComponent>()))
+						m_currentNode->attach<RotatorComponent>();
 					ImGui::EndMenu();
 				}
 				if (ImGui::BeginMenu("Remove", isLoaded && isValid))
@@ -585,6 +599,8 @@ void SceneEditorLayer::onDrawUI()
 						m_currentNode->detach<CameraComponent>();
 					if (ImGui::MenuItem("CustomComponent", nullptr, nullptr, isLoaded && m_currentNode->has<CustomComponent>()))
 						m_currentNode->detach<CustomComponent>();
+					if (ImGui::MenuItem("RotatorComponent", nullptr, nullptr, isLoaded && m_currentNode->has<RotatorComponent>()))
+						m_currentNode->detach<RotatorComponent>();
 					ImGui::EndMenu();
 				}
 				ImGui::EndMenu();
@@ -700,6 +716,7 @@ void SceneEditorLayer::onDrawUI()
 					component<StaticMeshComponent>(m_library, m_currentNode);
 					component<CameraComponent>(m_library, m_currentNode);
 					component<CustomComponent>(m_library, m_currentNode);
+					component<RotatorComponent>(m_library, m_currentNode);
 				}
 			}
 			else
