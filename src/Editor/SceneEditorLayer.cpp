@@ -394,7 +394,7 @@ template <> bool ComponentNode<CameraComponent>::draw(AssetLibrary* library, Cam
 template <> const char* ComponentNode<CustomComponent>::name() { return "CustomComponent"; }
 template <> bool ComponentNode<CustomComponent>::draw(AssetLibrary* library, CustomComponent& mesh)
 {
-	ImGui::Text(mesh.CustomData.cstr());
+	ImGui::Text(mesh.getCustomData().cstr());
 	return false;
 }
 
@@ -521,13 +521,19 @@ void SceneEditorLayer::onDrawUI()
 					{
 						if (ImGui::MenuItem("Cube", nullptr, nullptr, isLoaded))
 						{
+							ArchiveStaticMeshComponent archive;
+							archive.assetID = createCubeMesh(m_library, Application::app()->renderer());
+
 							m_currentNode = m_scene.get().createChild(m_currentNode, "Sphere node");
-							m_currentNode->attach<StaticMeshComponent>(createCubeMesh(m_library, Application::app()->renderer()));
+							m_currentNode->attach<StaticMeshComponent>().load(archive);
 						}
 						if (ImGui::MenuItem("UV Sphere", nullptr, nullptr, isLoaded))
 						{
+							ArchiveStaticMeshComponent archive;
+							archive.assetID = createSphereMesh(m_library, Application::app()->renderer());
+
 							m_currentNode = m_scene.get().createChild(m_currentNode, "Sphere node");
-							m_currentNode->attach<StaticMeshComponent>(createSphereMesh(m_library, Application::app()->renderer()));
+							m_currentNode->attach<StaticMeshComponent>().load(archive);
 						}
 						ImGui::EndMenu();
 					}
@@ -564,7 +570,7 @@ void SceneEditorLayer::onDrawUI()
 				if (ImGui::BeginMenu("Add", isLoaded && isValid))
 				{
 					if (ImGui::MenuItem("Mesh", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<StaticMeshComponent>()))
-						m_currentNode->attach<StaticMeshComponent>(AssetID::Invalid);
+						m_currentNode->attach<StaticMeshComponent>();
 					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CameraComponent>()))
 						m_currentNode->attach<CameraComponent>();
 					if (ImGui::MenuItem("CustomComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CustomComponent>()))

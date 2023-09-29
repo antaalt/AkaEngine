@@ -10,6 +10,7 @@
 
 #include <Aka/Resource/AssetLibrary.hpp>
 #include <Aka/Resource/Archive/ArchiveScene.hpp>
+#include <Aka/Scene/Component/StaticMeshComponent.hpp>
 
 namespace app {
 
@@ -22,7 +23,7 @@ public:
 
 	void process();
 	void processNode(ArchiveSceneID parent, aiNode* node);
-	ArchiveSceneID processMesh(aiMesh* mesh);
+	void processMesh(aiMesh* mesh);
 	ArchiveMaterial processMaterial(aiMaterial* material);
 	ArchiveImage processImage(const Path& path);
 private:
@@ -36,38 +37,31 @@ private:
 	ArchiveImage m_missingNormalTexture;
 	ArchiveImage m_missingRoughnessTexture;
 	ArchiveMaterial m_dummyMaterial;
-	std::map<AssetID, ArchiveImage> m_imageCache;
-	std::map<AssetID, ArchiveMaterial> m_materialCache;
+	//std::map<AssetID, ArchiveImage> m_imageCache;
+	//std::map<AssetID, ArchiveMaterial> m_materialCache;
+	Vector<ArchiveStaticMesh> m_staticMeshes;
 };
 
-ArchiveSceneEntity createEntity(const char* name)
+ArchiveSceneNode createNode(const char* name)
 {
-	ArchiveSceneEntity entity{};
-	entity.name = name;
-	entity.components = SceneComponentMask::None;
-	for (uint32_t i = 0; i < EnumCount<SceneComponent>(); i++)
-		entity.id[i] = ArchiveSceneID::Invalid;
-	return entity;
+	ArchiveSceneNode node{};
+	node.name = name;
+	node.transform = mat4f::identity();
+	node.parentID = ArchiveSceneID::Invalid;
+	node.components;
+	return node;
 }
-void addComponent(ArchiveSceneEntity& entity, SceneComponent _component, ArchiveSceneID id)
+void addComponent(ArchiveSceneNode& node, ComponentID _component)
 {
-	entity.components |= SceneComponentMask(1U << EnumToIndex(_component));
-	entity.id[EnumToIndex(_component)] = id;
+	ArchiveSceneComponent component{};
+	component.id = _component;
+	component.archive; 
+	node.components.append(component);
 }
-ArchiveSceneID addEntity(ArchiveScene& scene, ArchiveSceneEntity entity)
+ArchiveSceneID addNode(ArchiveScene& scene, ArchiveSceneNode node)
 {
-	scene.entities.append(entity);
-	return ArchiveSceneID(scene.entities.size() - 1);
-}
-ArchiveSceneID addTransform(ArchiveScene& scene, const mat4f& transform)
-{
-	scene.transforms.append(ArchiveSceneTransform{ transform });
-	return ArchiveSceneID(scene.transforms.size() - 1);
-}
-ArchiveSceneID addStaticMesh(ArchiveScene& scene, ArchiveStaticMesh&& mesh)
-{
-	scene.meshes.append(std::move(mesh));
-	return ArchiveSceneID(scene.meshes.size() - 1);
+	scene.nodes.append(node);
+	return ArchiveSceneID(scene.nodes.size() - 1);
 }
 void addTextureData(ArchiveImage& image, uint32_t width, uint32_t height, uint32_t channels, const uint8_t* data)
 {
@@ -127,21 +121,20 @@ AssimpImporterImpl::AssimpImporterImpl(AssimpImporter* _importer, const Path& di
 	//m_dummyMaterial.roughness = m_missingRoughnessTexture;
 
 	// Reserve vector to avoid rellocation
-	m_scene.meshes.reserve(m_assimpScene->mNumMeshes);
-	m_scene.transforms.reserve(m_assimpScene->mNumMeshes);
+	m_staticMeshes.reserve(m_assimpScene->mNumMeshes);
 }
 
 void AssimpImporterImpl::process()
 {
-	ArchiveSceneEntity root = createEntity("ImporterRoot");
-	addComponent(root, SceneComponent::Transform, addTransform(m_scene, mat4f::identity()));
-	addComponent(root, SceneComponent::Hierarchy, ArchiveSceneID::Invalid); // No parent here.
+	ArchiveSceneNode root = createNode("ImporterRoot");
+	root.transform = mat4f::identity();
+	root.parentID = ArchiveSceneID::Invalid;// No parent here.
 
 	// Pre process meshes to keep them instanced.
 	for (uint32_t i = 0; i < m_assimpScene->mNumMeshes; i++)
 		processMesh(m_assimpScene->mMeshes[i]);
 	
-	ArchiveSceneID rootID = addEntity(m_scene, root);
+	ArchiveSceneID rootID = addNode(m_scene, root);
 	processNode(rootID, m_assimpScene->mRootNode);
 
 	m_scene.save(ArchiveSaveContext(m_importer->getAssetLibrary()));
@@ -156,10 +149,8 @@ mat4f getParentTransform(ArchiveScene& _scene, ArchiveSceneID _parentID)
 	}
 	else
 	{
-		const ArchiveSceneEntity& e = _scene.entities[toIntegral(_parentID)];
-		ArchiveSceneID parentID = e.id[EnumToIndex(SceneComponent::Hierarchy)];
-		ArchiveSceneID transformID = e.id[EnumToIndex(SceneComponent::Transform)];
-		return getParentTransform(_scene, parentID) * _scene.transforms[toIntegral(transformID)].matrix;
+		const ArchiveSceneNode& e = _scene.nodes[EnumToValue(_parentID)];
+		return getParentTransform(_scene, e.parentID) * e.transform;
 	}
 }
 
@@ -173,37 +164,44 @@ void AssimpImporterImpl::processNode(ArchiveSceneID _parent, aiNode* _node)
 	);
 	// process all the node's meshes (if any)
 	// TODO: those are batches ? Return batch instead of mesh here...
-	ArchiveSceneID transformID = addTransform(m_scene, transform);
 	for (unsigned int i = 0; i < _node->mNumMeshes; i++)
 	{
 		aiMesh* aiMesh = m_assimpScene->mMeshes[_node->mMeshes[i]];
 		ArchiveSceneID meshID = ArchiveSceneID(_node->mMeshes[i]);
 
-		ArchiveSceneEntity entity = createEntity(aiMesh->mName.C_Str());
-		addComponent(entity, SceneComponent::Transform, transformID);
-		addComponent(entity, SceneComponent::Hierarchy, _parent);
-		addComponent(entity, SceneComponent::StaticMesh, meshID);
+		ArchiveSceneNode entity = createNode(aiMesh->mName.C_Str());
+		entity.transform = transform;
+		entity.parentID = _parent;
+		// Mesh component
+		ArchiveStaticMeshComponent meshComponentArchive;
+		meshComponentArchive.assetID = m_staticMeshes[_node->mMeshes[i]].id();
+
+		ArchiveSceneComponent component;
+		component.id = meshComponentArchive.getComponentID();
+		meshComponentArchive.save(component.archive);
 		
-		ArchiveSceneID entityID = addEntity(m_scene, entity);
+		entity.components.append(component);
+		
+		ArchiveSceneID entityID = addNode(m_scene, entity);
 
 		// Compute bounds
-		for (size_t j = 0; j < m_scene.meshes[toIntegral(meshID)].batches.size(); j++)
-			m_scene.bounds.include(getParentTransform(m_scene, entityID) * m_scene.meshes[toIntegral(meshID)].batches[j].geometry.bounds);
+		for (size_t j = 0; j < m_staticMeshes[_node->mMeshes[i]].batches.size(); j++)
+			m_scene.bounds.include(getParentTransform(m_scene, entityID) * m_staticMeshes[_node->mMeshes[i]].batches[j].geometry.bounds);
 	}
 	if (_node->mNumChildren > 0)
 	{
-		ArchiveSceneEntity entity = createEntity(_node->mName.C_Str());
-		addComponent(entity, SceneComponent::Transform, transformID);
-		addComponent(entity, SceneComponent::Hierarchy, _parent);
+		ArchiveSceneNode entity = createNode(_node->mName.C_Str());
+		entity.transform = transform;
+		entity.parentID = _parent;
 
-		ArchiveSceneID entityID = addEntity(m_scene, entity);
+		ArchiveSceneID entityID = addNode(m_scene, entity);
 
 		for (unsigned int i = 0; i < _node->mNumChildren; i++)
 			processNode(entityID, _node->mChildren[i]);
 	}
 }
 
-ArchiveSceneID AssimpImporterImpl::processMesh(aiMesh* mesh)
+void AssimpImporterImpl::processMesh(aiMesh* mesh)
 {
 	AKA_ASSERT(mesh->HasPositions(), "Mesh need positions");
 	AKA_ASSERT(mesh->HasNormals(), "Mesh needs normals");
@@ -268,7 +266,7 @@ ArchiveSceneID AssimpImporterImpl::processMesh(aiMesh* mesh)
 	ArchiveStaticMesh archiveMesh = ArchiveStaticMesh(m_importer->registerAsset(AssetType::StaticMesh, mesh->mName.C_Str()));
 	archiveMesh.batches.append(std::move(archiveBatch));
 	
-	return addStaticMesh(m_scene, std::move(archiveMesh));
+	m_staticMeshes.append(std::move(archiveMesh));
 }
 
 ArchiveMaterial AssimpImporterImpl::processMaterial(aiMaterial* material)
