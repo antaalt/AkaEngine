@@ -58,10 +58,10 @@ static const float s_vertices[s_vertexCount * 5] = {
 	 1.0f, -1.0f,  1.0f,	1.f, 1.f,
 };
 
-Vector<StaticVertex> getSphereVertices(float radius, uint32_t segmentCount, uint32_t ringCount)
+Vector<ArchiveStaticVertex> getSphereVertices(float radius, uint32_t segmentCount, uint32_t ringCount)
 {
 	// http://www.songho.ca/opengl/gl_sphere.html
-	Vector<StaticVertex> vertices;
+	Vector<ArchiveStaticVertex> vertices;
 
 	float length = 1.f / radius;
 	anglef sectorStep = 2.f * pi<float> / (float)ringCount;
@@ -79,20 +79,24 @@ Vector<StaticVertex> getSphereVertices(float radius, uint32_t segmentCount, uint
 		// the first and last vertices have same position and normal, but different uv
 		for (uint32_t j = 0; j <= ringCount; ++j)
 		{
-			StaticVertex v;
+			ArchiveStaticVertex v;
 			ringAngle = (float)j * sectorStep; // starting from 0 to 2pi
 
-			v.position.x = xy * cos(ringAngle); // r * cos(u) * cos(v)
-			v.position.y = xy * sin(ringAngle); // r * cos(u) * sin(v)
-			v.position.z = z;
+			v.position[0] = xy * cos(ringAngle); // r * cos(u) * cos(v)
+			v.position[1] = xy * sin(ringAngle); // r * cos(u) * sin(v)
+			v.position[2] = z;
 
-			v.normal = norm3f(v.position / radius);
+			for (uint32_t k = 0; k < 3; ++k)
+				v.normal[k] = v.position[k] / radius;
 
-			v.uv.u = (float)j / ringCount;
-			v.uv.v = (float)i / segmentCount;
-			v.color = color4f(1.f);
+			v.uv[0] = (float)j / ringCount;
+			v.uv[1] = (float)i / segmentCount;
+			v.color[0] = 1.f;
+			v.color[1] = 1.f;
+			v.color[2] = 1.f;
+			v.color[3] = 1.f;
 			vertices.append(v);
-			bounds.include(v.position);
+			bounds.include(point3f(v.position[0], v.position[1], v.position[2]));
 		}
 	}
 	return vertices;
@@ -146,36 +150,51 @@ AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer)
 	AssetID imageAlbedoID = _library->registerAsset(imageAlbedoPath, AssetType::Image);
 	AssetID imageNormalID = _library->registerAsset(imageNormalPath, AssetType::Image);
 	
+	ArchiveGeometry geometry(geometryID);
+	geometry.indices = getSphereIndices(1.0, 32, 16);
+	geometry.vertices = getSphereVertices(1.0, 32, 16);
+	for (uint32_t i = 0; i < geometry.vertices.size(); i++)
+		geometry.bounds.include(point3f(geometry.vertices[i].position[0], geometry.vertices[i].position[1], geometry.vertices[i].position[2]));
+
 	ArchiveBatch batch(batchID);
-	batch.geometry = ArchiveGeometry(geometryID);
-	batch.geometry.indices = getSphereIndices(1.0, 32, 16);
-	batch.geometry.vertices = getSphereVertices(1.0, 32, 16);
-	for (uint32_t i = 0; i < batch.geometry.vertices.size(); i++)
-		batch.geometry.bounds.include(batch.geometry.vertices[i].position);
-
+	batch.geometry = geometryID;
+	batch.material = materialID;
 	// Material
-	batch.material = ArchiveMaterial(materialID);
-	batch.material.color = color4f(0.0, 0.0, 1.0, 1.0);
+	ArchiveMaterial material(materialID);
+	material.color = color4f(0.0, 0.0, 1.0, 1.0);
+	material.albedo = imageAlbedoID;
+	material.normal = imageNormalID;
 
+	ArchiveImage albedo(imageAlbedoID);
 	Image img = ImageDecoder::fromDisk("../../../asset/textures/skyscraper.jpg");
-	batch.material.albedo = ArchiveImage(imageAlbedoID);
-	batch.material.albedo.width = img.width;
-	batch.material.albedo.height = img.height;
-	batch.material.albedo.channels = img.getComponents();
-	batch.material.albedo.data = std::move(img.bytes);
+	albedo = ArchiveImage(imageAlbedoID);
+	albedo.width = img.width;
+	albedo.height = img.height;
+	albedo.channels = img.getComponents();
+	albedo.data = std::move(img.bytes);
 
+	ArchiveImage normal(imageNormalID);
 	Image imgNormal = ImageDecoder::fromDisk("../../../asset/textures/skyscraper-normal.jpg");
-	batch.material.normal = ArchiveImage(imageNormalID);
-	batch.material.normal.width = imgNormal.width;
-	batch.material.normal.height = imgNormal.height;
-	batch.material.normal.channels = imgNormal.getComponents();
-	batch.material.normal.data = std::move(imgNormal.bytes);
+	normal = ArchiveImage(imageNormalID);
+	normal.width = imgNormal.width;
+	normal.height = imgNormal.height;
+	normal.channels = imgNormal.getComponents();
+	normal.data = std::move(imgNormal.bytes);
 
 	ArchiveStaticMesh sphereMesh(meshID);
-	sphereMesh.batches.append(batch);
-	ArchiveSaveResult res = sphereMesh.save(ArchiveSaveContext(_library));
+	sphereMesh.batches.append(batchID);
+	ArchiveSaveContext ctx(sphereMesh, _library);
+	ArchiveParseResult res;
+	res = sphereMesh.save(ctx);
+	res = batch.save(ctx);
+	res = geometry.save(ctx);
+	res = material.save(ctx);
+	res = albedo.save(ctx);
+	res = normal.save(ctx);
 
-	_library->load<StaticMesh>(meshID, sphereMesh, _renderer);
+	ArchiveLoadContext loadCtx(sphereMesh, _library);
+	sphereMesh.load(loadCtx);
+	_library->load<StaticMesh>(meshID, loadCtx, _renderer);
 	return meshID;
 }
 
@@ -197,39 +216,55 @@ AssetID createCubeMesh(AssetLibrary* _library, Renderer* _renderer)
 	AssetID imageAlbedoID = _library->registerAsset(imageAlbedoPath, AssetType::Image);
 	AssetID imageNormalID = _library->registerAsset(imageNormalPath, AssetType::Image);
 
-	ArchiveBatch batch(batchID);
-	batch.geometry = ArchiveGeometry(geometryID);
+	ArchiveGeometry geometry(geometryID);
 	// indices
-	batch.geometry.indices.resize(s_vertexCount);
+	geometry.indices.resize(s_vertexCount);
 	for (uint32_t i = 0; i < s_vertexCount; i++)
-		batch.geometry.indices[i] = i;
+		geometry.indices[i] = i;
 	// Vertices
-	batch.geometry.vertices.resize(s_vertexCount);
-	Memory::copy(batch.geometry.vertices.data(), s_vertices, sizeof(s_vertices));
-	batch.geometry.bounds = aabbox(point3f(-1.f), point3f(1.f));
+	geometry.vertices.resize(s_vertexCount);
+	Memory::copy(geometry.vertices.data(), s_vertices, sizeof(s_vertices));
+	geometry.bounds = aabbox(point3f(-1.f), point3f(1.f));
+
+	ArchiveBatch batch(batchID);
+	batch.geometry = geometryID;
+	batch.material = materialID;
 
 	// Material
-	batch.material = ArchiveMaterial(materialID);
-	batch.material.color = color4f(0.0, 0.0, 1.0, 1.0);
+	ArchiveMaterial material(materialID);
+	material.color = color4f(0.0, 0.0, 1.0, 1.0);
+	material.albedo = imageAlbedoID;
+	material.normal = imageNormalID;
 
+	ArchiveImage albedo(imageAlbedoID);
 	Image img = ImageDecoder::fromDisk("../../../asset/textures/skyscraper.jpg");
-	batch.material.albedo = ArchiveImage(imageAlbedoID);
-	batch.material.albedo.width = img.width;
-	batch.material.albedo.height = img.height;
-	batch.material.albedo.channels = img.getComponents();
-	batch.material.albedo.data = std::move(img.bytes);
+	albedo = ArchiveImage(imageAlbedoID);
+	albedo.width = img.width;
+	albedo.height = img.height;
+	albedo.channels = img.getComponents();
+	albedo.data = std::move(img.bytes);
 
+	ArchiveImage normal(imageNormalID);
 	Image imgNormal = ImageDecoder::fromDisk("../../../asset/textures/skyscraper-normal.jpg");
-	batch.material.normal = ArchiveImage(imageNormalID);
-	batch.material.normal.width = imgNormal.width;
-	batch.material.normal.height = imgNormal.height;
-	batch.material.normal.channels = imgNormal.getComponents();
-	batch.material.normal.data = std::move(imgNormal.bytes);
+	normal = ArchiveImage(imageNormalID);
+	normal.width = imgNormal.width;
+	normal.height = imgNormal.height;
+	normal.channels = imgNormal.getComponents();
+	normal.data = std::move(imgNormal.bytes);
 
-	ArchiveStaticMesh sphereMesh(meshID);
-	sphereMesh.batches.append(batch);
-	ArchiveSaveResult res = sphereMesh.save(ArchiveSaveContext(_library));
-	_library->load<StaticMesh>(meshID, sphereMesh, _renderer);
+	ArchiveStaticMesh cubeMesh(meshID);
+	cubeMesh.batches.append(batchID);
+	ArchiveSaveContext ctx(cubeMesh, _library);
+	ArchiveParseResult res = cubeMesh.save(ctx);
+	res = batch.save(ctx);
+	res = geometry.save(ctx);
+	res = material.save(ctx);
+	res = albedo.save(ctx);
+	res = normal.save(ctx);
+
+	ArchiveLoadContext loadCtx(cubeMesh, _library);
+	cubeMesh.load(loadCtx);
+	_library->load<StaticMesh>(meshID, loadCtx, _renderer);
 	return meshID;
 }
 
@@ -513,9 +548,9 @@ void SceneEditorLayer::onDrawUI()
 					if (isLoaded)
 					{
 						ArchiveScene archive(m_scene.get().getID());
-						m_scene.get().save(m_library, Application::app()->renderer(), archive);
-						ArchiveSaveResult res = archive.save(ArchiveSaveContext(m_library));
-						AKA_ASSERT(res == ArchiveSaveResult::Success, "");
+						m_scene.get().toArchive(ArchiveSaveContext(archive, m_library), Application::app()->renderer());
+						ArchiveParseResult res = archive.save(ArchiveSaveContext(archive, m_library));
+						AKA_ASSERT(res == ArchiveParseResult::Success, "");
 						// Also save library if meshes were added somehow.
 						m_library->serialize();
 					}
@@ -537,7 +572,7 @@ void SceneEditorLayer::onDrawUI()
 							archive.assetID = createCubeMesh(m_library, Application::app()->renderer());
 
 							m_currentNode = m_scene.get().createChild(m_currentNode, "Sphere node");
-							m_currentNode->attach<StaticMeshComponent>().load(archive);
+							m_currentNode->attach<StaticMeshComponent>().fromArchive(archive);
 						}
 						if (ImGui::MenuItem("UV Sphere", nullptr, nullptr, isLoaded))
 						{
@@ -545,7 +580,7 @@ void SceneEditorLayer::onDrawUI()
 							archive.assetID = createSphereMesh(m_library, Application::app()->renderer());
 
 							m_currentNode = m_scene.get().createChild(m_currentNode, "Sphere node");
-							m_currentNode->attach<StaticMeshComponent>().load(archive);
+							m_currentNode->attach<StaticMeshComponent>().fromArchive(archive);
 						}
 						ImGui::EndMenu();
 					}

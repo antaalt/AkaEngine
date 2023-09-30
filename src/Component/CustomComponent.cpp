@@ -13,18 +13,9 @@ ArchiveCustomComponent::ArchiveCustomComponent() :
 {
 }
 
-void ArchiveCustomComponent::load_internal(BinaryArchive& archive)
+void ArchiveCustomComponent::parse(BinaryArchive& archive)
 {
-	uint32_t length = archive.read<uint32_t>();
-	customData.resize(length);
-	archive.read(customData.data(), customData.size());
-	customData[length] = '\0';
-}
-
-void ArchiveCustomComponent::save_internal(BinaryArchive& archive)
-{
-	archive.write<uint32_t>((uint32_t)customData.length());
-	archive.write(customData.data(), customData.size());
+	archive.parse(customData);
 }
 
 }

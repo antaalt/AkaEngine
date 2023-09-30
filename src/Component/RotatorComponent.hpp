@@ -13,8 +13,7 @@ struct ArchiveRotatorComponent : ArchiveComponent
 	float speed;
 	vec3f axis;
 
-	void load_internal(BinaryArchive& archive) override;
-	void save_internal(BinaryArchive& archive) override;
+	void parse(BinaryArchive& archive) override;
 };
 
 class RotatorComponent : public Component
@@ -27,8 +26,8 @@ public:
 
 	void onUpdate(Time deltaTime) override;
 
-	void load(const ArchiveComponent& archive) override;
-	void save(ArchiveComponent& archive) override;
+	void fromArchive(const ArchiveComponent& archive) override;
+	void toArchive(ArchiveComponent& archive) override;
 private:
 	vec3f m_axis;
 	float m_speed;

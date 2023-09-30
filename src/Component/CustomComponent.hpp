@@ -12,8 +12,7 @@ struct ArchiveCustomComponent : ArchiveComponent
 
 	aka::String customData;
 
-	void load_internal(BinaryArchive& archive) override;
-	void save_internal(BinaryArchive& archive) override;
+	void parse(BinaryArchive& archive) override;
 };
 
 class CustomComponent : public Component
@@ -23,8 +22,8 @@ public:
 
 	const String& getCustomData() const { return m_customData; }
 
-	void load(const ArchiveComponent& archive) override {}
-	void save(ArchiveComponent& archive) override {}
+	void fromArchive(const ArchiveComponent& archive) override {}
+	void toArchive(ArchiveComponent& archive) override {}
 private:
 	String m_customData;
 };

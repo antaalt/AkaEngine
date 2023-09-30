@@ -23,9 +23,9 @@ public:
 
 	void process();
 	void processNode(ArchiveSceneID parent, aiNode* node);
-	void processMesh(aiMesh* mesh);
-	ArchiveMaterial processMaterial(aiMaterial* material);
-	ArchiveImage processImage(const Path& path);
+	AssetID processMesh(aiMesh* mesh);
+	AssetID processMaterial(aiMaterial* material);
+	AssetID processImage(const Path& path);
 private:
 	AssimpImporter* m_importer;
 	Path m_directory;
@@ -39,7 +39,11 @@ private:
 	ArchiveMaterial m_dummyMaterial;
 	//std::map<AssetID, ArchiveImage> m_imageCache;
 	//std::map<AssetID, ArchiveMaterial> m_materialCache;
-	Vector<ArchiveStaticMesh> m_staticMeshes;
+	Vector<AssetID> m_staticMeshes;
+	std::map<AssetID, ArchiveStaticMesh> m_staticMeshCache;
+	std::map<AssetID, ArchiveBatch> m_batchCache;
+	std::map<AssetID, ArchiveGeometry> m_geometryCache;
+	ArchiveSaveContext m_saveContext;
 };
 
 ArchiveSceneNode createNode(const char* name)
@@ -85,7 +89,8 @@ AssimpImporterImpl::AssimpImporterImpl(AssimpImporter* _importer, const Path& di
 	m_importer(_importer),
 	m_directory(directory),
 	m_assimpScene(aiScene),
-	m_scene(m_importer->registerAsset(AssetType::Scene, getSceneName(aiScene, _importer->getName())))
+	m_scene(m_importer->registerAsset(AssetType::Scene, getSceneName(aiScene, _importer->getName()))),
+	m_saveContext(m_scene, m_importer->getAssetLibrary())
 {
 	// Create folder for saving
 	Path path = m_importer->getAssetPath().getAbsolutePath();
@@ -104,6 +109,7 @@ AssimpImporterImpl::AssimpImporterImpl(AssimpImporter* _importer, const Path& di
 	m_missingNormalTexture = ArchiveImage(m_importer->registerAsset(AssetType::Image, "missingNormalTexture"));
 	m_missingRoughnessTexture = ArchiveImage(m_importer->registerAsset(AssetType::Image, "missingRoughnessTexture"));
 
+	// TODO should get them from somewhere instead of creating them.
 	uint8_t bytesMissingColor[4] = { 255, 0, 255, 255 };
 	uint8_t bytesBlankColor[4] = { 255, 255, 255, 255 };
 	uint8_t bytesNormal[4] = { 128,128,255,255 };
@@ -116,8 +122,8 @@ AssimpImporterImpl::AssimpImporterImpl(AssimpImporter* _importer, const Path& di
 	m_dummyMaterial = ArchiveMaterial(m_importer->registerAsset(AssetType::Material, "DummyMaterial"));
 	m_dummyMaterial.color = color4f(1.f);
 	m_dummyMaterial.flags = ArchiveMaterialFlag::DoubleSided;
-	m_dummyMaterial.albedo = m_blankColorTexture;
-	m_dummyMaterial.normal = m_missingNormalTexture;
+	m_dummyMaterial.albedo = m_blankColorTexture.id();
+	m_dummyMaterial.normal = m_missingNormalTexture.id();
 	//m_dummyMaterial.roughness = m_missingRoughnessTexture;
 
 	// Reserve vector to avoid rellocation
@@ -132,12 +138,17 @@ void AssimpImporterImpl::process()
 
 	// Pre process meshes to keep them instanced.
 	for (uint32_t i = 0; i < m_assimpScene->mNumMeshes; i++)
-		processMesh(m_assimpScene->mMeshes[i]);
+		m_staticMeshes.append(processMesh(m_assimpScene->mMeshes[i]));
 	
 	ArchiveSceneID rootID = addNode(m_scene, root);
 	processNode(rootID, m_assimpScene->mRootNode);
 
-	m_scene.save(ArchiveSaveContext(m_importer->getAssetLibrary()));
+	m_scene.save(m_saveContext);
+	m_dummyMaterial.save(m_saveContext);
+	m_blankColorTexture.save(m_saveContext);
+	m_missingColorTexture.save(m_saveContext);
+	m_missingNormalTexture.save(m_saveContext);
+	m_missingRoughnessTexture.save(m_saveContext);
 }
 
 
@@ -167,14 +178,13 @@ void AssimpImporterImpl::processNode(ArchiveSceneID _parent, aiNode* _node)
 	for (unsigned int i = 0; i < _node->mNumMeshes; i++)
 	{
 		aiMesh* aiMesh = m_assimpScene->mMeshes[_node->mMeshes[i]];
-		ArchiveSceneID meshID = ArchiveSceneID(_node->mMeshes[i]);
 
 		ArchiveSceneNode entity = createNode(aiMesh->mName.C_Str());
 		entity.transform = transform;
 		entity.parentID = _parent;
 		// Mesh component
 		ArchiveStaticMeshComponent meshComponentArchive;
-		meshComponentArchive.assetID = m_staticMeshes[_node->mMeshes[i]].id();
+		meshComponentArchive.assetID = m_staticMeshes[_node->mMeshes[i]];
 
 		ArchiveSceneComponent component;
 		component.id = meshComponentArchive.getComponentID();
@@ -185,8 +195,15 @@ void AssimpImporterImpl::processNode(ArchiveSceneID _parent, aiNode* _node)
 		ArchiveSceneID entityID = addNode(m_scene, entity);
 
 		// Compute bounds
-		for (size_t j = 0; j < m_staticMeshes[_node->mMeshes[i]].batches.size(); j++)
-			m_scene.bounds.include(getParentTransform(m_scene, entityID) * m_staticMeshes[_node->mMeshes[i]].batches[j].geometry.bounds);
+		ArchiveStaticMesh& meshArchive = m_staticMeshCache[m_staticMeshes[_node->mMeshes[i]]];
+		for (size_t j = 0; j < meshArchive.batches.size(); j++)
+		{
+			ArchiveBatch& batchArchive = m_batchCache[meshArchive.batches[j]];
+			ArchiveGeometry& geometryArchive = m_geometryCache[batchArchive.geometry];
+			
+			m_scene.bounds.include(getParentTransform(m_scene, entityID) * geometryArchive.bounds);
+			break;
+		}
 	}
 	if (_node->mNumChildren > 0)
 	{
@@ -201,7 +218,7 @@ void AssimpImporterImpl::processNode(ArchiveSceneID _parent, aiNode* _node)
 	}
 }
 
-void AssimpImporterImpl::processMesh(aiMesh* mesh)
+AssetID AssimpImporterImpl::processMesh(aiMesh* mesh)
 {
 	AKA_ASSERT(mesh->HasPositions(), "Mesh need positions");
 	AKA_ASSERT(mesh->HasNormals(), "Mesh needs normals");
@@ -211,32 +228,40 @@ void AssimpImporterImpl::processMesh(aiMesh* mesh)
 	archiveGeometry.vertices.resize(mesh->mNumVertices);
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 	{
-		StaticVertex& vertex = archiveGeometry.vertices[i];
+		ArchiveStaticVertex& vertex = archiveGeometry.vertices[i];
 		// process vertex positions, normals and texture coordinates
-		vertex.position.x = mesh->mVertices[i].x;
-		vertex.position.y = mesh->mVertices[i].y;
-		vertex.position.z = mesh->mVertices[i].z;
-		archiveGeometry.bounds.include(vertex.position);
+		vertex.position[0] = mesh->mVertices[i].x;
+		vertex.position[1] = mesh->mVertices[i].y;
+		vertex.position[2] = mesh->mVertices[i].z;
+		archiveGeometry.bounds.include(vertex.position[0], vertex.position[1], vertex.position[2]);
 
-		vertex.normal.x = mesh->mNormals[i].x;
-		vertex.normal.y = mesh->mNormals[i].y;
-		vertex.normal.z = mesh->mNormals[i].z;
+		vertex.normal[0] = mesh->mNormals[i].x;
+		vertex.normal[1] = mesh->mNormals[i].y;
+		vertex.normal[2] = mesh->mNormals[i].z;
 		if (mesh->HasTextureCoords(0))
 		{
-			vertex.uv.u = mesh->mTextureCoords[0][i].x;
-			vertex.uv.v = mesh->mTextureCoords[0][i].y;
+			vertex.uv[0] = mesh->mTextureCoords[0][i].x;
+			vertex.uv[1] = mesh->mTextureCoords[0][i].y;
 		}
 		else
-			vertex.uv = uv2f(0.f);
+		{
+			vertex.uv[0] = 0.f;
+			vertex.uv[1] = 0.f;
+		}
 		if (mesh->HasVertexColors(0))
 		{
-			vertex.color.r = mesh->mColors[0][i].r;
-			vertex.color.g = mesh->mColors[0][i].g;
-			vertex.color.b = mesh->mColors[0][i].b;
-			vertex.color.a = mesh->mColors[0][i].a;
+			vertex.color[0] = mesh->mColors[0][i].r;
+			vertex.color[1] = mesh->mColors[0][i].g;
+			vertex.color[2] = mesh->mColors[0][i].b;
+			vertex.color[3] = mesh->mColors[0][i].a;
 		}
 		else
-			vertex.color = color4f(1.f);
+		{
+			vertex.color[0] = 1.f;
+			vertex.color[1] = 1.f;
+			vertex.color[2] = 1.f;
+			vertex.color[3] = 1.f;
+		}
 		mesh->mTangents; // TODO:
 		mesh->mBitangents;
 	}
@@ -249,27 +274,36 @@ void AssimpImporterImpl::processMesh(aiMesh* mesh)
 	}
 
 	// process material
-	ArchiveMaterial archiveMaterial;
+	AssetID materialID;
 	if (mesh->mMaterialIndex >= 0)
 	{
 		aiMaterial* material = m_assimpScene->mMaterials[mesh->mMaterialIndex];
-		archiveMaterial = processMaterial(material);
+		materialID = processMaterial(material);
 	}
 	else
 	{
 		// No material !
-		archiveMaterial = m_dummyMaterial;
+		materialID = m_dummyMaterial.id();
 	}
-	ArchiveBatch archiveBatch = ArchiveBatch(m_importer->registerAsset(AssetType::Batch, mesh->mName.C_Str()));
-	archiveBatch.geometry = std::move(archiveGeometry);
-	archiveBatch.material = std::move(archiveMaterial);
-	ArchiveStaticMesh archiveMesh = ArchiveStaticMesh(m_importer->registerAsset(AssetType::StaticMesh, mesh->mName.C_Str()));
-	archiveMesh.batches.append(std::move(archiveBatch));
+	ArchiveBatch archiveBatch(m_importer->registerAsset(AssetType::Batch, mesh->mName.C_Str()));
+	archiveBatch.geometry = archiveGeometry.id();
+	archiveBatch.material = materialID;
+	ArchiveStaticMesh archiveMesh(m_importer->registerAsset(AssetType::StaticMesh, mesh->mName.C_Str()));
+	archiveMesh.batches.append(archiveBatch.id());
 	
-	m_staticMeshes.append(std::move(archiveMesh));
+
+	archiveGeometry.save(m_saveContext);
+	archiveBatch.save(m_saveContext);
+	archiveMesh.save(m_saveContext);
+
+	m_batchCache[archiveBatch.id()] = archiveBatch;
+	m_geometryCache[archiveGeometry.id()] = archiveGeometry;
+	m_staticMeshCache[archiveMesh.id()] = archiveMesh;
+
+	return archiveMesh.id();
 }
 
-ArchiveMaterial AssimpImporterImpl::processMaterial(aiMaterial* material)
+AssetID AssimpImporterImpl::processMaterial(aiMaterial* material)
 {
 	ArchiveMaterial archiveMaterial;
 	//aiTextureType_EMISSION_COLOR = 14,
@@ -294,8 +328,8 @@ ArchiveMaterial AssimpImporterImpl::processMaterial(aiMaterial* material)
 			aiString str;
 			material->GetTexture(type, i, &str);
 			archiveMaterial.albedo = processImage(Path(m_directory + str.C_Str()));
-			if (archiveMaterial.albedo.size() == 0)
-				archiveMaterial.albedo = m_missingColorTexture;
+			if (archiveMaterial.albedo == AssetID::Invalid)
+				archiveMaterial.albedo = m_missingColorTexture.id();
 			break; // Ignore others textures for now.
 		}
 	}
@@ -307,14 +341,14 @@ ArchiveMaterial AssimpImporterImpl::processMaterial(aiMaterial* material)
 			aiString str;
 			material->GetTexture(type, i, &str);
 			archiveMaterial.albedo = processImage(Path(m_directory + str.C_Str()));
-			if (archiveMaterial.albedo.size() == 0)
-				archiveMaterial.albedo = m_missingColorTexture;
+			if (archiveMaterial.albedo == AssetID::Invalid)
+				archiveMaterial.albedo = m_missingColorTexture.id();
 			break; // Ignore others textures for now.
 		}
 	}
 	else
 	{
-		archiveMaterial.albedo = m_blankColorTexture;
+		archiveMaterial.albedo = m_blankColorTexture.id();
 	}
 
 	// Normal
@@ -326,8 +360,8 @@ ArchiveMaterial AssimpImporterImpl::processMaterial(aiMaterial* material)
 			aiString str;
 			material->GetTexture(type, i, &str);
 			archiveMaterial.normal = processImage(Path(m_directory + str.C_Str()));
-			if (archiveMaterial.normal.size() == 0)
-				archiveMaterial.normal = m_missingNormalTexture;
+			if (archiveMaterial.normal == AssetID::Invalid)
+				archiveMaterial.normal = m_missingNormalTexture.id();
 			break; // Ignore others textures for now.
 		}
 	}
@@ -339,14 +373,14 @@ ArchiveMaterial AssimpImporterImpl::processMaterial(aiMaterial* material)
 			aiString str;
 			material->GetTexture(type, i, &str);
 			archiveMaterial.normal = processImage(Path(m_directory + str.C_Str()));
-			if (archiveMaterial.normal.size() == 0)
-				archiveMaterial.normal = m_missingNormalTexture;
+			if (archiveMaterial.normal == AssetID::Invalid)
+				archiveMaterial.normal = m_missingNormalTexture.id();
 			break; // Ignore others textures for now.
 		}
 	}
 	else
 	{
-		archiveMaterial.normal = m_missingNormalTexture;
+		archiveMaterial.normal = m_missingNormalTexture.id();
 	}
 
 	// PBR textures
@@ -380,10 +414,11 @@ ArchiveMaterial AssimpImporterImpl::processMaterial(aiMaterial* material)
 	{
 		archiveMaterial.material = m_missingRoughnessTexture;
 	}*/
-	return archiveMaterial;
+	archiveMaterial.save(m_saveContext);
+	return archiveMaterial.id();
 }
 
-ArchiveImage AssimpImporterImpl::processImage(const Path& path)
+AssetID AssimpImporterImpl::processImage(const Path& path)
 {
 	ArchiveImage image(m_importer->registerAsset(AssetType::Image, OS::File::basename(path)));
 
@@ -393,7 +428,9 @@ ArchiveImage AssimpImporterImpl::processImage(const Path& path)
 	image.height = img.height;
 	image.data = std::move(img.bytes);
 
-	return image;
+	image.save(m_saveContext);
+
+	return image.id();
 }
 
 template <Assimp::Logger::ErrorSeverity Severity>

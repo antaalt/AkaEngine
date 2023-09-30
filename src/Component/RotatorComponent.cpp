@@ -7,16 +7,12 @@ ArchiveRotatorComponent::ArchiveRotatorComponent() :
 {
 }
 
-void ArchiveRotatorComponent::load_internal(BinaryArchive& archive)
+void ArchiveRotatorComponent::parse(BinaryArchive& archive)
 {
-	speed = archive.read<float>();
-	axis = archive.read<vec3f>();
-}
-
-void ArchiveRotatorComponent::save_internal(BinaryArchive& archive)
-{
-	archive.write<float>(speed);
-	archive.write<vec3f>(axis);
+	archive.parse<float>(speed);
+	archive.parse<float>(axis.x);
+	archive.parse<float>(axis.y);
+	archive.parse<float>(axis.z);
 }
 
 RotatorComponent::RotatorComponent(Node* node) :
@@ -32,16 +28,18 @@ void RotatorComponent::onUpdate(Time deltaTime)
 	getNode()->setLocalTransform(getNode()->getLocalTransform() * mat4f::rotate(m_axis, rotation));
 }
 
-void RotatorComponent::load(const ArchiveComponent& archive)
+void RotatorComponent::fromArchive(const ArchiveComponent& archive)
 {
-	m_speed = reinterpret_cast<const ArchiveRotatorComponent&>(archive).speed;
-	m_axis = reinterpret_cast<const ArchiveRotatorComponent&>(archive).axis;
+	const ArchiveRotatorComponent& a = reinterpret_cast<const ArchiveRotatorComponent&>(archive);
+	m_speed = a.speed;
+	m_axis = a.axis;
 }
 
-void RotatorComponent::save(ArchiveComponent& archive)
+void RotatorComponent::toArchive(ArchiveComponent& archive)
 {
-	reinterpret_cast<ArchiveRotatorComponent&>(archive).speed = m_speed;
-	reinterpret_cast<ArchiveRotatorComponent&>(archive).axis = m_axis;
+	ArchiveRotatorComponent& a = reinterpret_cast<ArchiveRotatorComponent&>(archive);
+	a.speed = m_speed;
+	a.axis = m_axis;
 }
 
 }
