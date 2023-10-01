@@ -9,13 +9,14 @@ layout(location = 3) in vec4 v_color;
 layout(location = 0) out vec4 o_color;
 
 
-layout(set = 2, binding = 0) uniform MaterialUniformBuffer {
+layout(set = 1, binding = 0) uniform MaterialUniformBuffer {
 	vec4 color;
 } u_material;
 
-layout(set = 2, binding = 1) uniform sampler2D u_albedoTexture;
-layout(set = 2, binding = 2) uniform sampler2D u_normalTexture;
+layout(set = 1, binding = 1) uniform sampler2D u_albedoTexture;
+layout(set = 1, binding = 2) uniform sampler2D u_normalTexture;
 
+layout(set = 2, binding = 0) uniform sampler2D  u_textures[];
 
 void main()
 {

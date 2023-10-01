@@ -126,9 +126,8 @@ void TextureViewer::onCreate(gfx::GraphicDevice* _device)
 	// Should load a dummy texture waiting for main to be loaded
 	if (m_resource.isLoaded())
 	{
-		gfx::DescriptorSetData data;
-		data.addSampledTexture2D(m_resource.get().getGfxHandle(), m_sampler, m_layerSelected, m_mipSelected);
-		_device->update(m_descriptorSet, data);
+		gfx::DescriptorUpdate update = gfx::DescriptorUpdate::sampledTexture2D(0, 0, m_resource.get().getGfxHandle(), m_sampler, m_layerSelected, m_mipSelected);
+		_device->update(m_descriptorSet, &update, 1);
 		m_needUpdate = false;
 	}
 	else
@@ -149,9 +148,8 @@ void TextureViewer::onRender(gfx::GraphicDevice* _device, aka::gfx::Frame* frame
 	if (m_resource.isLoaded() && m_needUpdate)
 	{
 		_device->wait();
-		gfx::DescriptorSetData data;
-		data.addSampledTexture2D(m_resource.get().getGfxHandle(), m_sampler, m_layerSelected, m_mipSelected);
-		_device->update(m_descriptorSet, data);
+		gfx::DescriptorUpdate update = gfx::DescriptorUpdate::sampledTexture2D(0, 0, m_resource.get().getGfxHandle(), m_sampler, m_layerSelected, m_mipSelected);
+		_device->update(m_descriptorSet, &update, 1);
 		m_needUpdate = false;
 	}
 }

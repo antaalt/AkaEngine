@@ -57,7 +57,7 @@ void Editor::onCreate(int argc, char* argv[])
 	m_cameraProjection.farZ = 10000.f;
 
 	m_view = renderer()->createView(ViewType::Color);
-	//assets()->parse();
+	assets()->parse();
 }
 
 void Editor::onDestroy()

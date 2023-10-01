@@ -511,7 +511,9 @@ void SceneEditorLayer::onDrawUI()
 				int err = snprintf(buffer, 256, "ClosePopUp##%p", parent);
 				//ImGui::Bullet(); // TODO icon instead
 				bool isSelected = current == parent;
-				if (ImGui::Selectable(parent->getName().cstr(), &isSelected))
+				char buffer[256];
+				snprintf(buffer, 256, "%s##%p", parent->getName().cstr(), parent);
+				if (ImGui::Selectable(buffer, &isSelected))
 					current = parent;
 				if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(1))
 					ImGui::OpenPopup(buffer);
@@ -801,6 +803,9 @@ void SceneEditorLayer::setCurrentScene(ResourceHandle<Scene> _scene)
 	// TODO handle multiple scene with tabs ?
 	setVisible(true);
 	setEnabled(true);
+
+	if (m_scene.isLoaded())
+		m_assetToUnload = m_scene.get().getID();
 	m_scene = _scene;
 	m_currentNode = nullptr;
 	m_nodeToDestroy = nullptr;

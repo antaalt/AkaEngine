@@ -91,6 +91,10 @@ const char* toString(gfx::VertexSemantic semantic)
 		return "color2";
 	case gfx::VertexSemantic::Color3:
 		return "color3";
+	case gfx::VertexSemantic::WorldMatrix:
+		return "worldmatrix";
+	case gfx::VertexSemantic::NormalMatrix:
+		return "normalmatrix";
 	default:
 		return "unknown";
 	}
@@ -212,9 +216,9 @@ void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 		ubo.normal = mat4f::transpose(mat4f::inverse(ubo.view * ubo.model));
 		m_uniform = _device->createBuffer("StaticMeshViewerUBO", gfx::BufferType::Uniform, sizeof(StaticMeshViewerUBO), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, &ubo);
 
-		gfx::DescriptorSetData desc;
-		desc.addUniformBuffer(m_uniform);
-		_device->update(m_descriptorSet, desc);
+		Vector<gfx::DescriptorUpdate> desc;
+		desc.append(gfx::DescriptorUpdate::uniformBuffer(0, 0, m_uniform));
+		_device->update(m_descriptorSet, desc.data(), desc.size());
 	}
 
 	{
@@ -227,9 +231,9 @@ void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 			gfx::SamplerMipMapMode::None,
 			gfx::SamplerAddressMode::Repeat, gfx::SamplerAddressMode::Repeat, gfx::SamplerAddressMode::Repeat,
 			1.0);
-		gfx::DescriptorSetData desc;
-		desc.addSampledTexture2D(m_renderTarget, m_imguiSampler);
-		_device->update(m_imguiDescriptorSet, desc);
+		Vector<gfx::DescriptorUpdate> desc;
+		desc.append(gfx::DescriptorUpdate::sampledTexture2D(0, 0, m_renderTarget, m_imguiSampler));
+		_device->update(m_imguiDescriptorSet, desc.data(), desc.size());
 	}
 }
 void StaticMeshViewer::onDestroy(gfx::GraphicDevice* _device)

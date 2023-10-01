@@ -18,6 +18,7 @@ void SceneViewer::drawUIResource(const aka::Scene& scene)
 	aabbox<> b = scene.getBounds();
 	ImGui::InputFloat3("Min", b.min.data);
 	ImGui::InputFloat3("Max", b.max.data);
+	ImGui::Text("%u nodes", scene.getNodeCount());
 }
 
 };
