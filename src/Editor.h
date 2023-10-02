@@ -33,7 +33,7 @@ private:
 	bool m_dirty = false;
 	CameraArcball m_cameraController = {};
 	CameraPerspective m_cameraProjection = {};
-	View* m_view;
+	ViewHandle m_view;
 private:
 	AssetID m_sceneID;
 	ResourceHandle<Scene> m_scene;

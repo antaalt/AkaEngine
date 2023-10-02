@@ -285,14 +285,16 @@ void StaticMeshViewer::onLoad(const StaticMesh& mesh)
 void StaticMeshViewer::renderMesh(gfx::Frame* frame, const StaticMesh& mesh)
 {
 	gfx::GraphicDevice* device = Application::app()->graphic();
+	Renderer* renderer = Application::app()->renderer();
 	gfx::CommandList* cmd = device->getGraphicCommandList(frame);
 
 	cmd->transition(m_renderTarget, gfx::ResourceAccessType::Resource, gfx::ResourceAccessType::Attachment);
 	cmd->beginRenderPass(m_renderPass, m_target, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f}, 1.f, 0 });
 
+
 	cmd->bindPipeline(m_pipeline);
-	cmd->bindIndexBuffer(mesh.getIndexBuffer(), mesh.getIndexFormat());
-	cmd->bindVertexBuffer(0, mesh.getVertexBuffer());
+	cmd->bindIndexBuffer(renderer->getGeometryBuffer(mesh.getIndexBufferHandle()), mesh.getIndexFormat(), renderer->getGeometryBufferOffset(mesh.getIndexBufferHandle()));
+	cmd->bindVertexBuffer(0, renderer->getGeometryBuffer(mesh.getVertexBufferHandle()), renderer->getGeometryBufferOffset(mesh.getVertexBufferHandle()));
 	cmd->bindDescriptorSet(0, m_descriptorSet);
 
 	for (uint32_t i = 0; i < mesh.getBatchCount(); i++)

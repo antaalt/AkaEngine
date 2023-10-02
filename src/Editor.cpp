@@ -106,8 +106,11 @@ void Editor::onRender(gfx::GraphicDevice* device, gfx::Frame* _frame)
 
 	if (m_dirty)
 	{
-		m_view->data.view = m_cameraController.view();
-		m_view->data.projection = m_cameraProjection.projection();
+		renderer()->updateView(
+			m_view,
+			m_cameraController.view(),
+			m_cameraProjection.projection()
+		);
 		m_dirty = false;
 	}
 }
