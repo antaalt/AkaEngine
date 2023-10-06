@@ -23,7 +23,7 @@ public:
 	void onDestroy(aka::gfx::GraphicDevice* _device) override;
 
 	void onPreRender() override;
-	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override;
+	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame) override;
 	void onDrawUI() override;
 	void onPostRender() override;
 	void onResize(uint32_t width, uint32_t height) override;

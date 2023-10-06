@@ -46,7 +46,7 @@ void AssetViewerEditorLayer::onUpdate(aka::Time deltaTime)
 	}
 }
 
-void AssetViewerEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame)
+void AssetViewerEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame)
 {
 	// Destroy viewer that where removed recently.
 	for (AssetViewerBase*& viewer : m_assetViewersToDestroy)

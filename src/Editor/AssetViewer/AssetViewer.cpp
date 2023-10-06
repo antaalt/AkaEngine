@@ -37,7 +37,7 @@ void AssetViewerBase::update(aka::Time _deltaTime)
 		onUpdate(_deltaTime);
 }
 
-void AssetViewerBase::render(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* _frame)
+void AssetViewerBase::render(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle _frame)
 {
 	if (m_created)
 		onRender(_device, _frame);

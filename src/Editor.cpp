@@ -96,7 +96,7 @@ void Editor::onUpdate(aka::Time time)
 }
 
 
-void Editor::onRender(gfx::GraphicDevice* device, gfx::Frame* _frame)
+void Editor::onRender(gfx::GraphicDevice* device, gfx::FrameHandle _frame)
 {
 	if (m_scene.isLoaded())
 	{

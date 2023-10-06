@@ -471,7 +471,7 @@ void component(AssetLibrary* library, Node* current)
 	}
 }
 
-void SceneEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame)
+void SceneEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame)
 {
 }
 

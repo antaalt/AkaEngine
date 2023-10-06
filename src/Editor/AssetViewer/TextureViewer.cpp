@@ -143,11 +143,10 @@ void TextureViewer::onDestroy(gfx::GraphicDevice* _device)
 	_device->destroy(m_sampler);
 }
 
-void TextureViewer::onRender(gfx::GraphicDevice* _device, aka::gfx::Frame* frame)
+void TextureViewer::onRender(gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame)
 {
 	if (m_resource.isLoaded() && m_needUpdate)
 	{
-		_device->wait();
 		gfx::DescriptorUpdate update = gfx::DescriptorUpdate::sampledTexture2D(0, 0, m_resource.get().getGfxHandle(), m_sampler, m_layerSelected, m_mipSelected);
 		_device->update(m_descriptorSet, &update, 1);
 		m_needUpdate = false;
@@ -213,33 +212,46 @@ void TextureViewer::drawUIResource(const app::Texture& texture)
 	// Image explorer
 	gfx::GraphicDevice* device = Application::app()->graphic();
 	ImTextureID textureID = ImGuiLayer::getTextureID(device, m_descriptorSet);
+	// To support alpha removal correctly, we should use a shader & a temp texture.
 	ImVec4 mask = ImVec4(
 		red ? 1.f : 0.f,
 		green ? 1.f : 0.f,
 		blue ? 1.f : 0.f,
 		alpha ? 1.f : 0.f
 	);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
 	if (ImGui::BeginChild("TextureDisplayChild", ImVec2(0, 0), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar))
 	{
 		if (ImGui::IsWindowHovered())
 		{
 			const ImGuiIO& io = ImGui::GetIO();
-			ImVec2 scrollPosition = ImVec2(0.f, 0.f);
-			scrollPosition.x = ImGui::GetScrollX();
-			scrollPosition.y = ImGui::GetScrollY();
+			float scrollPositionX = ImGui::GetScrollX();
+			float scrollPositionY = ImGui::GetScrollY();
 			if (zoomChanged || io.MouseWheel != 0.f && !ImGui::IsAnyItemActive())
-				m_zoom = clamp(m_zoom + io.MouseWheel * zoomScale, minZoom, maxZoom);
+			{
+				float uvX = ((io.MousePos.x - ImGui::GetWindowPos().x) + scrollPositionX) / (m_zoom * texture.getWidth());
+				float uvY = ((io.MousePos.y - ImGui::GetWindowPos().y) + scrollPositionY) / (m_zoom * texture.getHeight());
+
+				float zoomOffset = io.MouseWheel * zoomScale;
+				if (m_zoom + zoomOffset < maxZoom)
+				{
+					scrollPositionX += lerp(0.f, zoomOffset * texture.getWidth(), uvX);
+					scrollPositionY += lerp(0.f, zoomOffset * texture.getHeight(), uvY);
+					m_zoom = clamp(m_zoom + zoomOffset, minZoom, maxZoom);
+				}
+			}
 
 			if (ImGui::IsMouseDragging(0, 0.0f) || ImGui::IsMouseDragging(1, 0.0f))
 			{
-				scrollPosition.x = clamp(scrollPosition.x - io.MouseDelta.x, 0.f, ImGui::GetScrollMaxX());
-				scrollPosition.y = clamp(scrollPosition.y - io.MouseDelta.y, 0.f, ImGui::GetScrollMaxY());
+				scrollPositionX = clamp((scrollPositionX - io.MouseDelta.x), 0.f, ImGui::GetScrollMaxX());
+				scrollPositionY = clamp((scrollPositionY - io.MouseDelta.y), 0.f, ImGui::GetScrollMaxY());
 			}
-			ImGui::SetScrollX(scrollPosition.x);
-			ImGui::SetScrollY(scrollPosition.y);
+			ImGui::SetScrollX(scrollPositionX);
+			ImGui::SetScrollY(scrollPositionY);
 		}
-		ImGui::Image(textureID, ImVec2(m_zoom * texture.getWidth(), m_zoom * texture.getHeight()), ImVec2(0, 0), ImVec2(1, 1), mask);
+		ImGui::Image(textureID, ImVec2(m_delayedZoom * texture.getWidth(), m_delayedZoom * texture.getHeight()), ImVec2(0, 0), ImVec2(1, 1), mask);
+		m_delayedZoom = m_zoom;
 	}
 	ImGui::EndChild();
 	ImGui::PopStyleVar();

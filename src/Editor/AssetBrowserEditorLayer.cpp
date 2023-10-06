@@ -257,7 +257,7 @@ static void PopStyleCompact()
 	ImGui::PopStyleVar(2);
 }
 
-void AssetBrowserEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame)
+void AssetBrowserEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame)
 {
 }
 

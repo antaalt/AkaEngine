@@ -24,7 +24,7 @@ void InfoEditorLayer::onLayerPreRender()
 {
 }
 
-void InfoEditorLayer::onLayerRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame)
+void InfoEditorLayer::onLayerRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame)
 {
 	aka::Application* app = aka::Application::app();
 	aka::gfx::GraphicDevice* graphic = app->graphic();

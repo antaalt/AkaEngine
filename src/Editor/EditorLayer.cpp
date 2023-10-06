@@ -32,7 +32,7 @@ void EditorLayer::onLayerPreRender()
 	onPreRender();
 }
 
-void EditorLayer::onLayerRender(aka::gfx::GraphicDevice* _device, gfx::Frame* frame)
+void EditorLayer::onLayerRender(aka::gfx::GraphicDevice* _device, gfx::FrameHandle frame)
 {
 	onRender(_device, frame);
 	if (isVisible() && isEnabled())

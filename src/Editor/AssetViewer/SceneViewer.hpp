@@ -14,7 +14,7 @@ public:
 	void onCreate(aka::gfx::GraphicDevice* _device) override {}
 	void onDestroy(aka::gfx::GraphicDevice* _device) override {}
 	void onUpdate(aka::Time deltaTime) override {}
-	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override {}
+	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame) override {}
 protected:
 	void drawUIResource(const aka::Scene& scene) override;
 private:

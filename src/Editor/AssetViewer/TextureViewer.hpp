@@ -14,7 +14,7 @@ public:
 	void onCreate(aka::gfx::GraphicDevice* _device) override;
 	void onDestroy(aka::gfx::GraphicDevice* _device) override;
 	void onUpdate(aka::Time deltaTime) override;
-	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override;
+	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame) override;
 	void onLoad(const aka::Texture& texture) override;
 protected:
 	void drawUIResource(const aka::Texture& texture) override;
@@ -27,6 +27,7 @@ private:
 	int m_mipSelected = 0;
 	aka::gfx::ColorMask m_mask = aka::gfx::ColorMask::Rgba;
 	float m_zoom = 1.f;
+	float m_delayedZoom = 1.f;
 };
 
 };

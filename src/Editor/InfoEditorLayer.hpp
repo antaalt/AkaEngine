@@ -17,7 +17,7 @@ public:
 	void onLayerDestroy(aka::gfx::GraphicDevice* _device) override;
 
 	void onLayerPreRender() override;
-	void onLayerRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override;
+	void onLayerRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame) override;
 	void onLayerPostRender() override;
 	void onLayerResize(uint32_t width, uint32_t height) override;
 	

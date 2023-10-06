@@ -156,7 +156,7 @@ struct StaticMeshViewerUBO {
 
 StaticMeshViewer::StaticMeshViewer(AssetID _assetID, ResourceHandle<app::StaticMesh> _resourceHandle) :
 	AssetViewer(ResourceType::StaticMesh, _assetID, _resourceHandle),
-	m_needCameraUpdate(false)
+	m_needCameraUpdate{}
 {
 }
 
@@ -199,9 +199,9 @@ void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 		gfx::BlendStateDefault,
 		gfx::FillStateLine
 	);
-	// TODO 1 by gfx::MaxFrameInFlight
-	m_descriptorPool = _device->createDescriptorPool("StaticMeshViewerDescriptorPool", _device->get(p)->sets[0], 1);
-	m_descriptorSet = _device->allocateDescriptorSet("StaticMeshViewerDescriptorSet", _device->get(p)->sets[0], m_descriptorPool);
+	m_descriptorPool = _device->createDescriptorPool("StaticMeshViewerDescriptorPool", _device->get(p)->sets[0], gfx::MaxFrameInFlight);
+	for (uint32_t iFrame = 0; iFrame < gfx::MaxFrameInFlight; iFrame++)
+		m_descriptorSet[iFrame] = _device->allocateDescriptorSet("StaticMeshViewerDescriptorSet", _device->get(p)->sets[0], m_descriptorPool);
 	{
 		m_arcball.set(aabbox<>(point3f(-20.f), point3f(20.f)));
 		m_projection.nearZ = 0.1f;
@@ -214,11 +214,14 @@ void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 		ubo.view = m_arcball.view();
 		ubo.proj = m_projection.projection();
 		ubo.normal = mat4f::transpose(mat4f::inverse(ubo.view * ubo.model));
-		m_uniform = _device->createBuffer("StaticMeshViewerUBO", gfx::BufferType::Uniform, sizeof(StaticMeshViewerUBO), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, &ubo);
+		for (uint32_t iFrame = 0; iFrame < gfx::MaxFrameInFlight; iFrame++)
+		{
+			m_uniform[iFrame] = _device->createBuffer("StaticMeshViewerUBO", gfx::BufferType::Uniform, sizeof(StaticMeshViewerUBO), gfx::BufferUsage::Default, gfx::BufferCPUAccess::None, &ubo);
 
-		Vector<gfx::DescriptorUpdate> desc;
-		desc.append(gfx::DescriptorUpdate::uniformBuffer(0, 0, m_uniform));
-		_device->update(m_descriptorSet, desc.data(), desc.size());
+			Vector<gfx::DescriptorUpdate> desc;
+			desc.append(gfx::DescriptorUpdate::uniformBuffer(0, 0, m_uniform[iFrame]));
+			_device->update(m_descriptorSet[iFrame], desc.data(), desc.size());
+		}
 	}
 
 	{
@@ -242,9 +245,12 @@ void StaticMeshViewer::onDestroy(gfx::GraphicDevice* _device)
 	_device->destroy(m_imguiSampler);
 	_device->free(m_imguiDescriptorSet);
 	_device->destroy(m_imguiDescriptorPool);
-	_device->free(m_descriptorSet);
+	for (uint32_t iFrame = 0; iFrame < gfx::MaxFrameInFlight; iFrame++)
+	{
+		_device->destroy(m_uniform[iFrame]);
+		_device->free(m_descriptorSet[iFrame]);
+	}
 	_device->destroy(m_descriptorPool);
-	_device->destroy(m_uniform);
 	_device->destroy(m_target);
 	_device->destroy(m_renderTarget);
 	_device->destroy(m_depthTarget);
@@ -258,18 +264,17 @@ void StaticMeshViewer::onUpdate(aka::Time deltaTime)
 		m_arcball.update(deltaTime);
 	}
 }
-void StaticMeshViewer::onRender(gfx::GraphicDevice* _device, aka::gfx::Frame* frame)
+void StaticMeshViewer::onRender(gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame)
 {
 	// This is run one frame late though...
-	if (m_needCameraUpdate)
+	if (m_needCameraUpdate[_device->getFrameIndex(frame).value()])
 	{
-		_device->wait();
 		StaticMeshViewerUBO ubo{};
 		ubo.model = mat4f::identity();
 		ubo.view = m_arcball.view();
 		ubo.proj = m_projection.projection();
 		ubo.normal = mat4f::transpose(mat4f::inverse(ubo.view * ubo.model));
-		_device->upload(m_uniform, &ubo, 0, sizeof(StaticMeshViewerUBO));
+		_device->upload(m_uniform[_device->getFrameIndex(frame).value()], &ubo, 0, sizeof(StaticMeshViewerUBO));
 	}
 	if (m_resource.isLoaded())
 	{
@@ -282,7 +287,7 @@ void StaticMeshViewer::onLoad(const StaticMesh& mesh)
 	m_arcball.set(mesh.getBounds());
 }
 
-void StaticMeshViewer::renderMesh(gfx::Frame* frame, const StaticMesh& mesh)
+void StaticMeshViewer::renderMesh(gfx::FrameHandle frame, const StaticMesh& mesh)
 {
 	gfx::GraphicDevice* device = Application::app()->graphic();
 	Renderer* renderer = Application::app()->renderer();
@@ -295,7 +300,7 @@ void StaticMeshViewer::renderMesh(gfx::Frame* frame, const StaticMesh& mesh)
 	cmd->bindPipeline(m_pipeline);
 	cmd->bindIndexBuffer(renderer->getGeometryBuffer(mesh.getIndexBufferHandle()), mesh.getIndexFormat(), renderer->getGeometryBufferOffset(mesh.getIndexBufferHandle()));
 	cmd->bindVertexBuffer(0, renderer->getGeometryBuffer(mesh.getVertexBufferHandle()), renderer->getGeometryBufferOffset(mesh.getVertexBufferHandle()));
-	cmd->bindDescriptorSet(0, m_descriptorSet);
+	cmd->bindDescriptorSet(0, m_descriptorSet[device->getFrameIndex(frame).value()]);
 
 	for (uint32_t i = 0; i < mesh.getBatchCount(); i++)
 	{
@@ -335,11 +340,13 @@ void StaticMeshViewer::drawUIResource(const app::StaticMesh& mesh)
 	{
 		if (ImGui::IsWindowHovered() && (ImGui::IsMouseDragging(0, 0.0f) || ImGui::IsMouseDragging(1, 0.0f) || !ImGui::IsAnyItemActive()))
 		{
-			m_needCameraUpdate = true;
+			for (uint32_t iFrame = 0; iFrame < gfx::MaxFrameInFlight; iFrame++)
+				m_needCameraUpdate[iFrame] = true;
 		}
 		else
 		{
-			m_needCameraUpdate = false;
+			for (uint32_t iFrame = 0; iFrame < gfx::MaxFrameInFlight; iFrame++)
+				m_needCameraUpdate[iFrame] = false;
 		}
 		gfx::GraphicDevice* device = Application::app()->graphic();
 		ImTextureID texID = ImGuiLayer::getTextureID(device, m_imguiDescriptorSet);

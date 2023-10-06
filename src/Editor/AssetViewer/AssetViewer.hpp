@@ -17,13 +17,13 @@ public:
 	void create(aka::gfx::GraphicDevice* _device);
 	void destroy(aka::gfx::GraphicDevice* _device);
 	void update(aka::Time _deltaTime);
-	void render(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* _frame);
+	void render(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle _frame);
 	void onReceive(const aka::ResourceLoadedEvent& event);
 protected:
 	virtual void onCreate(aka::gfx::GraphicDevice * _device) {}
 	virtual void onDestroy(aka::gfx::GraphicDevice* _device) {}
 	virtual void onUpdate(aka::Time deltaTime) {}
-	virtual void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) {}
+	virtual void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame) {}
 	virtual void onLoad() = 0;
 public:
 	virtual const char* getResourceName() const = 0;
