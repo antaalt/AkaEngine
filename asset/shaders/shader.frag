@@ -17,13 +17,10 @@ struct MaterialData
 	uint normalID;
 };
 
+//https://vkguide.dev/docs/chapter-4/storage_buffers/
 layout(std140, set = 1, binding = 0) readonly buffer MaterialDataBuffer {
 	MaterialData data[];
 } u_material;
-//https://vkguide.dev/docs/chapter-4/storage_buffers/
-/*layout(std140, set = 2, binding = 0) readonly buffer MaterialData {
-    mat4 model[];
-} ssbo;*/
 
 layout(set = 2, binding = 0) uniform sampler2D  u_textures[];
 
