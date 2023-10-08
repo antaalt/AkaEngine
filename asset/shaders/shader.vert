@@ -1,15 +1,27 @@
 #version 450
 #extension GL_KHR_vulkan_glsl : enable
 
-// Vertex
 layout (location = 0) in vec3 a_position;
 layout (location = 1) in vec3 a_normal;
 layout (location = 2) in vec2 a_uv;
 layout (location = 3) in vec4 a_color;
+
+#ifdef SKELETAL
+const uint MaxBoneInfluence = 4;// TODO shared code
+const uint InvalidBoneID = uint(-1);
+// Vertex
+layout (location = 4) in uvec4 a_boneIndex;
+layout (location = 5) in vec4 a_weights;
+// Instance
+layout(location = 6) in mat4 a_worldMatrix;
+layout(location = 10) in mat4 a_normalMatrix;
+layout(location = 14) in uint a_batchIndex;
+#else // STATIC
 // Instance
 layout(location = 4) in mat4 a_worldMatrix;
 layout(location = 8) in mat4 a_normalMatrix;
 layout(location = 12) in uint a_batchIndex;
+#endif
 
 // Output
 layout (location = 0) out vec4 v_worldPosition;
@@ -46,12 +58,19 @@ struct BatchData
 	uint vertexOffset;
 	uint indexOffset;
 	uint indexCount;
+#ifdef SKELETAL // Rigging
+	uint boneOffset;
+	uint _pad0;
+	uint _pad1;
+	uint _pad2;
+#endif
 
 	uint materialIndex;
 	// BBOX
 	vec4 min;
 	vec4 max;
 };
+
 
 layout(std140, set = 3, binding = 0) readonly buffer AssetDataBuffer {
 	AssetData data[];
@@ -61,9 +80,27 @@ layout(std140, set = 3, binding = 1) readonly buffer BatchDataBuffer {
 	BatchData data[];
 } u_batches;
 
+layout(std140, set = 3, binding = 2) readonly buffer BoneDataBuffer {
+	mat4 offset[];
+} u_bones;
+
 void main(void)
 {
-	v_worldPosition = a_worldMatrix * vec4(a_position, 1.0);
+	vec3 localPosition = a_position;
+#ifdef SKELETAL // Rigging
+	vec3 sumPosition = vec3(0.0);
+	for(int i = 0 ; i < MaxBoneInfluence ; i++)
+    {
+        if(a_boneIndex[i] == InvalidBoneID) 
+            continue;
+        vec4 boneLocalPosition = u_bones.offset[a_boneIndex[i]] * vec4(localPosition,1.0);
+        sumPosition += boneLocalPosition.xyz * a_weights[i];
+		// Sum of normal is not really valid here...
+        //vec3 localNormal = mat3(u_bones.offset[a_boneIndex[i]]) * a_normal; // TODO issue with scale & normal matrix ?
+    }
+	localPosition = sumPosition;
+#endif
+	v_worldPosition = a_worldMatrix * vec4(localPosition, 1.0);
 	v_worldNormal = mat3(a_normalMatrix) * a_normal;
 	v_uv = a_uv;
 	v_color = a_color;

@@ -10,7 +10,9 @@
 
 #include <Aka/Resource/AssetLibrary.hpp>
 #include <Aka/Resource/Archive/ArchiveScene.hpp>
+#include <Aka/Resource/Resource/SkeletalMesh.hpp>
 #include <Aka/Scene/Component/StaticMeshComponent.hpp>
+#include <Aka/Scene/Component/SkeletalMeshComponent.hpp>
 
 namespace app {
 
@@ -23,7 +25,7 @@ public:
 
 	void process();
 	void processNode(ArchiveSceneID parent, aiNode* node);
-	AssetID processMesh(aiMesh* mesh);
+	AssetID processMesh(aiMesh* mesh, bool& isSkeletal);
 	AssetID processMaterial(aiMaterial* material);
 	AssetID processImage(const Path& path);
 private:
@@ -39,10 +41,13 @@ private:
 	ArchiveMaterial m_dummyMaterial;
 	//std::map<AssetID, ArchiveImage> m_imageCache;
 	//std::map<AssetID, ArchiveMaterial> m_materialCache;
-	Vector<AssetID> m_staticMeshes;
+	Vector<AssetID> m_meshes;
+	BitField m_isSkeletal;
 	std::map<AssetID, ArchiveStaticMesh> m_staticMeshCache;
+	std::map<AssetID, ArchiveSkeletalMesh> m_skeletalMeshCache;
 	std::map<AssetID, ArchiveBatch> m_batchCache;
 	std::map<AssetID, ArchiveGeometry> m_geometryCache;
+	std::map<AssetID, aabbox<>> m_meshAabbox;
 	ArchiveSaveContext m_saveContext;
 };
 
@@ -127,7 +132,8 @@ AssimpImporterImpl::AssimpImporterImpl(AssimpImporter* _importer, const Path& di
 	//m_dummyMaterial.roughness = m_missingRoughnessTexture;
 
 	// Reserve vector to avoid rellocation
-	m_staticMeshes.reserve(m_assimpScene->mNumMeshes);
+	m_meshes.resize(m_assimpScene->mNumMeshes);
+	m_isSkeletal.resize(m_assimpScene->mNumMeshes);
 }
 
 void AssimpImporterImpl::process()
@@ -138,7 +144,12 @@ void AssimpImporterImpl::process()
 
 	// Pre process meshes to keep them instanced.
 	for (uint32_t i = 0; i < m_assimpScene->mNumMeshes; i++)
-		m_staticMeshes.append(processMesh(m_assimpScene->mMeshes[i]));
+	{
+		bool isSkeletal = false;
+		AssetID id = processMesh(m_assimpScene->mMeshes[i], isSkeletal);
+		m_meshes[i] = id;
+		m_isSkeletal.set(i, isSkeletal);
+	}
 	
 	ArchiveSceneID rootID = addNode(m_scene, root);
 	processNode(rootID, m_assimpScene->mRootNode);
@@ -165,14 +176,19 @@ mat4f getParentTransform(ArchiveScene& _scene, ArchiveSceneID _parentID)
 	}
 }
 
+mat4f getAkaTransform(const aiMatrix4x4& matrix)
+{
+	return mat4f(
+		col4f(matrix[0][0], matrix[1][0], matrix[2][0], matrix[3][0]),
+		col4f(matrix[0][1], matrix[1][1], matrix[2][1], matrix[3][1]),
+		col4f(matrix[0][2], matrix[1][2], matrix[2][2], matrix[3][2]),
+		col4f(matrix[0][3], matrix[1][3], matrix[2][3], matrix[3][3])
+	);
+}
+
 void AssimpImporterImpl::processNode(ArchiveSceneID _parent, aiNode* _node)
 {
-	mat4f transform = mat4f(
-		col4f(_node->mTransformation[0][0], _node->mTransformation[1][0], _node->mTransformation[2][0], _node->mTransformation[3][0]),
-		col4f(_node->mTransformation[0][1], _node->mTransformation[1][1], _node->mTransformation[2][1], _node->mTransformation[3][1]),
-		col4f(_node->mTransformation[0][2], _node->mTransformation[1][2], _node->mTransformation[2][2], _node->mTransformation[3][2]),
-		col4f(_node->mTransformation[0][3], _node->mTransformation[1][3], _node->mTransformation[2][3], _node->mTransformation[3][3])
-	);
+	mat4f transform = getAkaTransform(_node->mTransformation);
 	// process all the node's meshes (if any)
 	// TODO: those are batches ? Return batch instead of mesh here...
 	for (unsigned int i = 0; i < _node->mNumMeshes; i++)
@@ -183,27 +199,27 @@ void AssimpImporterImpl::processNode(ArchiveSceneID _parent, aiNode* _node)
 		entity.transform = transform;
 		entity.parentID = _parent;
 		// Mesh component
-		ArchiveStaticMeshComponent meshComponentArchive;
-		meshComponentArchive.assetID = m_staticMeshes[_node->mMeshes[i]];
-
 		ArchiveSceneComponent component;
-		component.id = meshComponentArchive.getComponentID();
-		meshComponentArchive.save(component.archive);
+		if (m_isSkeletal[i])
+		{
+			ArchiveSkeletalMeshComponent meshComponentArchive;
+			meshComponentArchive.assetID = m_meshes[_node->mMeshes[i]];
+			component.id = meshComponentArchive.getComponentID();
+			meshComponentArchive.save(component.archive);
+		}
+		else
+		{
+			ArchiveStaticMeshComponent meshComponentArchive;
+			meshComponentArchive.assetID = m_meshes[_node->mMeshes[i]];
+			component.id = meshComponentArchive.getComponentID();
+			meshComponentArchive.save(component.archive);
+		}
 		
 		entity.components.append(component);
 		
 		ArchiveSceneID entityID = addNode(m_scene, entity);
 
-		// Compute bounds
-		ArchiveStaticMesh& meshArchive = m_staticMeshCache[m_staticMeshes[_node->mMeshes[i]]];
-		for (size_t j = 0; j < meshArchive.batches.size(); j++)
-		{
-			ArchiveBatch& batchArchive = m_batchCache[meshArchive.batches[j]];
-			ArchiveGeometry& geometryArchive = m_geometryCache[batchArchive.geometry];
-			
-			m_scene.bounds.include(getParentTransform(m_scene, entityID) * geometryArchive.bounds);
-			break;
-		}
+		m_scene.bounds.include(getParentTransform(m_scene, entityID) * m_meshAabbox[m_meshes[_node->mMeshes[i]]]);
 	}
 	if (_node->mNumChildren > 0)
 	{
@@ -218,53 +234,115 @@ void AssimpImporterImpl::processNode(ArchiveSceneID _parent, aiNode* _node)
 	}
 }
 
-AssetID AssimpImporterImpl::processMesh(aiMesh* mesh)
+AssetID AssimpImporterImpl::processMesh(aiMesh* mesh, bool& isSkeletal)
 {
 	AKA_ASSERT(mesh->HasPositions(), "Mesh need positions");
 	AKA_ASSERT(mesh->HasNormals(), "Mesh needs normals");
 
 	// process vertices
+	isSkeletal = mesh->HasBones();
+	aabbox<> bbox;
 	ArchiveGeometry archiveGeometry = ArchiveGeometry(m_importer->registerAsset(AssetType::Geometry, mesh->mName.C_Str()));
-	archiveGeometry.vertices.resize(mesh->mNumVertices);
-	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
+	if (isSkeletal)
 	{
-		ArchiveStaticVertex& vertex = archiveGeometry.vertices[i];
-		// process vertex positions, normals and texture coordinates
-		vertex.position[0] = mesh->mVertices[i].x;
-		vertex.position[1] = mesh->mVertices[i].y;
-		vertex.position[2] = mesh->mVertices[i].z;
-		archiveGeometry.bounds.include(vertex.position[0], vertex.position[1], vertex.position[2]);
+		archiveGeometry.skeletalVertices.resize(mesh->mNumVertices);
+		archiveGeometry.flags |= ArchiveGeometryFlags::IsSkeletal;
+		for (unsigned int iVert = 0; iVert < mesh->mNumVertices; iVert++)
+		{
+			ArchiveSkeletalVertex& vertex = archiveGeometry.skeletalVertices[iVert];
+			// process vertex positions, normals and texture coordinates
+			std::copy(&mesh->mVertices[iVert].x, &mesh->mVertices[iVert].x + 3, vertex.position);
+			archiveGeometry.bounds.include(vertex.position[0], vertex.position[1], vertex.position[2]);
 
-		vertex.normal[0] = mesh->mNormals[i].x;
-		vertex.normal[1] = mesh->mNormals[i].y;
-		vertex.normal[2] = mesh->mNormals[i].z;
-		if (mesh->HasTextureCoords(0))
-		{
-			vertex.uv[0] = mesh->mTextureCoords[0][i].x;
-			vertex.uv[1] = mesh->mTextureCoords[0][i].y;
+			std::copy(&mesh->mNormals[iVert].x, &mesh->mNormals[iVert].x + 3, vertex.normal);
+			if (mesh->HasTextureCoords(0))
+			{
+				std::copy(&mesh->mTextureCoords[0][iVert].x, &mesh->mTextureCoords[0][iVert].x + 2, vertex.uv);
+			}
+			else
+			{
+				vertex.uv[0] = 0.f;
+				vertex.uv[1] = 0.f;
+			}
+			if (mesh->HasVertexColors(0))
+			{
+				std::copy(&mesh->mColors[0][iVert].r, &mesh->mColors[0][iVert].r + 4, vertex.color);
+			}
+			else
+			{
+				vertex.color[0] = 1.f;
+				vertex.color[1] = 1.f;
+				vertex.color[2] = 1.f;
+				vertex.color[3] = 1.f;
+			}
+			for (uint32_t iInfluence = 0; iInfluence < SkeletalVertex::MaxBoneInfluence; iInfluence++)
+			{
+				vertex.boneIndex[iInfluence] = SkeletalVertex::InvalidBoneIndex;
+				vertex.weights[iInfluence] = 0.f;
+			}
+			mesh->mTangents; // TODO:
+			mesh->mBitangents;
 		}
-		else
+		bbox.include(archiveGeometry.bounds);
+		// Bones
+		archiveGeometry.skeletalBones.resize(mesh->mNumBones);
+		for (unsigned int iBone = 0; iBone < mesh->mNumBones; iBone++)
 		{
-			vertex.uv[0] = 0.f;
-			vertex.uv[1] = 0.f;
+			ArchiveSkeletalBone& skeletalBone = archiveGeometry.skeletalBones[iBone];
+			aiBone* bone = mesh->mBones[iBone];
+			bone->mName; // Could sort by name, bone might be mutualized within batches.
+			skeletalBone.offset = getAkaTransform(bone->mOffsetMatrix);
+			for (uint32_t iWeight = 0; iWeight < bone->mNumWeights; iWeight++) // max is AI_MAX_BONE_WEIGHTS
+			{
+				const aiVertexWeight& weight = bone->mWeights[iWeight];
+				ArchiveSkeletalVertex& vertex = archiveGeometry.skeletalVertices[weight.mVertexId];
+				for (uint32_t iInfluence = 0; iInfluence < SkeletalVertex::MaxBoneInfluence; iInfluence++)
+				{
+					if (vertex.boneIndex[iInfluence] == SkeletalVertex::InvalidBoneIndex)
+					{
+						vertex.boneIndex[iInfluence] = iBone;
+						vertex.weights[iInfluence] = weight.mWeight;
+						break;
+					}
+				}
+			}
 		}
-		if (mesh->HasVertexColors(0))
-		{
-			vertex.color[0] = mesh->mColors[0][i].r;
-			vertex.color[1] = mesh->mColors[0][i].g;
-			vertex.color[2] = mesh->mColors[0][i].b;
-			vertex.color[3] = mesh->mColors[0][i].a;
-		}
-		else
-		{
-			vertex.color[0] = 1.f;
-			vertex.color[1] = 1.f;
-			vertex.color[2] = 1.f;
-			vertex.color[3] = 1.f;
-		}
-		mesh->mTangents; // TODO:
-		mesh->mBitangents;
 	}
+	else
+	{
+		archiveGeometry.staticVertices.resize(mesh->mNumVertices);
+		for (unsigned int i = 0; i < mesh->mNumVertices; i++)
+		{
+			ArchiveStaticVertex& vertex = archiveGeometry.staticVertices[i];
+			std::copy(&mesh->mVertices[i].x, &mesh->mVertices[i].x + 3, vertex.position);
+			archiveGeometry.bounds.include(vertex.position[0], vertex.position[1], vertex.position[2]);
+
+			std::copy(&mesh->mNormals[i].x, &mesh->mNormals[i].x + 3, vertex.normal);
+			if (mesh->HasTextureCoords(0))
+			{
+				std::copy(&mesh->mTextureCoords[0][i].x, &mesh->mTextureCoords[0][i].x + 2, vertex.uv);
+			}
+			else
+			{
+				vertex.uv[0] = 0.f;
+				vertex.uv[1] = 0.f;
+			}
+			if (mesh->HasVertexColors(0))
+			{
+				std::copy(&mesh->mColors[0][i].r, &mesh->mColors[0][i].r + 4, vertex.color);
+			}
+			else
+			{
+				vertex.color[0] = 1.f;
+				vertex.color[1] = 1.f;
+				vertex.color[2] = 1.f;
+				vertex.color[3] = 1.f;
+			}
+			mesh->mTangents; // TODO:
+			mesh->mBitangents;
+		}
+	}
+	bbox.include(archiveGeometry.bounds);
 	// process indices
 	for (unsigned int i = 0; i < mesh->mNumFaces; i++)
 	{
@@ -288,19 +366,32 @@ AssetID AssimpImporterImpl::processMesh(aiMesh* mesh)
 	ArchiveBatch archiveBatch(m_importer->registerAsset(AssetType::Batch, mesh->mName.C_Str()));
 	archiveBatch.geometry = archiveGeometry.id();
 	archiveBatch.material = materialID;
-	ArchiveStaticMesh archiveMesh(m_importer->registerAsset(AssetType::StaticMesh, mesh->mName.C_Str()));
-	archiveMesh.batches.append(archiveBatch.id());
-	
 
 	archiveGeometry.save(m_saveContext);
 	archiveBatch.save(m_saveContext);
-	archiveMesh.save(m_saveContext);
-
+	AssetID meshID = AssetID::Invalid;
+	if (isSkeletal)
+	{
+		ArchiveSkeletalMesh archiveMesh(m_importer->registerAsset(AssetType::SkeletalMesh, mesh->mName.C_Str()));
+		archiveMesh.batches.append(archiveBatch.id());
+		archiveMesh.save(m_saveContext);
+		m_skeletalMeshCache[archiveMesh.id()] = archiveMesh;
+		meshID = archiveMesh.id();
+		m_meshAabbox[archiveMesh.id()] = bbox;
+	}
+	else
+	{
+		ArchiveStaticMesh archiveMesh(m_importer->registerAsset(AssetType::StaticMesh, mesh->mName.C_Str()));
+		archiveMesh.batches.append(archiveBatch.id());
+		archiveMesh.save(m_saveContext);
+		m_staticMeshCache[archiveMesh.id()] = archiveMesh;
+		meshID = archiveMesh.id();
+		m_meshAabbox[archiveMesh.id()] = bbox;
+	}
 	m_batchCache[archiveBatch.id()] = archiveBatch;
 	m_geometryCache[archiveGeometry.id()] = archiveGeometry;
-	m_staticMeshCache[archiveMesh.id()] = archiveMesh;
 
-	return archiveMesh.id();
+	return meshID;
 }
 
 AssetID AssimpImporterImpl::processMaterial(aiMaterial* material)

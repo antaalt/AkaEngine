@@ -2,6 +2,7 @@
 
 #include <Aka/Layer/ImGuiLayer.h>
 #include <Aka/Scene/Component/CameraComponent.hpp>
+#include <Aka/Scene/Component/SkeletalMeshComponent.hpp>
 #include <Aka/Scene/Component/StaticMeshComponent.hpp>
 #include <Aka/Resource/AssetLibrary.hpp>
 
@@ -14,48 +15,48 @@ using namespace aka;
 
 static const uint32_t s_vertexCount = 36;
 
-static const float s_vertices[s_vertexCount * 5] = {
-	-1.0f,  1.0f, -1.0f,	0.f, 1.f,
-	-1.0f, -1.0f, -1.0f,	0.f, 0.f,
-	 1.0f, -1.0f, -1.0f,	1.f, 0.f,
-	 1.0f, -1.0f, -1.0f,	1.f, 0.f,
-	 1.0f,  1.0f, -1.0f,	1.f, 1.f,
-	-1.0f,  1.0f, -1.0f,	0.f, 1.f,
+static const StaticVertex s_vertices[s_vertexCount] = {
+	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
 
-	-1.0f, -1.0f,  1.0f,	0.f, 1.f,
-	-1.0f, -1.0f, -1.0f,	0.f, 0.f,
-	-1.0f,  1.0f, -1.0f,	1.f, 0.f,
-	-1.0f,  1.0f, -1.0f,	1.f, 0.f,
-	-1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	-1.0f, -1.0f,  1.0f,	0.f, 1.f,
+	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
 
-	 1.0f, -1.0f, -1.0f,	0.f, 0.f,
-	 1.0f, -1.0f,  1.0f,	0.f, 1.f,
-	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	 1.0f,  1.0f, -1.0f,	1.f, 0.f,
-	 1.0f, -1.0f, -1.0f,	0.f, 0.f,
+	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
 
-	-1.0f, -1.0f,  1.0f,	0.f, 0.f,
-	-1.0f,  1.0f,  1.0f,	0.f, 1.f,
-	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	 1.0f, -1.0f,  1.0f,	1.f, 0.f,
-	-1.0f, -1.0f,  1.0f,	0.f, 0.f,
+	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
 
-	-1.0f,  1.0f, -1.0f,	0.f, 0.f,
-	 1.0f,  1.0f, -1.0f,	1.f, 0.f,
-	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	 1.0f,  1.0f,  1.0f,	1.f, 1.f,
-	-1.0f,  1.0f,  1.0f,	0.f, 1.f,
-	-1.0f,  1.0f, -1.0f,	0.f, 0.f,
+	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
 
-	-1.0f, -1.0f, -1.0f,	0.f, 0.f,
-	-1.0f, -1.0f,  1.0f,	0.f, 1.f,
-	 1.0f, -1.0f, -1.0f,	1.f, 0.f,
-	 1.0f, -1.0f, -1.0f,	1.f, 0.f,
-	-1.0f, -1.0f,  1.0f,	0.f, 1.f,
-	 1.0f, -1.0f,  1.0f,	1.f, 1.f,
+	StaticVertex{point3f(-1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
 };
 
 Vector<ArchiveStaticVertex> getSphereVertices(float radius, uint32_t segmentCount, uint32_t ringCount)
@@ -152,9 +153,9 @@ AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer)
 	
 	ArchiveGeometry geometry(geometryID);
 	geometry.indices = getSphereIndices(1.0, 32, 16);
-	geometry.vertices = getSphereVertices(1.0, 32, 16);
-	for (uint32_t i = 0; i < geometry.vertices.size(); i++)
-		geometry.bounds.include(point3f(geometry.vertices[i].position[0], geometry.vertices[i].position[1], geometry.vertices[i].position[2]));
+	geometry.staticVertices = getSphereVertices(1.0, 32, 16);
+	for (uint32_t i = 0; i < geometry.staticVertices.size(); i++)
+		geometry.bounds.include(point3f(geometry.staticVertices[i].position[0], geometry.staticVertices[i].position[1], geometry.staticVertices[i].position[2]));
 
 	ArchiveBatch batch(batchID);
 	batch.geometry = geometryID;
@@ -222,8 +223,8 @@ AssetID createCubeMesh(AssetLibrary* _library, Renderer* _renderer)
 	for (uint32_t i = 0; i < s_vertexCount; i++)
 		geometry.indices[i] = i;
 	// Vertices
-	geometry.vertices.resize(s_vertexCount);
-	Memory::copy(geometry.vertices.data(), s_vertices, sizeof(s_vertices));
+	geometry.staticVertices.resize(s_vertexCount);
+	Memory::copy(geometry.staticVertices.data(), s_vertices, sizeof(s_vertices));
 	geometry.bounds = aabbox(point3f(-1.f), point3f(1.f));
 
 	ArchiveBatch batch(batchID);
@@ -341,6 +342,28 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library,
 			}
 			ImGui::EndCombo();
 		}
+		// TODO: button to open viewer somehow.
+		// + combo to switch mesh
+	}
+	else
+	{
+		ImGui::Text("No mesh data");
+	}
+	return false;
+}
+
+
+template <> const char* ComponentNode<SkeletalMeshComponent>::name() { return "MeshComponent"; }
+template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* library, SkeletalMeshComponent& mesh)
+{
+	if (mesh.getMesh().isLoaded())
+	{
+		SkeletalMesh& m = mesh.getMesh().get();
+		mesh.getMesh();
+
+		AssetID currentAssetID = mesh.getMesh().get().getID();
+		const String& name = mesh.getMesh().get().getName();
+		
 		// TODO: button to open viewer somehow.
 		// + combo to switch mesh
 	}
@@ -751,6 +774,7 @@ void SceneEditorLayer::onDrawUI()
 				{
 					// Draw every component.
 					component<StaticMeshComponent>(m_library, m_currentNode);
+					component<SkeletalMeshComponent>(m_library, m_currentNode);
 					component<CameraComponent>(m_library, m_currentNode);
 					component<CustomComponent>(m_library, m_currentNode);
 					component<RotatorComponent>(m_library, m_currentNode);

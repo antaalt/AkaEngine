@@ -18,6 +18,8 @@ ResourceState getResourceState(AssetID id, AssetType type, AssetLibrary* library
 	{
 	case AssetType::Scene: return library->getState<Scene>(id);
 	case AssetType::StaticMesh: return library->getState<StaticMesh>(id);
+	case AssetType::SkeletalMesh: return library->getState<SkeletalMesh>(id);
+	case AssetType::Material: return library->getState<Material>(id);
 	case AssetType::Image: return library->getState<Texture>(id);
 	default: return ResourceState::Unknown;
 	}
@@ -46,6 +48,9 @@ void load(AssetID id, AssetType type, AssetLibrary* library)
 		break;
 	case AssetType::StaticMesh:
 		library->load<StaticMesh>(id, Application::app()->renderer());
+		break;
+	case AssetType::SkeletalMesh:
+		library->load<SkeletalMesh>(id, Application::app()->renderer());
 		break;
 	case AssetType::Image:
 		library->load<Texture>(id, Application::app()->renderer());
