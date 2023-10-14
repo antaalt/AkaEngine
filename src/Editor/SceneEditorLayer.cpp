@@ -796,7 +796,14 @@ void SceneEditorLayer::onDrawUI()
 			}
 			if (ImGui::BeginMenu("Transform operation"))
 			{
-				bool enabled = m_gizmoOperation == ImGuizmo::TRANSLATE;
+				bool enabled = m_gizmoMode == ImGuizmo::LOCAL;
+				if (ImGui::MenuItem("Local", nullptr, &enabled))
+					m_gizmoMode = ImGuizmo::LOCAL;
+				enabled = m_gizmoMode == ImGuizmo::WORLD;
+				if (ImGui::MenuItem("World", nullptr, &enabled))
+					m_gizmoMode = ImGuizmo::WORLD;
+				ImGui::Separator();
+				enabled = m_gizmoOperation == ImGuizmo::TRANSLATE;
 				if (ImGui::MenuItem("Translate", nullptr, &enabled))
 					m_gizmoOperation = ImGuizmo::TRANSLATE;
 				enabled = m_gizmoOperation == ImGuizmo::ROTATE;
@@ -872,23 +879,32 @@ void SceneEditorLayer::onDrawUI()
 				if (ImGui::TreeNodeEx("Transform", ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_DefaultOpen))
 				{
 					bool updatedTransform = false;
-					mat4f& transform = m_currentNode->getLocalTransform();
+					mat4f localTransform = m_currentNode->getLocalTransform();
+					mat4f worldTransform = m_currentNode->getWorldTransform();
 					float translation[3];
 					float rotation[3];
 					float scale[3];
-					ImGuizmo::DecomposeMatrixToComponents(transform.cols[0].data, translation, rotation, scale);
-					updatedTransform |= ImGui::InputFloat3("Translation", translation);
-					updatedTransform |= ImGui::InputFloat3("Rotation", rotation);
-					updatedTransform |= ImGui::InputFloat3("Scale", scale);
+					ImGuizmo::DecomposeMatrixToComponents(localTransform.cols[0].data, translation, rotation, scale);
+					updatedTransform |= ImGui::InputFloat3("Local Translation", translation);
+					updatedTransform |= ImGui::InputFloat3("Local Rotation", rotation);
+					updatedTransform |= ImGui::InputFloat3("Local Scale", scale);
 					if (updatedTransform)
-						ImGuizmo::RecomposeMatrixFromComponents(translation, rotation, scale, transform.cols[0].data);
+					{
+						ImGuizmo::RecomposeMatrixFromComponents(translation, rotation, scale, localTransform.cols[0].data);
+						m_currentNode->setLocalTransform(localTransform);
+					}
 
 					mat4f view = m_cameraController->view();
 					mat4f projection = m_cameraProjection->projection();
 					// Draw gizmo axis
 					ImGuiIO& io = ImGui::GetIO();
 					ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-					updatedTransform |= ImGuizmo::Manipulate(view[0].data, projection[0].data, m_gizmoOperation, ImGuizmo::MODE::LOCAL, transform[0].data);
+					if (ImGuizmo::Manipulate(view[0].data, projection[0].data, m_gizmoOperation, m_gizmoMode, worldTransform[0].data))
+					{
+						mat4f inverseParentWorld = mat4f::inverse(m_currentNode->getParentTransform());
+						m_currentNode->setLocalTransform(inverseParentWorld * worldTransform);
+						updatedTransform = true;
+					}
 
 					if (updatedTransform)
 						m_currentNode->setFlag(NodeUpdateFlag::Transform);

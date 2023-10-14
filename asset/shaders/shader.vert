@@ -75,10 +75,12 @@ layout(std140, set = 3, binding = 1) readonly buffer BatchDataBuffer {
 	BatchData data[];
 } u_batches;
 
+#ifdef SKELETAL
 // TODO raw buffer instead
 layout(std140, set = 3, binding = 2) readonly buffer BoneDataBuffer {
 	mat4 offset[];
 } u_bones;
+#endif
 
 void main(void)
 {

@@ -35,6 +35,7 @@ public:
 	void setCurrentCameraProjection(aka::CameraProjection* _camera) { m_cameraProjection = _camera; }
 private:
 	aka::AssetLibrary* m_library;
+	ImGuizmo::MODE m_gizmoMode = ImGuizmo::WORLD;
 	ImGuizmo::OPERATION m_gizmoOperation = ImGuizmo::TRANSLATE;
 	aka::Node* m_nodeToDestroy = nullptr;
 	aka::Node* m_currentNode = nullptr;
