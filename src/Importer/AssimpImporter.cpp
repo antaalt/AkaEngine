@@ -10,6 +10,14 @@
 
 #include <Aka/Resource/AssetLibrary.hpp>
 #include <Aka/Resource/Archive/ArchiveScene.hpp>
+#include <Aka/Resource/Archive/ArchiveStaticMesh.hpp>
+#include <Aka/Resource/Archive/ArchiveSkeletalMesh.hpp>
+#include <Aka/Resource/Archive/ArchiveImage.hpp>
+#include <Aka/Resource/Archive/ArchiveMaterial.hpp>
+#include <Aka/Resource/Archive/ArchiveBatch.hpp>
+#include <Aka/Resource/Archive/ArchiveGeometry.hpp>
+#include <Aka/Resource/Archive/ArchiveSkeleton.hpp>
+#include <Aka/Resource/Archive/ArchiveSkeletonAnimation.hpp>
 #include <Aka/Resource/Resource/SkeletalMesh.hpp>
 #include <Aka/Scene/Component/StaticMeshComponent.hpp>
 #include <Aka/Scene/Component/SkeletalMeshComponent.hpp>
@@ -25,8 +33,9 @@ public:
 
 	void process();
 	void processNode(ArchiveSceneID parent, aiNode* node);
-	AssetID processMesh(aiMesh* mesh, bool& isSkeletal);
-	AssetID processMaterial(aiMaterial* material);
+	AssetID processMesh(const aiMesh* mesh, bool& isSkeletal);
+	AssetID processAnimation(const aiAnimation* animation, const aiMesh* mesh, AssetID skeletonID);
+	AssetID processMaterial(const aiMaterial* material);
 	AssetID processImage(const Path& path);
 private:
 	AssimpImporter* m_importer;
@@ -150,7 +159,7 @@ void AssimpImporterImpl::process()
 		m_meshes[i] = id;
 		m_isSkeletal.set(i, isSkeletal);
 	}
-	
+	// Iterate over all tree to setup Node
 	ArchiveSceneID rootID = addNode(m_scene, root);
 	processNode(rootID, m_assimpScene->mRootNode);
 
@@ -234,19 +243,32 @@ void AssimpImporterImpl::processNode(ArchiveSceneID _parent, aiNode* _node)
 	}
 }
 
-AssetID AssimpImporterImpl::processMesh(aiMesh* mesh, bool& isSkeletal)
+aiNode* findNode(aiNode* node, const aiString& name)
+{
+	if (name == node->mName)
+		return node;
+	for (unsigned int i = 0; i < node->mNumChildren; i++)
+	{
+		if (aiNode* found = findNode(node->mChildren[i], name))
+			return found;
+	}
+	return nullptr;
+}
+
+AssetID AssimpImporterImpl::processMesh(const aiMesh* mesh, bool& isSkeletal)
 {
 	AKA_ASSERT(mesh->HasPositions(), "Mesh need positions");
 	AKA_ASSERT(mesh->HasNormals(), "Mesh needs normals");
 
 	// process vertices
 	isSkeletal = mesh->HasBones();
+	Vector<AssetID> animations;
 	aabbox<> bbox;
 	ArchiveGeometry archiveGeometry = ArchiveGeometry(m_importer->registerAsset(AssetType::Geometry, mesh->mName.C_Str()));
 	if (isSkeletal)
 	{
+		ArchiveSkeleton archiveSkeleton(m_importer->registerAsset(AssetType::Skeleton, mesh->mName.C_Str()));
 		archiveGeometry.skeletalVertices.resize(mesh->mNumVertices);
-		archiveGeometry.flags |= ArchiveGeometryFlags::IsSkeletal;
 		for (unsigned int iVert = 0; iVert < mesh->mNumVertices; iVert++)
 		{
 			ArchiveSkeletalVertex& vertex = archiveGeometry.skeletalVertices[iVert];
@@ -285,13 +307,33 @@ AssetID AssimpImporterImpl::processMesh(aiMesh* mesh, bool& isSkeletal)
 		}
 		bbox.include(archiveGeometry.bounds);
 		// Bones
-		archiveGeometry.skeletalBones.resize(mesh->mNumBones);
+		archiveSkeleton.bones.resize(mesh->mNumBones);
+		archiveSkeleton.rootBoneIndex = SkeletalVertex::InvalidBoneIndex;
 		for (unsigned int iBone = 0; iBone < mesh->mNumBones; iBone++)
 		{
-			ArchiveSkeletalBone& skeletalBone = archiveGeometry.skeletalBones[iBone];
-			aiBone* bone = mesh->mBones[iBone];
-			bone->mName; // Could sort by name, bone might be mutualized within batches.
+			ArchiveSkeletalBone& skeletalBone = archiveSkeleton.bones[iBone];
+			const aiBone* bone = mesh->mBones[iBone];
+			skeletalBone.parentIndex = SkeletalVertex::InvalidBoneIndex;
+			skeletalBone.name = bone->mName.C_Str();
 			skeletalBone.offset = getAkaTransform(bone->mOffsetMatrix);
+			// Find parent bone in mesh.
+			const aiNode* node = findNode(m_assimpScene->mRootNode, bone->mName);
+			bool found = false;
+			for (unsigned int iBone2 = 0; iBone2 < mesh->mNumBones; iBone2++)
+			{
+				if (node->mParent->mName == mesh->mBones[iBone2]->mName)
+				{
+					skeletalBone.parentIndex = iBone2;
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+			{
+				AKA_ASSERT(archiveSkeleton.rootBoneIndex == SkeletalVertex::InvalidBoneIndex, "Multiple root detected.");
+				archiveSkeleton.rootBoneIndex = iBone;
+			}
+			// Set vertices weights & indices.
 			for (uint32_t iWeight = 0; iWeight < bone->mNumWeights; iWeight++) // max is AI_MAX_BONE_WEIGHTS
 			{
 				const aiVertexWeight& weight = bone->mWeights[iWeight];
@@ -307,6 +349,16 @@ AssetID AssimpImporterImpl::processMesh(aiMesh* mesh, bool& isSkeletal)
 				}
 			}
 		}
+
+		if (m_assimpScene->HasAnimations())
+		{
+			for (uint32_t iAnim = 0; iAnim < m_assimpScene->mNumAnimations; iAnim++)
+			{
+				animations.append(processAnimation(m_assimpScene->mAnimations[iAnim], mesh, archiveSkeleton.id()));
+			}
+		}
+		archiveGeometry.skeleton = archiveSkeleton.id();
+		archiveSkeleton.save(m_saveContext);
 	}
 	else
 	{
@@ -374,6 +426,7 @@ AssetID AssimpImporterImpl::processMesh(aiMesh* mesh, bool& isSkeletal)
 	{
 		ArchiveSkeletalMesh archiveMesh(m_importer->registerAsset(AssetType::SkeletalMesh, mesh->mName.C_Str()));
 		archiveMesh.batches.append(archiveBatch.id());
+		archiveMesh.animations.append(animations);
 		archiveMesh.save(m_saveContext);
 		m_skeletalMeshCache[archiveMesh.id()] = archiveMesh;
 		meshID = archiveMesh.id();
@@ -394,7 +447,78 @@ AssetID AssimpImporterImpl::processMesh(aiMesh* mesh, bool& isSkeletal)
 	return meshID;
 }
 
-AssetID AssimpImporterImpl::processMaterial(aiMaterial* material)
+String generateRandomName(AssetType type)
+{
+	// Could use name dictionnary.
+	return String::format("%s-%zu", Importer::getAssetTypeName(type), geometry::random<size_t>(0, std::numeric_limits<size_t>::max()));
+}
+
+AssetID AssimpImporterImpl::processAnimation(const aiAnimation* sceneAnimation, const aiMesh* mesh, AssetID skeletonID)
+{
+	String name = (sceneAnimation->mName.length > 0) ? sceneAnimation->mName.C_Str() : generateRandomName(AssetType::SkeletonAnimation);
+	ArchiveSkeletonAnimation archive(m_importer->registerAsset(AssetType::SkeletonAnimation, name));
+	archive.name = name;
+	archive.durationInTick = static_cast<float>(sceneAnimation->mDuration); // Could be computed by looking all channels length
+	archive.tickPerSeconds = static_cast<float>(sceneAnimation->mTicksPerSecond);
+	archive.skeleton = skeletonID;
+
+	sceneAnimation->mNumMeshChannels; // TODO mesh anim
+	sceneAnimation->mNumMorphMeshChannels; // TODO mesh morphing
+	// https://github.com/ccxvii/asstools/blob/master/assview.c#L247
+	for (uint32_t iChannel = 0; iChannel < sceneAnimation->mNumChannels; iChannel++)
+	{
+		const aiNodeAnim* channel = sceneAnimation->mChannels[iChannel];
+
+		// Check if bone is in this mesh.
+		uint32_t boneIndex = 0;
+		for (; boneIndex < mesh->mNumBones; boneIndex++)
+		{
+			aiBone* bone = mesh->mBones[boneIndex];
+			if (channel->mNodeName == bone->mName)
+			{
+				break;
+			}
+		}
+		AKA_ASSERT(boneIndex < mesh->mNumBones, "This animation channel is not for this mesh. Need to unregister archive");
+
+		ArchiveSkeletonBoneAnimation bone;
+		bone.boneIndex = boneIndex;
+		for (uint32_t iKey = 0; iKey < channel->mNumPositionKeys; iKey++)
+		{
+			const aiVectorKey& aiKey = channel->mPositionKeys[iKey];
+			ArchiveSkeletalBonePosition pos;
+			pos.position = point3f(aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z);
+			pos.timestamp = static_cast<float>(aiKey.mTime);
+			bone.positions.append(pos);
+		}
+		for (uint32_t iKey = 0; iKey < channel->mNumRotationKeys; iKey++)
+		{
+			const aiQuatKey& aiKey = channel->mRotationKeys[iKey];
+			ArchiveSkeletalBoneRotation rot;
+			rot.orientation = quatf(aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z, aiKey.mValue.w);
+			rot.timestamp = static_cast<float>(aiKey.mTime);
+			bone.rotations.append(rot);
+		}
+		for (uint32_t iKey = 0; iKey < channel->mNumScalingKeys; iKey++)
+		{
+			const aiVectorKey& aiKey = channel->mScalingKeys[iKey];
+			ArchiveSkeletalBoneScale scale;
+			scale.scale = vec3f(aiKey.mValue.x, aiKey.mValue.y, aiKey.mValue.z);
+			scale.timestamp = static_cast<float>(aiKey.mTime);
+			bone.scales.append(scale);
+		}
+
+		// TODO constant or linear
+		bone.behaviour = ArchiveSkeletalMeshBehaviour(0);
+		channel->mPreState;
+		channel->mPostState;
+		archive.bones.append(bone);
+	}
+	archive.save(m_saveContext);
+	return archive.id();
+}
+
+AssetID AssimpImporterImpl::processMaterial(const aiMaterial* material)
 {
 	ArchiveMaterial archiveMaterial;
 	//aiTextureType_EMISSION_COLOR = 14,

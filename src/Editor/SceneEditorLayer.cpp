@@ -5,6 +5,8 @@
 #include <Aka/Scene/Component/SkeletalMeshComponent.hpp>
 #include <Aka/Scene/Component/StaticMeshComponent.hpp>
 #include <Aka/Resource/AssetLibrary.hpp>
+#include <Aka/Resource/Archive/ArchiveBatch.hpp>
+#include <Aka/Resource/Archive/ArchiveGeometry.hpp>
 
 #include "../Component/CustomComponent.hpp"
 #include "../Component/RotatorComponent.hpp"
@@ -354,16 +356,143 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library,
 
 
 template <> const char* ComponentNode<SkeletalMeshComponent>::name() { return "MeshComponent"; }
-template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* library, SkeletalMeshComponent& mesh)
+template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* library, SkeletalMeshComponent& meshComp)
 {
-	if (mesh.getMesh().isLoaded())
+	if (meshComp.getMesh().isLoaded())
 	{
-		SkeletalMesh& m = mesh.getMesh().get();
-		mesh.getMesh();
+		SkeletalMesh& m = meshComp.getMesh().get();
 
-		AssetID currentAssetID = mesh.getMesh().get().getID();
-		const String& name = mesh.getMesh().get().getName();
-		
+		AssetID currentAssetID = m.getID();
+		ImGui::Text("Mesh '%s'", m.getName().cstr());
+		if (ImGui::TreeNode("Batches"))
+		{
+			for (size_t iBatch = 0; iBatch < m.getBatches().size(); iBatch++)
+			{
+				const SkeletalMeshBatch& batch = m.getBatches()[iBatch];
+				if (ImGui::TreeNode(&batch, "Batch (%zu/%zu)", iBatch + 1, m.getBatches().size()))
+				{
+					batch.indexOffset;
+					batch.vertexOffset;
+					batch.boneOffset;
+					ImGui::Text("%u indices", batch.indexCount);
+
+					if (ImGui::TreeNode("Material"))
+					{
+						if (batch.material.isLoaded())
+						{
+							const Material& material = batch.material.get();
+							ImGui::Text("Material: %s", material.getName().cstr());
+							material.getAlbedoTexture();
+							material.getNormalTexture();
+						}
+						else
+						{
+							ImGui::Text("Material not loaded");
+						}
+						ImGui::TreePop();
+					}
+					ImGui::TreePop();
+				}
+			}
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("Animations"))
+		{
+			for (size_t iAnim = 0; iAnim < meshComp.getAnimations().size(); iAnim++)
+			{
+				const SkeletalMeshAnimation& animation = meshComp.getAnimations()[iAnim];
+				if (ImGui::TreeNode(&animation, "%s (%zu/%zu)", animation.name.cstr(), iAnim + 1, meshComp.getAnimations().size()))
+				{
+					ImGui::Text("Duration:  %.3f ticks", animation.durationInTick);
+					ImGui::Text("Ticks:	    %.3f /s", animation.tickPerSecond);
+					for (size_t iBone = 0; iBone < animation.bones.size(); iBone++)
+					{
+						const SkeletalMeshBoneAnimation& bone = animation.bones[iBone];
+						if (ImGui::TreeNode(&bone, "%s (%zu/%zu)", meshComp.getBones()[iBone].name.cstr(), iBone + 1, animation.bones.size()))
+						{
+							bone.behaviour;
+							float translation[3];
+							float rotation[3];
+							float scale[3];
+							ImGuizmo::DecomposeMatrixToComponents(bone.localTransform.cols[0].data, translation, rotation, scale);
+							ImGui::InputFloat3("Translation", translation);
+							ImGui::InputFloat3("Rotation", rotation);
+							ImGui::InputFloat3("Scale", scale);
+
+							if (ImGui::TreeNode(&bone.positionKeys, "Positions keys (%zu)", bone.positionKeys.size()))
+							{
+								for (size_t iKey = 0; iKey < bone.positionKeys.size(); iKey++)
+								{
+									const SkeletalMeshKeyPosition& key = bone.positionKeys[iKey];
+									if (ImGui::TreeNode(&key, "Position key (%zu/%zu)", iKey + 1, bone.positionKeys.size()))
+									{
+										ImGui::Text("Position : point3(%f, %f, %f)", key.position.x, key.position.y, key.position.z);
+										ImGui::Text("Timestamp: %f ticks", key.timeStamp);
+										ImGui::TreePop();
+									}
+								}
+								ImGui::TreePop();
+							}
+							if (ImGui::TreeNode(&bone.rotationKeys, "Rotation keys (%zu)", bone.rotationKeys.size()))
+							{
+								for (size_t iKey = 0; iKey < bone.rotationKeys.size(); iKey++)
+								{
+									const SkeletalMeshKeyRotation& key = bone.rotationKeys[iKey];
+									if (ImGui::TreeNode(&key, "Rotation key (%zu/%zu)", iKey + 1, bone.rotationKeys.size()))
+									{
+										ImGui::Text("Rotation : quat(%f, %f, %f)", key.orientation.x, key.orientation.y, key.orientation.z, key.orientation.w);
+										ImGui::Text("Timestamp: %f ticks", key.timeStamp);
+										ImGui::TreePop();
+									}
+								}
+								ImGui::TreePop();
+							}
+							if (ImGui::TreeNode(&bone.scaleKeys, "Scale keys (%zu)", bone.scaleKeys.size()))
+							{
+								for (size_t iKey = 0; iKey < bone.scaleKeys.size(); iKey++)
+								{
+									const SkeletalMeshKeyScale& key = bone.scaleKeys[iKey];
+									if (ImGui::TreeNode(&key, "Scale key (%zu/%zu)", iKey + 1, bone.scaleKeys.size()))
+									{
+										ImGui::Text("Scale : vec3(%f, %f, %f)", key.scale.x, key.scale.y, key.scale.z);
+										ImGui::Text("Timestamp: %f ticks", key.timeStamp);
+										ImGui::TreePop();
+									}
+								}
+								ImGui::TreePop();
+							}
+							ImGui::TreePop();
+						}
+					}
+					ImGui::TreePop();
+				}
+			}
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("Bones offset"))
+		{
+			for (size_t iBone = 0; iBone < meshComp.getBones().size(); iBone++)
+			{
+				const SkeletalMeshBone& bone = meshComp.getBones()[iBone];
+				if (ImGui::TreeNode(&bone, "%s (%zu/%zu)", bone.name.cstr(), iBone + 1, meshComp.getBones().size()))
+				{
+					if (bone.parentIndex == SkeletalVertex::InvalidBoneIndex)
+						ImGui::Text("No parent");
+					else
+						ImGui::Text("Parent: '%s' (%u)", meshComp.getBones()[bone.parentIndex].name.cstr(), bone.parentIndex);
+					float translation[3];
+					float rotation[3];
+					float scale[3];
+					ImGuizmo::DecomposeMatrixToComponents(bone.offset.cols[0].data, translation, rotation, scale);
+					ImGui::InputFloat3("Translation", translation);
+					ImGui::InputFloat3("Rotation", rotation);
+					ImGui::InputFloat3("Scale", scale);
+					ImGui::TreePop();
+				}
+			}
+			ImGui::TreePop();
+		}
+
 		// TODO: button to open viewer somehow.
 		// + combo to switch mesh
 	}

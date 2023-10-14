@@ -16,6 +16,7 @@ layout (location = 5) in vec4 a_weights;
 layout(location = 6) in mat4 a_worldMatrix;
 layout(location = 10) in mat4 a_normalMatrix;
 layout(location = 14) in uint a_batchIndex;
+layout(location = 15) in uint a_boneOffset;
 #else // STATIC
 // Instance
 layout(location = 4) in mat4 a_worldMatrix;
@@ -58,12 +59,6 @@ struct BatchData
 	uint vertexOffset;
 	uint indexOffset;
 	uint indexCount;
-#ifdef SKELETAL // Rigging
-	uint boneOffset;
-	uint _pad0;
-	uint _pad1;
-	uint _pad2;
-#endif
 
 	uint materialIndex;
 	// BBOX
@@ -80,6 +75,7 @@ layout(std140, set = 3, binding = 1) readonly buffer BatchDataBuffer {
 	BatchData data[];
 } u_batches;
 
+// TODO raw buffer instead
 layout(std140, set = 3, binding = 2) readonly buffer BoneDataBuffer {
 	mat4 offset[];
 } u_bones;
@@ -87,21 +83,24 @@ layout(std140, set = 3, binding = 2) readonly buffer BoneDataBuffer {
 void main(void)
 {
 	vec3 localPosition = a_position;
+	vec3 localNormal = a_normal;
 #ifdef SKELETAL // Rigging
 	vec3 sumPosition = vec3(0.0);
-	for(int i = 0 ; i < MaxBoneInfluence ; i++)
-    {
-        if(a_boneIndex[i] == InvalidBoneID) 
-            continue;
-        vec4 boneLocalPosition = u_bones.offset[a_boneIndex[i]] * vec4(localPosition,1.0);
-        sumPosition += boneLocalPosition.xyz * a_weights[i];
-		// Sum of normal is not really valid here...
-        //vec3 localNormal = mat3(u_bones.offset[a_boneIndex[i]]) * a_normal; // TODO issue with scale & normal matrix ?
-    }
+	vec3 sumNormal = vec3(0.0);
+	for(int i = 0 ; i < MaxBoneInfluence; i++)
+	{
+		if(a_boneIndex[i] == InvalidBoneID) 
+			continue;
+		vec4 boneLocalPosition = u_bones.offset[a_boneOffset + a_boneIndex[i]] * vec4(localPosition,1.0);
+		vec3 boneLocalNormal = mat3(u_bones.offset[a_boneOffset + a_boneIndex[i]]) * localNormal;
+		sumPosition += boneLocalPosition.xyz * a_weights[i];
+		sumNormal   += boneLocalNormal * a_weights[i];
+	}
 	localPosition = sumPosition;
+	localNormal = sumNormal;
 #endif
 	v_worldPosition = a_worldMatrix * vec4(localPosition, 1.0);
-	v_worldNormal = mat3(a_normalMatrix) * a_normal;
+	v_worldNormal = normalize(mat3(a_normalMatrix) * localNormal);
 	v_uv = a_uv;
 	v_color = a_color;
 	v_materialID = u_batches.data[a_batchIndex].materialIndex;
