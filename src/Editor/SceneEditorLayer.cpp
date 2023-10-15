@@ -284,6 +284,17 @@ void SceneEditorLayer::onDestroy(aka::gfx::GraphicDevice* _device)
 {
 }
 
+void SceneEditorLayer::onUpdate(aka::Time deltaTime)
+{
+	const Keyboard& keyboard = Application::app()->platform()->keyboard();
+	if (keyboard.down(KeyboardKey::T))
+		m_gizmoOperation = ImGuizmo::TRANSLATE;
+	else if (keyboard.down(KeyboardKey::R))
+		m_gizmoOperation = ImGuizmo::ROTATE;
+	else if (keyboard.down(KeyboardKey::S))
+		m_gizmoOperation = ImGuizmo::SCALE;
+}
+
 void SceneEditorLayer::onPreRender()
 {
 	if (m_assetToUnload != aka::AssetID::Invalid)
@@ -514,10 +525,10 @@ template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* librar
 bool drawArcball(CameraArcball* arcball)
 {
 	bool updated = false;
-	ImGui::InputFloat3("Position", arcball->position.data);
-	ImGui::InputFloat3("Target", arcball->target.data);
-	ImGui::InputFloat3("Up", arcball->up.data);
-	ImGui::DragFloat("Speed", &arcball->speed);
+	updated |= ImGui::InputFloat3("Position", arcball->position.data);
+	updated |= ImGui::InputFloat3("Target", arcball->target.data);
+	updated |= ImGui::InputFloat3("Up", arcball->up.data);
+	updated |= ImGui::DragFloat("Speed", &arcball->speed);
 	return updated;
 
 }
@@ -560,13 +571,14 @@ bool drawOrthographic(CameraOrthographic* projection)
 template <> const char* ComponentNode<CameraComponent>::name() { return "CameraComponent"; }
 template <> bool ComponentNode<CameraComponent>::draw(AssetLibrary* library, CameraComponent& camera)
 {
+	bool updated = false;
 	if (CameraController* controller = camera.getController())
 	{
 		ImGui::Text("Controller");
 		switch (controller->type())
 		{
 		case CameraControllerType::Arcball:
-			drawArcball(reinterpret_cast<CameraArcball*>(controller));
+			updated |= drawArcball(reinterpret_cast<CameraArcball*>(controller));
 			break;
 		}
 	}
@@ -576,14 +588,14 @@ template <> bool ComponentNode<CameraComponent>::draw(AssetLibrary* library, Cam
 		switch (projection->type())
 		{
 		case CameraProjectionType::Perpective:
-			drawPerspective(reinterpret_cast<CameraPerspective*>(projection));
+			updated |= drawPerspective(reinterpret_cast<CameraPerspective*>(projection));
 			break;
 		case CameraProjectionType::Orthographic:
-			drawOrthographic(reinterpret_cast<CameraOrthographic*>(projection));
+			updated |= drawOrthographic(reinterpret_cast<CameraOrthographic*>(projection));
 			break;
 		}
 	}
-	return false;
+	return updated;
 }
 
 template <> const char* ComponentNode<CustomComponent>::name() { return "CustomComponent"; }
@@ -840,44 +852,14 @@ void SceneEditorLayer::onDrawUI()
 					m_gizmoMode = ImGuizmo::WORLD;
 				ImGui::Separator();
 				enabled = m_gizmoOperation == ImGuizmo::TRANSLATE;
-				if (ImGui::MenuItem("Translate", nullptr, &enabled))
+				if (ImGui::MenuItem("Translate", "T", &enabled))
 					m_gizmoOperation = ImGuizmo::TRANSLATE;
 				enabled = m_gizmoOperation == ImGuizmo::ROTATE;
-				if (ImGui::MenuItem("Rotate", nullptr, &enabled))
+				if (ImGui::MenuItem("Rotate", "R", &enabled))
 					m_gizmoOperation = ImGuizmo::ROTATE;
 				enabled = m_gizmoOperation == ImGuizmo::SCALE;
-				if (ImGui::MenuItem("Scale", nullptr, &enabled))
+				if (ImGui::MenuItem("Scale", "S", &enabled))
 					m_gizmoOperation = ImGuizmo::SCALE;
-				ImGui::Separator();
-				enabled = m_gizmoOperation == ImGuizmo::TRANSLATE_X;
-				if (ImGui::MenuItem("TranslateX", nullptr, &enabled))
-					m_gizmoOperation = ImGuizmo::TRANSLATE_X;
-				enabled = m_gizmoOperation == ImGuizmo::TRANSLATE_Y;
-				if (ImGui::MenuItem("TranslateY", nullptr, &enabled))
-					m_gizmoOperation = ImGuizmo::TRANSLATE_Y;
-				enabled = m_gizmoOperation == ImGuizmo::TRANSLATE_Z;
-				if (ImGui::MenuItem("TranslateZ", nullptr, &enabled))
-					m_gizmoOperation = ImGuizmo::TRANSLATE_Z;
-				ImGui::Separator();
-				enabled = m_gizmoOperation == ImGuizmo::ROTATE_X;
-				if (ImGui::MenuItem("RotateX", nullptr, &enabled))
-					m_gizmoOperation = ImGuizmo::ROTATE_X;
-				enabled = m_gizmoOperation == ImGuizmo::ROTATE_Y;
-				if (ImGui::MenuItem("RotateY", nullptr, &enabled))
-					m_gizmoOperation = ImGuizmo::ROTATE_Y;
-				enabled = m_gizmoOperation == ImGuizmo::ROTATE_Z;
-				if (ImGui::MenuItem("RotateZ", nullptr, &enabled))
-					m_gizmoOperation = ImGuizmo::ROTATE_Z;
-				ImGui::Separator();
-				enabled = m_gizmoOperation == ImGuizmo::SCALE_X;
-				if (ImGui::MenuItem("ScaleX", nullptr, &enabled))
-					m_gizmoOperation = ImGuizmo::SCALE_X;
-				enabled = m_gizmoOperation == ImGuizmo::SCALE_Y;
-				if (ImGui::MenuItem("ScaleY", nullptr, &enabled))
-					m_gizmoOperation = ImGuizmo::SCALE_Y;
-				enabled = m_gizmoOperation == ImGuizmo::SCALE_Z;
-				if (ImGui::MenuItem("ScaleZ", nullptr, &enabled))
-					m_gizmoOperation = ImGuizmo::SCALE_Z;
 				ImGui::EndMenu();
 			}
 			ImGui::EndMenuBar();

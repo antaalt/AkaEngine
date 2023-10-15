@@ -22,6 +22,7 @@ public:
 	void onCreate(aka::gfx::GraphicDevice* _device) override;
 	void onDestroy(aka::gfx::GraphicDevice* _device) override;
 
+	void onUpdate(aka::Time deltaTime) override;
 	void onPreRender() override;
 	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame) override;
 	void onDrawUI() override;

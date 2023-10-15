@@ -57,9 +57,6 @@ void Editor::onDestroy()
 
 void Editor::onFixedUpdate(aka::Time time)
 {
-	if (platform()->keyboard().pressed(KeyboardKey::Escape))
-		EventDispatcher<QuitEvent>::emit();
-
 	if (m_scene.isLoaded())
 	{
 		m_scene.get().getRootNode().fixedUpdate(time);
@@ -68,9 +65,11 @@ void Editor::onFixedUpdate(aka::Time time)
 
 void Editor::onUpdate(aka::Time time)
 {
+	if (platform()->keyboard().down(KeyboardKey::Escape))
+		EventDispatcher<QuitEvent>::emit();
+
 	program()->reloadIfChanged(graphic());
 
-	
 	if (m_scene.isLoaded())
 	{
 		// Disable camera inputs if ImGui uses them.
@@ -109,8 +108,12 @@ void Editor::onReceive(const app::SceneSwitchEvent& event)
 		component.projectionType = CameraProjectionType::Perpective;
 		component.controllerType = CameraControllerType::Arcball;
 		CameraComponent& camera = m_editorCameraNode->attach<CameraComponent>();
+		const aabbox<>& bounds = scene.getBounds();
 		camera.fromArchive(component);
-		camera.getController()->set(scene.getBounds());
+		camera.setBounds(bounds);
+		camera.setNear(0.1f);
+		camera.setFar(bounds.extent().norm());
+		scene.setMainCameraNode(m_editorCameraNode);
 	}
 }
 
