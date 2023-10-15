@@ -31,8 +31,6 @@ public:
 public:
 	void setLibrary(aka::AssetLibrary* library);
 	void setCurrentScene(aka::ResourceHandle<aka::Scene> _scene);
-	void setCurrentCameraController(aka::CameraController* _camera) { m_cameraController = _camera; }
-	void setCurrentCameraProjection(aka::CameraProjection* _camera) { m_cameraProjection = _camera; }
 private:
 	aka::AssetLibrary* m_library;
 	ImGuizmo::MODE m_gizmoMode = ImGuizmo::WORLD;
@@ -41,8 +39,6 @@ private:
 	aka::Node* m_currentNode = nullptr;
 	aka::AssetID m_assetToUnload = aka::AssetID::Invalid;
 	aka::ResourceHandle<aka::Scene> m_scene;
-	aka::CameraController* m_cameraController = nullptr;
-	aka::CameraProjection* m_cameraProjection = nullptr;
 };
 
 };

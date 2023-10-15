@@ -310,7 +310,7 @@ struct ComponentNode
 	static bool draw(AssetLibrary* library, T& component) { AKA_ASSERT(false, "Trying to draw an undefined component"); return false; }
 };
 
-template <> const char* ComponentNode<StaticMeshComponent>::name() { return "MeshComponent"; }
+template <> const char* ComponentNode<StaticMeshComponent>::name() { return "StaticMeshComponent"; }
 template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library, StaticMeshComponent& mesh)
 {
 	if (mesh.getMesh().isLoaded())
@@ -362,7 +362,7 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library,
 }
 
 
-template <> const char* ComponentNode<SkeletalMeshComponent>::name() { return "MeshComponent"; }
+template <> const char* ComponentNode<SkeletalMeshComponent>::name() { return "SkeletalMeshComponent"; }
 template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* library, SkeletalMeshComponent& meshComp)
 {
 	if (meshComp.getMesh().isLoaded())
@@ -514,10 +514,10 @@ template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* librar
 bool drawArcball(CameraArcball* arcball)
 {
 	bool updated = false;
-	arcball->position;
-	arcball->speed;
-	arcball->target;
-	arcball->up;
+	ImGui::InputFloat3("Position", arcball->position.data);
+	ImGui::InputFloat3("Target", arcball->target.data);
+	ImGui::InputFloat3("Up", arcball->up.data);
+	ImGui::DragFloat("Speed", &arcball->speed);
 	return updated;
 
 }
@@ -531,10 +531,10 @@ bool drawPerspective(CameraPerspective* projection)
 		projection->farZ = range.y;
 		updated = true;
 	}
-	float hFov = projection->hFov.degree();
+	float hFov = projection->hFov.radian();
 	if (ImGui::SliderAngle("Horizontal FOV", &hFov, 10.f, 160.f))
 	{
-		projection->hFov = anglef::degree(hFov);
+		projection->hFov = anglef::radian(hFov);
 		updated = true;
 	}
 	projection->ratio; // Depend on viewport. Should not be editable.
@@ -610,7 +610,9 @@ void component(AssetLibrary* library, Node* current)
 		ImGui::Separator();
 		T& component = current->get<T>();
 		int res = snprintf(buffer, 256, "%s##%p", ComponentNode<T>::name(), &component);
+		ImGui::PushStyleColor(ImGuiCol_Text, ImGuiLayer::Color::red);
 		bool open = ImGui::TreeNodeEx(buffer, ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_DefaultOpen);
+		ImGui::PopStyleColor();
 		if (ImGui::BeginPopupContextItem())
 		{
 			if (ImGui::MenuItem("Remove"))
@@ -680,7 +682,7 @@ void SceneEditorLayer::onDrawUI()
 	const bool isLoaded = m_scene.isLoaded();
 	{
 		// --- Menu
-		Node* rootNode = isLoaded ? &m_scene.get().getRoot() : nullptr;
+		Node* rootNode = isLoaded ? &m_scene.get().getRootNode() : nullptr;
 		const bool isValid = m_currentNode != nullptr;
 		if (ImGui::BeginMenuBar())
 		{
@@ -768,12 +770,19 @@ void SceneEditorLayer::onDrawUI()
 				{
 					if (ImGui::BeginMenu("Static Mesh", isLoaded && isValid && !m_currentNode->has<StaticMeshComponent>()))
 					{
-						for (auto component : m_library->getRange<StaticMesh>())
+						static ImGuiTextFilter filter;
+						filter.Draw();
+						for (const auto& asset : m_library->getAssetRange())
 						{
-							if (ImGui::MenuItem(component.second.getName().cstr(), nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<StaticMeshComponent>()))
+							if (asset.second.type != AssetType::StaticMesh)
+								continue;
+							String name = OS::File::basename(asset.second.path.getRawPath());
+							if (!filter.PassFilter(name.cstr()))
+								continue;
+							if (ImGui::MenuItem(name.cstr(), nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<StaticMeshComponent>()))
 							{
 								ArchiveStaticMeshComponent archive;
-								archive.assetID = component.second.getAssetID();
+								archive.assetID = asset.first;
 								m_currentNode->attach<StaticMeshComponent>().fromArchive(archive);
 							}
 						}
@@ -781,19 +790,24 @@ void SceneEditorLayer::onDrawUI()
 					}
 					if (ImGui::BeginMenu("Skeletal Mesh", isLoaded && isValid && !m_currentNode->has<SkeletalMeshComponent>()))
 					{
-						for (auto component : m_library->getRange<SkeletalMesh>())
+						static ImGuiTextFilter filter;
+						filter.Draw();
+						for (const auto& asset : m_library->getAssetRange())
 						{
-							if (ImGui::MenuItem(component.second.getName().cstr(), nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<SkeletalMeshComponent>()))
+							if (asset.second.type != AssetType::SkeletalMesh)
+								continue;
+							String name = OS::File::basename(asset.second.path.getRawPath());
+							if (!filter.PassFilter(name.cstr()))
+								continue;
+							if (ImGui::MenuItem(name.cstr(), nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<SkeletalMeshComponent>()))
 							{
 								ArchiveSkeletalMeshComponent archive;
-								archive.assetID = component.second.getAssetID();
+								archive.assetID = asset.first;
 								m_currentNode->attach<SkeletalMeshComponent>().fromArchive(archive);
 							}
 						}
 						ImGui::EndMenu();
 					}
-					if (ImGui::MenuItem("Mesh", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<StaticMeshComponent>()))
-						m_currentNode->attach<StaticMeshComponent>();
 					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CameraComponent>()))
 						m_currentNode->attach<CameraComponent>();
 					if (ImGui::MenuItem("CustomComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CustomComponent>()))
@@ -915,23 +929,27 @@ void SceneEditorLayer::onDrawUI()
 						ImGuizmo::RecomposeMatrixFromComponents(translation, rotation, scale, localTransform.cols[0].data);
 						m_currentNode->setLocalTransform(localTransform);
 					}
-
-					mat4f view = m_cameraController->view();
-					mat4f projection = m_cameraProjection->projection();
-					// Draw gizmo axis
-					ImGuiIO& io = ImGui::GetIO();
-					ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-					if (ImGuizmo::Manipulate(view[0].data, projection[0].data, m_gizmoOperation, m_gizmoMode, worldTransform[0].data))
+					if (const Node* node = scene.getMainCameraNode())
 					{
-						mat4f inverseParentWorld = mat4f::inverse(m_currentNode->getParentTransform());
-						m_currentNode->setLocalTransform(inverseParentWorld * worldTransform);
-						updatedTransform = true;
+						const CameraComponent& camera = node->get<CameraComponent>();
+						mat4f view = camera.getViewMatrix();
+						mat4f projection = camera.getProjectionMatrix();
+						// Draw gizmo axis
+						ImGuiIO& io = ImGui::GetIO();
+						ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+						if (ImGuizmo::Manipulate(view[0].data, projection[0].data, m_gizmoOperation, m_gizmoMode, worldTransform[0].data))
+						{
+							mat4f inverseParentWorld = mat4f::inverse(m_currentNode->getParentTransform());
+							m_currentNode->setLocalTransform(inverseParentWorld * worldTransform);
+							updatedTransform = true;
+						}
 					}
 
 					ImGui::TreePop();
 				}
 				if (m_currentNode->isOrphan())
 				{
+					ImGui::Separator();
 					ImGui::Text("Add a component to the entity.");
 				}
 				else

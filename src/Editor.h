@@ -30,10 +30,7 @@ public:
 	void onResize(uint32_t width, uint32_t height) override;
 	void onReceive(const app::SceneSwitchEvent& event) override;
 private:
-	bool m_dirty = false;
-	CameraArcball m_cameraController = {};
-	CameraPerspective m_cameraProjection = {};
-	ViewHandle m_view;
+	Node* m_editorCameraNode;
 private:
 	AssetID m_sceneID;
 	ResourceHandle<Scene> m_scene;

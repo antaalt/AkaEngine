@@ -30,8 +30,6 @@ Editor::Editor(const Config& cfg) :
 	app::InfoEditorLayer*			infoEditor			= imgui->addLayer<app::InfoEditorLayer>();
 	// Set dependencies
 	sceneEditor->setCurrentScene(m_scene);
-	sceneEditor->setCurrentCameraController(&m_cameraController);
-	sceneEditor->setCurrentCameraProjection(&m_cameraProjection);
 	sceneEditor->setLibrary(assets());
 	assetBrowserEditor->setLibrary(assets());
 	assetBrowserEditor->setAssetViewer(assetViewerEditor);
@@ -50,20 +48,11 @@ Editor::~Editor()
 
 void Editor::onCreate(int argc, char* argv[])
 {
-	m_cameraController.set(aabbox(point3(-1.f), point3(1.f)));
-	m_cameraProjection.hFov = anglef::degree(60.f);
-	m_cameraProjection.ratio = width() / (float)height();
-	m_cameraProjection.nearZ = 0.1f;
-	m_cameraProjection.farZ = 10000.f;
-
-	m_view = renderer()->createView(ViewType::Color);
 	assets()->parse();
 }
 
 void Editor::onDestroy()
 {
-	gfx::GraphicDevice* device = graphic();
-	renderer()->destroyView(m_view);
 }
 
 void Editor::onFixedUpdate(aka::Time time)
@@ -73,7 +62,7 @@ void Editor::onFixedUpdate(aka::Time time)
 
 	if (m_scene.isLoaded())
 	{
-		m_scene.get().getRoot().fixedUpdate(time);
+		m_scene.get().getRootNode().fixedUpdate(time);
 	}
 }
 
@@ -81,17 +70,16 @@ void Editor::onUpdate(aka::Time time)
 {
 	program()->reloadIfChanged(graphic());
 
-	const ImGuiIO& io = ImGui::GetIO();
-	if (!io.WantCaptureMouse && !io.WantCaptureKeyboard)
-	{
-		if (m_cameraController.update(time))
-		{
-			m_dirty = true;
-		}
-	}
+	
 	if (m_scene.isLoaded())
 	{
-		m_scene.get().getRoot().update(time);
+		// Disable camera inputs if ImGui uses them.
+		const ImGuiIO& io = ImGui::GetIO();
+		CameraComponent& camera = m_editorCameraNode->get<CameraComponent>();
+		camera.setUpdateEnabled(!io.WantCaptureMouse && !io.WantCaptureKeyboard);
+
+		// Update scene
+		m_scene.get().getRootNode().update(time);
 	}
 }
 
@@ -100,18 +88,7 @@ void Editor::onRender(gfx::GraphicDevice* device, gfx::FrameHandle _frame)
 {
 	if (m_scene.isLoaded())
 	{
-		m_scene.get().getRoot().update(assets(), renderer());
-	}
-	gfx::CommandList* cmd = device->getGraphicCommandList(_frame);
-
-	if (m_dirty)
-	{
-		renderer()->updateView(
-			m_view,
-			m_cameraController.view(),
-			m_cameraProjection.projection()
-		);
-		m_dirty = false;
+		m_scene.get().getRootNode().update(assets(), renderer());
 	}
 }
 
@@ -124,10 +101,16 @@ void Editor::onReceive(const app::SceneSwitchEvent& event)
 	m_scene = event.scene;
 	if (event.scene.isLoaded())
 	{
-		const Scene& scene = event.scene.get();
+		Scene& scene = m_scene.get();
 		m_sceneID = scene.getID();
-		m_cameraController.set(scene.getBounds());
-		m_dirty = true;
+		// Setup editor camera.
+		m_editorCameraNode = scene.createChild(nullptr, "EditorCamera");
+		ArchiveCameraComponent component{};
+		component.projectionType = CameraProjectionType::Perpective;
+		component.controllerType = CameraControllerType::Arcball;
+		CameraComponent& camera = m_editorCameraNode->attach<CameraComponent>();
+		camera.fromArchive(component);
+		camera.getController()->set(scene.getBounds());
 	}
 }
 
