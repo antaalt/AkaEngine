@@ -92,6 +92,21 @@ struct AssetNode
 		if (isFolder)
 		{
 			bool open = ImGui::TreeNodeEx(node.name.cstr(), ImGuiTreeNodeFlags_SpanFullWidth);
+			if (ImGui::BeginPopupContextItem())
+			{
+				if (ImGui::MenuItem("Rename", nullptr, nullptr))
+				{
+					Logger::info("Renaming ", node.path);
+					// TODO use a modal to rename.
+					// Check issues with assetID based on path first as it will break references.
+				}
+				if (ImGui::MenuItem("Delete", nullptr, nullptr))
+				{
+					Logger::info("Deleting ", node.path);
+					// TODO os delete recursive, remove from library aswell
+				}
+				ImGui::EndPopup();
+			}
 			ImGui::TableNextColumn();
 			ImGui::TextDisabled("--"); // Size
 			ImGui::TableNextColumn();
@@ -111,7 +126,6 @@ struct AssetNode
 			const bool isLoaded = state == ResourceState::Loaded;
 			const bool isResource = state != ResourceState::Unknown;
 			const bool current = currentNode && (currentNode->id == node.id);
-			const char* popUpName = node.path.cstr();
 
 			ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanFullWidth;
 
@@ -146,23 +160,15 @@ struct AssetNode
 				}
 			}
 			ImGui::PopStyleColor();
-			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
-				ImGui::OpenPopup(popUpName);
-			ImGui::TableNextColumn();
-			ImGui::Text("%u bytes", node.size); // Size
-			ImGui::TableNextColumn();
-			ImGui::TextUnformatted(getAssetTypeString(node.type)); // Type
-			ImGui::TableNextColumn();
-			ImGui::TextUnformatted(getStatusString(state)); // Status
 
-			if (ImGui::BeginPopupContextItem(popUpName))
+			if (ImGui::BeginPopupContextItem())
 			{
 				if (ImGui::MenuItem("Open", nullptr, nullptr, (node.type == AssetType::Scene)))
 				{
 					// This will load or simply get the scene if it already exist.
 					EventDispatcher<SceneSwitchEvent>::trigger(SceneSwitchEvent{
 						library->load<Scene>(node.id, Application::app()->renderer())
-					});
+						});
 				}
 				if (ImGui::MenuItem("Load", nullptr, nullptr, state == ResourceState::Disk))
 				{
@@ -182,12 +188,30 @@ struct AssetNode
 						viewerManager.open<Texture>(node.id, library->get<Texture>(node.id));
 						break;
 					default:
-						AKA_NOT_IMPLEMENTED;
+						Logger::error("Type does not have a viewer.");
 					}
-					
+				}
+				ImGui::Separator();
+				if (ImGui::MenuItem("Rename", nullptr, nullptr))
+				{
+					Logger::info("Renaming ", node.path);
+					// TODO use a modal to rename.
+					// Check issues with assetID based on path first as it will break references.
+				}
+				if (ImGui::MenuItem("Delete", nullptr, nullptr))
+				{
+					Logger::info("Deleting ", node.path);
+					// TODO remove from library + os delete
 				}
 				ImGui::EndPopup();
 			}
+
+			ImGui::TableNextColumn();
+			ImGui::Text("%u bytes", node.size); // Size
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(getAssetTypeString(node.type)); // Type
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(getStatusString(state)); // Status
 		}
 	}
 	static AssetNode* addNodeToTree(AssetNode& node, const AssetInfo& assetInfo, const String* directories, size_t count)
@@ -223,7 +247,8 @@ struct AssetNode
 };
 
 AssetBrowserEditorLayer::AssetBrowserEditorLayer() :
-	EditorLayer("Asset browser")
+	EditorLayer("Asset browser"),
+	m_importer("Import##Popup")
 {
 	m_rootNode = new AssetNode();
 }
@@ -249,26 +274,13 @@ void AssetBrowserEditorLayer::onPreRender()
 {
 }
 
-// Make the UI compact because there are so many fields
-static void PushStyleCompact()
-{
-	ImGuiStyle& style = ImGui::GetStyle();
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(style.FramePadding.x, (float)(int)(style.FramePadding.y * 0.60f)));
-	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, (float)(int)(style.ItemSpacing.y * 0.60f)));
-}
-
-static void PopStyleCompact()
-{
-	ImGui::PopStyleVar(2);
-}
-
 void AssetBrowserEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame)
 {
 }
 
 void AssetBrowserEditorLayer::onDrawUI()
 {
-	bool openImportWindow = false;
+	AssetType assetTypeToImport = AssetType::Unknown;
 	if (ImGui::BeginMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
@@ -287,26 +299,14 @@ void AssetBrowserEditorLayer::onDrawUI()
 		{
 			if (ImGui::MenuItem("Scene"))
 			{
-				openImportWindow = true;
-				importDeferred([&](const aka::Path& path) -> bool{
-					aka::Logger::info("Importing scene : ", path);
-					AssimpImporter importer(m_library);
-					ImportResult res = importer.import(path);
-					return ImportResult::Succeed == res;
-				});
+				assetTypeToImport = AssetType::Scene;
 			}
 			if (ImGui::MenuItem("Mesh"))
 			{
 			}
 			if (ImGui::MenuItem("Texture"))
 			{
-				openImportWindow = true;
-				importDeferred([&](const aka::Path& path) -> bool {
-					aka::Logger::info("Importing texture : ", path);
-					TextureImporter importer(m_library);
-					ImportResult res = importer.import(path);
-					return ImportResult::Succeed == res;
-				});
+				assetTypeToImport = AssetType::Image;
 			}
 			if (ImGui::MenuItem("Audio"))
 			{
@@ -357,92 +357,11 @@ void AssetBrowserEditorLayer::onDrawUI()
 		ImGui::Text("Type: %s", getAssetTypeString(m_currentNode->type));
 	}
 
-	// -------------------------
-	// ------- IMPORTER --------
-	// -------------------------
-	{
-		if (openImportWindow)
-			ImGui::OpenPopup("Import##Popup");
-		bool openFlag = true;
-		if (ImGui::BeginPopupModal("Import##Popup", &openFlag, ImGuiWindowFlags_AlwaysAutoResize))
-		{
-			bool updated = false;
-			if (ImGui::Button(ICON_FA_ARROW_UP_LONG))
-			{
-				m_currentPath = m_currentPath.up();
-				updated = true;
-			}
-			// Refresh directory
-			ImGui::SameLine();
-			if (ImGui::Button(ICON_FA_ROTATE_RIGHT))
-			{
-				updated = true;
-			}
-			ImGui::SameLine();
-			// Path
-			char currentPathBuffer[256];
-			aka::String::copy(currentPathBuffer, 256, m_currentPath.cstr());
-			if (ImGui::InputText("##Path", currentPathBuffer, 256))
-			{
-				m_currentPath = currentPathBuffer;
-				updated = true;
-			}
-			if (ImGui::BeginChild("##files", ImVec2(0, 200), true))
-			{
-				char buffer[256];
-				for (aka::Path& path : m_paths)
-				{
-					bool selected = (&path == m_selectedPath);
-					bool isFolder = OS::Directory::exist(m_currentPath + path);
-					if (isFolder)
-					{
-						int err = snprintf(buffer, 256, "%s %s", ICON_FA_FOLDER, path.cstr());
-						if (ImGui::Selectable(buffer, &selected))
-						{
-							m_selectedPath = &path;
-						}
-						if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
-						{
-							m_currentPath += path;
-							updated = true;
-						}
-					}
-					else
-					{
-						int err = snprintf(buffer, 256, "%s %s", ICON_FA_FILE, path.cstr());
-						if (ImGui::Selectable(buffer, &selected))
-						{
-							m_selectedPath = &path;
-						}
-						if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
-						{
-							if (m_importCallback(m_currentPath + path))
-								ImGui::CloseCurrentPopup();
-						}
-					}
-				}
-			}
-			ImGui::EndChild();
-			if (updated)
-			{
-				m_paths = OS::enumerate(m_currentPath);
-			}
-			if (ImGui::Button("Import"))
-			{
-				if (m_selectedPath != nullptr)
-				{
-					if (m_importCallback(m_currentPath + *m_selectedPath))
-						ImGui::CloseCurrentPopup();
-				}
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Close"))
-			{
-				ImGui::CloseCurrentPopup();
-			}
-			ImGui::EndPopup();
-		}
-	}
+	if (assetTypeToImport != AssetType::Unknown)
+		m_importer.RequestImportType(assetTypeToImport);
+	m_importer.Render();
+	if (m_importer.Import(m_library))
+		m_importer.Close();
 }
 
 void AssetBrowserEditorLayer::onPostRender()
@@ -464,14 +383,6 @@ void AssetBrowserEditorLayer::setLibrary(AssetLibrary* _library)
 void AssetBrowserEditorLayer::setAssetViewer(AssetViewerEditorLayer* _viewer)
 {
 	m_viewerEditor = _viewer;
-}
-
-void AssetBrowserEditorLayer::importDeferred(std::function<bool(const aka::Path&)> callback)
-{
-	m_currentPath = AssetPath().getAbsolutePath();
-	m_selectedPath = nullptr;
-	m_paths = aka::OS::enumerate(m_currentPath);
-	m_importCallback = callback;
 }
 
 };

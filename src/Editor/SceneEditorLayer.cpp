@@ -18,26 +18,26 @@ using namespace aka;
 static const uint32_t s_vertexCount = 36;
 
 static const StaticVertex s_vertices[s_vertexCount] = {
-	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f(-1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, -1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, -1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, -1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, -1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, -1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, -1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
 
-	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f(-1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f(-1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(-1.f, 0.f, 0.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f, -1.0f, -1.0f),	norm3f(-1.f, 0.f, 0.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(-1.f, 0.f, 0.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(-1.f, 0.f, 0.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f,  1.0f),	norm3f(-1.f, 0.f, 0.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(-1.f, 0.f, 0.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
 
-	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(1.f, 0.f, 0.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f,  1.0f),	norm3f(1.f, 0.f, 0.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(1.f, 0.f, 0.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(1.f, 0.f, 0.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f, -1.0f),	norm3f(1.f, 0.f, 0.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(1.f, 0.f, 0.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
 
 	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
 	StaticVertex{point3f(-1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
@@ -46,19 +46,19 @@ static const StaticVertex s_vertices[s_vertexCount] = {
 	StaticVertex{point3f( 1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
 	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
 
-	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f(-1.0f,  1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 1.f, 0.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f, -1.0f),	norm3f(0.f, 1.f, 0.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(0.f, 1.f, 0.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f,  1.0f,  1.0f),	norm3f(0.f, 1.f, 0.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f,  1.0f),	norm3f(0.f, 1.f, 0.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f,  1.0f, -1.0f),	norm3f(0.f, 1.f, 0.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
 
-	StaticVertex{point3f(-1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-	StaticVertex{point3f( 1.0f, -1.0f,  1.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f, -1.0f, -1.0f),	norm3f(0.f, -1.f, 0.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, -1.f, 0.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, -1.f, 0.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f, -1.0f),	norm3f(0.f, -1.f, 0.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f(-1.0f, -1.0f,  1.0f),	norm3f(0.f, -1.f, 0.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	StaticVertex{point3f( 1.0f, -1.0f,  1.0f),	norm3f(0.f, -1.f, 0.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
 };
 
 Vector<ArchiveStaticVertex> getSphereVertices(float radius, uint32_t segmentCount, uint32_t ringCount)
@@ -316,34 +316,41 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library,
 	if (mesh.getMesh().isLoaded())
 	{
 		StaticMesh& m = mesh.getMesh().get();
-		mesh.getMesh();
 
 		AssetID currentAssetID = mesh.getMesh().get().getID();
 		const String& name = mesh.getMesh().get().getName();
-		if (ImGui::BeginCombo("Mesh", name.cstr()))
+		if (ImGui::TreeNode("Batches"))
 		{
-			for (const std::pair<AssetID, AssetInfo>& asset : library->getAssetRange())
+			for (size_t iBatch = 0; iBatch < m.getBatches().size(); iBatch++)
 			{
-				const AssetID& id = asset.first;
-				const AssetInfo& info = asset.second;
-				if (info.type != AssetType::StaticMesh)
-					continue;
-
-				bool isSelected = (currentAssetID == id);
-				if (ImGui::Selectable(info.path.cstr(), isSelected))
+				const StaticMeshBatch& batch = m.getBatches()[iBatch];
+				if (ImGui::TreeNode(&batch, "Batch (%zu/%zu)", iBatch + 1, m.getBatches().size()))
 				{
-					if (currentAssetID != id)
+					batch.indexOffset;
+					batch.vertexOffset;
+					ImGui::Text("%u indices", batch.indexCount);
+
+					if (ImGui::TreeNode("Material"))
 					{
-						// TODO switch mesh.
-						// Should also load it if required.
-						// As we are in draw, unload & co will need to be deferred.
+						if (batch.material.isLoaded())
+						{
+							const Material& material = batch.material.get();
+							ImGui::Text("Material: %s", material.getName().cstr());
+							material.getAlbedoTexture();
+							material.getNormalTexture();
+						}
+						else
+						{
+							ImGui::Text("Material not loaded");
+						}
+						ImGui::TreePop();
 					}
+					ImGui::TreePop();
 				}
-				if (isSelected)
-					ImGui::SetItemDefaultFocus();
 			}
-			ImGui::EndCombo();
+			ImGui::TreePop();
 		}
+
 		// TODO: button to open viewer somehow.
 		// + combo to switch mesh
 	}
@@ -603,20 +610,18 @@ void component(AssetLibrary* library, Node* current)
 		ImGui::Separator();
 		T& component = current->get<T>();
 		int res = snprintf(buffer, 256, "%s##%p", ComponentNode<T>::name(), &component);
-		if (ImGui::TreeNodeEx(buffer, ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_DefaultOpen))
+		bool open = ImGui::TreeNodeEx(buffer, ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_DefaultOpen);
+		if (ImGui::BeginPopupContextItem())
 		{
-			snprintf(buffer, 256, "ClosePopUp##%p", &component);
-			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1))
-				ImGui::OpenPopup(buffer);
+			if (ImGui::MenuItem("Remove"))
+				current->detach<T>();
+			ImGui::EndPopup();
+		}
+		if (open)
+		{
 			if (ComponentNode<T>::draw(library, component))
 			{
 				current->setDirty<T>();
-			}
-			if (ImGui::BeginPopupContextItem(buffer))
-			{
-				if (ImGui::MenuItem("Remove"))
-					current->detach<T>();
-				ImGui::EndPopup();
 			}
 			ImGui::TreePop();
 		}
@@ -637,22 +642,20 @@ void SceneEditorLayer::onDrawUI()
 			if (childCount > 0)
 			{
 				int err = snprintf(buffer, 256, "%s##%p", parent->getName().cstr(), parent);
-				ImGuiTreeNodeFlags flags = 0;
+				ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
 				if (parent == current)
 					flags |= ImGuiTreeNodeFlags_Selected;
-				if (ImGui::TreeNodeEx(buffer, flags))
+				bool open = ImGui::TreeNodeEx(buffer, flags);
+				if (ImGui::IsItemClicked())
+					current = parent;
+				if (ImGui::BeginPopupContextItem())
 				{
-					err = snprintf(buffer, 256, "ClosePopUp##%p", parent);
-					if (ImGui::IsItemClicked())
-						current = parent;
-					if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(1))
-						ImGui::OpenPopup(buffer);
-					if (ImGui::BeginPopupContextItem(buffer))
-					{
-						if (ImGui::MenuItem("Delete"))
-							m_nodeToDestroy = parent;
-						ImGui::EndPopup();
-					}
+					if (ImGui::MenuItem("Delete"))
+						m_nodeToDestroy = parent;
+					ImGui::EndPopup();
+				}
+				if (open)
+				{
 					for (uint32_t iChild = 0; iChild < childCount; iChild++)
 						recurse(parent->getChild(iChild), current);
 					ImGui::TreePop();
@@ -660,16 +663,11 @@ void SceneEditorLayer::onDrawUI()
 			}
 			else
 			{
-				int err = snprintf(buffer, 256, "ClosePopUp##%p", parent);
-				//ImGui::Bullet(); // TODO icon instead
 				bool isSelected = current == parent;
-				char buffer[256];
 				snprintf(buffer, 256, "%s##%p", parent->getName().cstr(), parent);
 				if (ImGui::Selectable(buffer, &isSelected))
 					current = parent;
-				if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(1))
-					ImGui::OpenPopup(buffer);
-				if (ImGui::BeginPopupContextItem(buffer))
+				if (ImGui::BeginPopupContextItem())
 				{
 					if (ImGui::MenuItem("Delete"))
 						m_nodeToDestroy = parent;
@@ -720,19 +718,17 @@ void SceneEditorLayer::onDrawUI()
 				{
 					if (ImGui::BeginMenu("Mesh"))
 					{
-						if (ImGui::MenuItem("Cube", nullptr, nullptr, isLoaded))
+						if (ImGui::MenuItem("Cube", nullptr, nullptr, isLoaded && isValid))
 						{
 							ArchiveStaticMeshComponent archive;
-							archive.assetID = createCubeMesh(m_library, Application::app()->renderer());
-
+							archive.assetID = createCubeMesh(m_library, Application::app()->renderer());							
 							m_currentNode = m_scene.get().createChild(m_currentNode, "Sphere node");
 							m_currentNode->attach<StaticMeshComponent>().fromArchive(archive);
 						}
-						if (ImGui::MenuItem("UV Sphere", nullptr, nullptr, isLoaded))
+						if (ImGui::MenuItem("UV Sphere", nullptr, nullptr, isLoaded && isValid))
 						{
 							ArchiveStaticMeshComponent archive;
 							archive.assetID = createSphereMesh(m_library, Application::app()->renderer());
-
 							m_currentNode = m_scene.get().createChild(m_currentNode, "Sphere node");
 							m_currentNode->attach<StaticMeshComponent>().fromArchive(archive);
 						}
@@ -740,23 +736,23 @@ void SceneEditorLayer::onDrawUI()
 					}
 					if (ImGui::BeginMenu("Light"))
 					{
-						if (ImGui::MenuItem("Point light", nullptr, nullptr, isLoaded))
+						if (ImGui::MenuItem("Point light", nullptr, nullptr, isLoaded && isValid))
 						{
 							//m_currentNode = Scene::createPointLightNode(world).handle();
 						}
-						if (ImGui::MenuItem("Directional light", nullptr, nullptr, isLoaded))
+						if (ImGui::MenuItem("Directional light", nullptr, nullptr, isLoaded && isValid))
 						{
 							//m_currentNode = Scene::createDirectionalLightNode(world).handle();
 						}
 						ImGui::EndMenu();
 					}
 
-					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded))
+					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid))
 					{
 						m_currentNode = m_scene.get().createChild(m_currentNode, "Camera");
 						m_currentNode->attach<CameraComponent>();
 					}
-					if (ImGui::MenuItem("Empty", nullptr, nullptr, isLoaded))
+					if (ImGui::MenuItem("Empty", nullptr, nullptr, isLoaded && isValid))
 					{
 						m_currentNode = m_scene.get().createChild(m_currentNode, "Empty");
 					}
@@ -770,6 +766,32 @@ void SceneEditorLayer::onDrawUI()
 			{
 				if (ImGui::BeginMenu("Add", isLoaded && isValid))
 				{
+					if (ImGui::BeginMenu("Static Mesh", isLoaded && isValid && !m_currentNode->has<StaticMeshComponent>()))
+					{
+						for (auto component : m_library->getRange<StaticMesh>())
+						{
+							if (ImGui::MenuItem(component.second.getName().cstr(), nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<StaticMeshComponent>()))
+							{
+								ArchiveStaticMeshComponent archive;
+								archive.assetID = component.second.getAssetID();
+								m_currentNode->attach<StaticMeshComponent>().fromArchive(archive);
+							}
+						}
+						ImGui::EndMenu();
+					}
+					if (ImGui::BeginMenu("Skeletal Mesh", isLoaded && isValid && !m_currentNode->has<SkeletalMeshComponent>()))
+					{
+						for (auto component : m_library->getRange<SkeletalMesh>())
+						{
+							if (ImGui::MenuItem(component.second.getName().cstr(), nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<SkeletalMeshComponent>()))
+							{
+								ArchiveSkeletalMeshComponent archive;
+								archive.assetID = component.second.getAssetID();
+								m_currentNode->attach<SkeletalMeshComponent>().fromArchive(archive);
+							}
+						}
+						ImGui::EndMenu();
+					}
 					if (ImGui::MenuItem("Mesh", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<StaticMeshComponent>()))
 						m_currentNode->attach<StaticMeshComponent>();
 					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CameraComponent>()))
@@ -782,13 +804,13 @@ void SceneEditorLayer::onDrawUI()
 				}
 				if (ImGui::BeginMenu("Remove", isLoaded && isValid))
 				{
-					if (ImGui::MenuItem("Mesh", nullptr, nullptr, isLoaded && m_currentNode->has<StaticMeshComponent>()))
+					if (ImGui::MenuItem("Mesh", nullptr, nullptr, isLoaded && isValid && m_currentNode->has<StaticMeshComponent>()))
 						m_currentNode->detach<StaticMeshComponent>();
-					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && m_currentNode->has<CameraComponent>()))
+					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid && m_currentNode->has<CameraComponent>()))
 						m_currentNode->detach<CameraComponent>();
-					if (ImGui::MenuItem("CustomComponent", nullptr, nullptr, isLoaded && m_currentNode->has<CustomComponent>()))
+					if (ImGui::MenuItem("CustomComponent", nullptr, nullptr, isLoaded && isValid && m_currentNode->has<CustomComponent>()))
 						m_currentNode->detach<CustomComponent>();
-					if (ImGui::MenuItem("RotatorComponent", nullptr, nullptr, isLoaded && m_currentNode->has<RotatorComponent>()))
+					if (ImGui::MenuItem("RotatorComponent", nullptr, nullptr, isLoaded && isValid && m_currentNode->has<RotatorComponent>()))
 						m_currentNode->detach<RotatorComponent>();
 					ImGui::EndMenu();
 				}
@@ -905,9 +927,6 @@ void SceneEditorLayer::onDrawUI()
 						m_currentNode->setLocalTransform(inverseParentWorld * worldTransform);
 						updatedTransform = true;
 					}
-
-					if (updatedTransform)
-						m_currentNode->setFlag(NodeUpdateFlag::Transform);
 
 					ImGui::TreePop();
 				}

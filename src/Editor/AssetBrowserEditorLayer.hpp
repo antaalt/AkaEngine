@@ -5,6 +5,7 @@
 #include <Aka/Resource/AssetLibrary.hpp>
 
 #include "EditorLayer.hpp"
+#include "Modal/ImportModal.hpp"
 #include "AssetViewerEditorLayer.hpp"
 
 #include <functional>
@@ -40,13 +41,7 @@ public:
 	void setLibrary(aka::AssetLibrary* _library);
 	void setAssetViewer(AssetViewerEditorLayer* _viewer);
 private:
-	void importDeferred(std::function<bool(const aka::Path&)> callback);
-private:
-	aka::Path m_currentPath;
-	aka::Path* m_selectedPath;
-	std::vector<aka::Path> m_paths;
-	std::function<bool(const aka::Path& path)> m_importCallback;
-private:
+	ImGuiImportModal m_importer;
 	AssetNode* m_rootNode;
 	const AssetNode* m_currentNode = nullptr;
 	bool m_assetUpdated = false;

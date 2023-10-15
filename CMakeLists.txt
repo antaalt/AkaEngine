@@ -20,6 +20,8 @@ add_executable(AkaEditor
 	"src/Editor/AssetViewer/SceneViewer.cpp"
 	"src/Editor/AssetViewer/TextureViewer.cpp"
 	"src/Editor/EditorLayer.cpp"
+	"src/Editor/Modal/FileModal.cpp" 
+	"src/Editor/Modal/ImportModal.cpp"
 	
 	"src/Component/CustomComponent.cpp"
 	"src/Component/RotatorComponent.cpp"

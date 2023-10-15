@@ -68,7 +68,7 @@ void Editor::onDestroy()
 
 void Editor::onFixedUpdate(aka::Time time)
 {
-	if (platform()->keyboard().down(KeyboardKey::Escape))
+	if (platform()->keyboard().pressed(KeyboardKey::Escape))
 		EventDispatcher<QuitEvent>::emit();
 
 	if (m_scene.isLoaded())
