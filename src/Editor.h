@@ -2,6 +2,7 @@
 
 #include <Aka/Core/Application.h>
 #include <Aka/Scene/Component/CameraComponent.hpp>
+#include <Aka/Scene/Component/ArcballComponent.hpp>
 #include <Aka/Graphic/GraphicDevice.h>
 
 #include <Aka/Resource/Asset.hpp>

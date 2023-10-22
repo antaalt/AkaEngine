@@ -74,7 +74,7 @@ void Editor::onUpdate(aka::Time time)
 	{
 		// Disable camera inputs if ImGui uses them.
 		const ImGuiIO& io = ImGui::GetIO();
-		CameraComponent& camera = m_editorCameraNode->get<CameraComponent>();
+		ArcballComponent& camera = m_editorCameraNode->get<ArcballComponent>();
 		camera.setUpdateEnabled(!io.WantCaptureMouse && !io.WantCaptureKeyboard);
 
 		// Update scene
@@ -104,16 +104,23 @@ void Editor::onReceive(const app::SceneSwitchEvent& event)
 		m_sceneID = scene.getID();
 		// Setup editor camera.
 		m_editorCameraNode = scene.createChild(nullptr, "EditorCamera");
-		ArchiveCameraComponent component{};
-		component.projectionType = CameraProjectionType::Perpective;
-		component.controllerType = CameraControllerType::Arcball;
-		CameraComponent& camera = m_editorCameraNode->attach<CameraComponent>();
-		const aabbox<>& bounds = scene.getBounds();
-		camera.fromArchive(component);
-		camera.setBounds(bounds);
-		camera.setNear(0.1f);
-		camera.setFar(bounds.extent().norm() * 2.f);
-		scene.setMainCameraNode(m_editorCameraNode);
+		{
+			ArchiveCameraComponent component{};
+			component.projectionType = CameraProjectionType::Perpective;
+			CameraComponent& camera = m_editorCameraNode->attach<CameraComponent>();
+			const aabbox<>& bounds = scene.getBounds();
+			camera.fromArchive(component);
+			camera.setNear(0.1f);
+			camera.setFar(bounds.extent().norm() * 2.f);
+			scene.setMainCameraNode(m_editorCameraNode);
+		}
+		{
+			ArchiveArcballComponent component{};
+			ArcballComponent& controller = m_editorCameraNode->attach<ArcballComponent>();
+			const aabbox<>& bounds = scene.getBounds();
+			controller.fromArchive(component);
+			controller.setBounds(bounds);
+		}
 	}
 }
 

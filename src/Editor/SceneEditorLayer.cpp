@@ -2,6 +2,7 @@
 
 #include <Aka/Layer/ImGuiLayer.h>
 #include <Aka/Scene/Component/CameraComponent.hpp>
+#include <Aka/Scene/Component/ArcballComponent.hpp>
 #include <Aka/Scene/Component/SkeletalMeshComponent.hpp>
 #include <Aka/Scene/Component/StaticMeshComponent.hpp>
 #include <Aka/Renderer/DebugDraw/DebugDrawList.hpp>
@@ -368,7 +369,6 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library,
 		
 
 		// TODO: button to open viewer somehow.
-		// + combo to switch mesh
 	}
 	else
 	{
@@ -529,22 +529,6 @@ template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* librar
 	return false;
 }
 
-
-bool drawArcball(CameraArcball* arcball)
-{
-	bool updated = false;
-	updated |= ImGui::InputFloat3("Position", arcball->position.data);
-	updated |= ImGui::InputFloat3("Target", arcball->target.data);
-	updated |= ImGui::InputFloat3("Up", arcball->up.data);
-	updated |= ImGui::DragFloat("Speed", &arcball->speed);
-	return updated;
-}
-bool drawStatic(CameraStatic* camera)
-{
-	bool updated = false;
-	return updated;
-
-}
 bool drawPerspective(CameraPerspective* projection)
 {
 	bool updated = false;
@@ -585,19 +569,6 @@ template <> const char* ComponentNode<CameraComponent>::name() { return "CameraC
 template <> bool ComponentNode<CameraComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, CameraComponent& camera)
 {
 	bool updated = false;
-	if (CameraController* controller = camera.getController())
-	{
-		ImGui::Text("Controller");
-		switch (controller->type())
-		{
-		case CameraControllerType::Arcball:
-			updated |= drawArcball(reinterpret_cast<CameraArcball*>(controller));
-			break;
-		case CameraControllerType::Static:
-			updated |= drawStatic(reinterpret_cast<CameraStatic*>(controller));
-			break;
-		}
-	}
 	if (CameraProjection* projection = camera.getProjection())
 	{
 		ImGui::Text("Projection");
@@ -612,6 +583,17 @@ template <> bool ComponentNode<CameraComponent>::draw(AssetLibrary* library, Deb
 		}
 	}
 	debugDrawList.draw3DFrustum(camera.getProjectionMatrix() * camera.getViewMatrix(), color4f(1.f, 0.f, 0.f, 1.f));
+	return updated;
+}
+
+template <> const char* ComponentNode<ArcballComponent>::name() { return "ArcballComponent"; }
+template <> bool ComponentNode<ArcballComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, ArcballComponent& controller)
+{
+	bool updated = false;
+	updated |= ImGui::InputFloat3("Position", controller.getController().position.data);
+	updated |= ImGui::InputFloat3("Target", controller.getController().target.data);
+	updated |= ImGui::InputFloat3("Up", controller.getController().up.data);
+	updated |= ImGui::DragFloat("Speed", &controller.getController().speed);
 	return updated;
 }
 
@@ -781,7 +763,6 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid))
 					{
 						ArchiveCameraComponent archive;
-						archive.controllerType = CameraControllerType::Static;
 						archive.projectionType = CameraProjectionType::Perpective;
 						m_currentNode = m_scene.get().createChild(m_currentNode, "Camera");
 						m_currentNode->attach<CameraComponent>().fromArchive(archive);
@@ -843,7 +824,6 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CameraComponent>()))
 					{
 						ArchiveCameraComponent archive;
-						archive.controllerType = CameraControllerType::Static;
 						archive.projectionType = CameraProjectionType::Perpective;
 						m_currentNode->attach<CameraComponent>().fromArchive(archive);
 					}
@@ -965,6 +945,7 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 					component<StaticMeshComponent>(m_library, debugDrawList, m_currentNode);
 					component<SkeletalMeshComponent>(m_library, debugDrawList, m_currentNode);
 					component<CameraComponent>(m_library, debugDrawList, m_currentNode);
+					component<ArcballComponent>(m_library, debugDrawList, m_currentNode);
 					component<CustomComponent>(m_library, debugDrawList, m_currentNode);
 					component<RotatorComponent>(m_library, debugDrawList, m_currentNode);
 				}
