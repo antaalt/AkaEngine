@@ -2,6 +2,7 @@
 
 #include <Aka/Core/Layer.h>
 #include <Aka/Core/Container/String.h>
+#include <Aka/Renderer/DebugDraw/DebugDrawList.hpp>
 
 namespace app {
 
@@ -29,23 +30,23 @@ public:
 	bool isEnabled() const { return m_enabled; }
 	const char* getName() const { return m_name.cstr(); }
 protected:
-	virtual void onCreate(aka::gfx::GraphicDevice* _device) {}
-	virtual void onDestroy(aka::gfx::GraphicDevice* _device) {}
+	virtual void onCreate(aka::Renderer* _renderer) {}
+	virtual void onDestroy(aka::Renderer* _renderer) {}
 	virtual void onUpdate(aka::Time deltaTime) {}
 	virtual void onFixedUpdate(aka::Time deltaTime) {}
 	virtual void onPreRender() {}
-	virtual void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame) {}
-	virtual void onDrawUI() {}
+	virtual void onRender(aka::Renderer* _renderer, aka::gfx::FrameHandle frame) {}
+	virtual void onDrawUI(aka::DebugDrawList& debugDrawList) {}
 	virtual void onPostRender() {}
 	virtual void onResize(uint32_t width, uint32_t height) {}
 private:
-	void onLayerCreate(aka::gfx::GraphicDevice* _device) final;
-	void onLayerDestroy(aka::gfx::GraphicDevice* _device) final;
+	void onLayerCreate(aka::Renderer* _renderer) final;
+	void onLayerDestroy(aka::Renderer* _renderer) final;
 
 	void onLayerUpdate(aka::Time deltaTime) final;
 	void onLayerFixedUpdate(aka::Time deltaTime) final;
 	void onLayerPreRender() final;
-	void onLayerRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame) final;
+	void onLayerRender(aka::Renderer* _renderer, aka::gfx::FrameHandle frame) final;
 	void onLayerPostRender() final;
 
 	void onLayerResize(uint32_t width, uint32_t height) final;

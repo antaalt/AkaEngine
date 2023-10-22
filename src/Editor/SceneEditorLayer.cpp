@@ -4,6 +4,7 @@
 #include <Aka/Scene/Component/CameraComponent.hpp>
 #include <Aka/Scene/Component/SkeletalMeshComponent.hpp>
 #include <Aka/Scene/Component/StaticMeshComponent.hpp>
+#include <Aka/Renderer/DebugDraw/DebugDrawList.hpp>
 #include <Aka/Resource/AssetLibrary.hpp>
 #include <Aka/Resource/Archive/ArchiveBatch.hpp>
 #include <Aka/Resource/Archive/ArchiveGeometry.hpp>
@@ -276,11 +277,11 @@ SceneEditorLayer::SceneEditorLayer() :
 {
 }
 
-void SceneEditorLayer::onCreate(aka::gfx::GraphicDevice* _device)
+void SceneEditorLayer::onCreate(aka::Renderer* _renderer)
 {
 }
 
-void SceneEditorLayer::onDestroy(aka::gfx::GraphicDevice* _device)
+void SceneEditorLayer::onDestroy(aka::Renderer* _renderer)
 {
 }
 
@@ -318,11 +319,11 @@ struct ComponentNode
 {
 	static const char* name() { return "Unknown"; }
 	//static const char* icon() { return ""; }
-	static bool draw(AssetLibrary* library, T& component) { AKA_ASSERT(false, "Trying to draw an undefined component"); return false; }
+	static bool draw(AssetLibrary* library, DebugDrawList& debugDrawList, T& component) { AKA_ASSERT(false, "Trying to draw an undefined component"); return false; }
 };
 
 template <> const char* ComponentNode<StaticMeshComponent>::name() { return "StaticMeshComponent"; }
-template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library, StaticMeshComponent& mesh)
+template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, StaticMeshComponent& mesh)
 {
 	if (mesh.getMesh().isLoaded())
 	{
@@ -362,6 +363,10 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library,
 			ImGui::TreePop();
 		}
 
+		aabbox<> bbox = mesh.getWorldBounds();
+		debugDrawList.draw3DCube(mat4f::TRS(vec3f(bbox.center()), quatf::identity(), bbox.extent() * 0.5f), color4f(1.f, 1.f, 1.f, 1.f));
+		
+
 		// TODO: button to open viewer somehow.
 		// + combo to switch mesh
 	}
@@ -374,7 +379,7 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library,
 
 
 template <> const char* ComponentNode<SkeletalMeshComponent>::name() { return "SkeletalMeshComponent"; }
-template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* library, SkeletalMeshComponent& meshComp)
+template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, SkeletalMeshComponent& meshComp)
 {
 	if (meshComp.getMesh().isLoaded())
 	{
@@ -511,6 +516,9 @@ template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* librar
 			ImGui::TreePop();
 		}
 
+		aabbox<> bbox = meshComp.getWorldBounds();
+		debugDrawList.draw3DCube(mat4f::TRS(vec3f(bbox.center()), quatf::identity(), bbox.extent() * 0.5f), color4f(1.f, 1.f, 1.f, 1.f));
+
 		// TODO: button to open viewer somehow.
 		// + combo to switch mesh
 	}
@@ -530,16 +538,21 @@ bool drawArcball(CameraArcball* arcball)
 	updated |= ImGui::InputFloat3("Up", arcball->up.data);
 	updated |= ImGui::DragFloat("Speed", &arcball->speed);
 	return updated;
+}
+bool drawStatic(CameraStatic* camera)
+{
+	bool updated = false;
+	return updated;
 
 }
 bool drawPerspective(CameraPerspective* projection)
 {
 	bool updated = false;
 	vec2 range(projection->nearZ, projection->farZ);
-	if (ImGui::DragFloat2("Range", range.data))
+	if (ImGui::DragFloat2("Range", range.data, 0.1f, 0.f, FLT_MAX / INT_MAX))
 	{
-		projection->nearZ = range.x;
-		projection->farZ = range.y;
+		projection->nearZ = min(range.x, range.y);
+		projection->farZ = max(range.x, range.y);
 		updated = true;
 	}
 	float hFov = projection->hFov.radian();
@@ -555,10 +568,10 @@ bool drawOrthographic(CameraOrthographic* projection)
 {
 	bool updated = false;
 	vec2 range(projection->nearZ, projection->farZ);
-	if (ImGui::DragFloat2("Range", range.data))
+	if (ImGui::DragFloat2("Range", range.data, 0.1f, 0.f, FLT_MAX / INT_MAX))
 	{
-		projection->nearZ = range.x;
-		projection->farZ = range.y;
+		projection->nearZ = min(range.x, range.y);
+		projection->farZ = max(range.x, range.y);
 		updated = true;
 	}
 	projection->left;
@@ -569,7 +582,7 @@ bool drawOrthographic(CameraOrthographic* projection)
 }
 
 template <> const char* ComponentNode<CameraComponent>::name() { return "CameraComponent"; }
-template <> bool ComponentNode<CameraComponent>::draw(AssetLibrary* library, CameraComponent& camera)
+template <> bool ComponentNode<CameraComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, CameraComponent& camera)
 {
 	bool updated = false;
 	if (CameraController* controller = camera.getController())
@@ -579,6 +592,9 @@ template <> bool ComponentNode<CameraComponent>::draw(AssetLibrary* library, Cam
 		{
 		case CameraControllerType::Arcball:
 			updated |= drawArcball(reinterpret_cast<CameraArcball*>(controller));
+			break;
+		case CameraControllerType::Static:
+			updated |= drawStatic(reinterpret_cast<CameraStatic*>(controller));
 			break;
 		}
 	}
@@ -595,18 +611,19 @@ template <> bool ComponentNode<CameraComponent>::draw(AssetLibrary* library, Cam
 			break;
 		}
 	}
+	debugDrawList.draw3DFrustum(camera.getProjectionMatrix() * camera.getViewMatrix(), color4f(1.f, 0.f, 0.f, 1.f));
 	return updated;
 }
 
 template <> const char* ComponentNode<CustomComponent>::name() { return "CustomComponent"; }
-template <> bool ComponentNode<CustomComponent>::draw(AssetLibrary* library, CustomComponent& mesh)
+template <> bool ComponentNode<CustomComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, CustomComponent& mesh)
 {
 	ImGui::Text(mesh.getCustomData().cstr());
 	return false;
 }
 
 template <> const char* ComponentNode<RotatorComponent>::name() { return "RotatorComponent"; }
-template <> bool ComponentNode<RotatorComponent>::draw(AssetLibrary* library, RotatorComponent& mesh)
+template <> bool ComponentNode<RotatorComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, RotatorComponent& mesh)
 {
 	ImGui::DragFloat("Speed", &mesh.getSpeed(), 1.f);
 	ImGui::InputFloat3("Axis", mesh.getAxis().data);
@@ -614,7 +631,7 @@ template <> bool ComponentNode<RotatorComponent>::draw(AssetLibrary* library, Ro
 }
 
 template <typename T>
-void component(AssetLibrary* library, Node* current)
+void component(AssetLibrary* library, DebugDrawList& debugDrawList, Node* current)
 {
 	static char buffer[256];
 	if (current->has<T>())
@@ -633,7 +650,7 @@ void component(AssetLibrary* library, Node* current)
 		}
 		if (open)
 		{
-			if (ComponentNode<T>::draw(library, component))
+			if (ComponentNode<T>::draw(library, debugDrawList, component))
 			{
 				current->setDirty<T>();
 			}
@@ -642,11 +659,11 @@ void component(AssetLibrary* library, Node* current)
 	}
 }
 
-void SceneEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame)
+void SceneEditorLayer::onRender(aka::Renderer* _renderer, aka::gfx::FrameHandle frame)
 {
 }
 
-void SceneEditorLayer::onDrawUI()
+void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 {
 	std::function<void(Node* parent, Node*& current)> recurse;
 	recurse = [&recurse, this](Node* parent, Node*& current)
@@ -763,8 +780,11 @@ void SceneEditorLayer::onDrawUI()
 
 					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid))
 					{
+						ArchiveCameraComponent archive;
+						archive.controllerType = CameraControllerType::Static;
+						archive.projectionType = CameraProjectionType::Perpective;
 						m_currentNode = m_scene.get().createChild(m_currentNode, "Camera");
-						m_currentNode->attach<CameraComponent>();
+						m_currentNode->attach<CameraComponent>().fromArchive(archive);
 					}
 					if (ImGui::MenuItem("Empty", nullptr, nullptr, isLoaded && isValid))
 					{
@@ -821,7 +841,12 @@ void SceneEditorLayer::onDrawUI()
 						ImGui::EndMenu();
 					}
 					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CameraComponent>()))
-						m_currentNode->attach<CameraComponent>();
+					{
+						ArchiveCameraComponent archive;
+						archive.controllerType = CameraControllerType::Static;
+						archive.projectionType = CameraProjectionType::Perpective;
+						m_currentNode->attach<CameraComponent>().fromArchive(archive);
+					}
 					if (ImGui::MenuItem("CustomComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CustomComponent>()))
 						m_currentNode->attach<CustomComponent>();
 					if (ImGui::MenuItem("RotatorComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<RotatorComponent>()))
@@ -937,11 +962,11 @@ void SceneEditorLayer::onDrawUI()
 				else
 				{
 					// Draw every component.
-					component<StaticMeshComponent>(m_library, m_currentNode);
-					component<SkeletalMeshComponent>(m_library, m_currentNode);
-					component<CameraComponent>(m_library, m_currentNode);
-					component<CustomComponent>(m_library, m_currentNode);
-					component<RotatorComponent>(m_library, m_currentNode);
+					component<StaticMeshComponent>(m_library, debugDrawList, m_currentNode);
+					component<SkeletalMeshComponent>(m_library, debugDrawList, m_currentNode);
+					component<CameraComponent>(m_library, debugDrawList, m_currentNode);
+					component<CustomComponent>(m_library, debugDrawList, m_currentNode);
+					component<RotatorComponent>(m_library, debugDrawList, m_currentNode);
 				}
 			}
 			else

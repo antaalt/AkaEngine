@@ -83,11 +83,11 @@ void Editor::onUpdate(aka::Time time)
 }
 
 
-void Editor::onRender(gfx::GraphicDevice* device, gfx::FrameHandle _frame)
+void Editor::onRender(Renderer* _renderer, gfx::FrameHandle _frame)
 {
 	if (m_scene.isLoaded())
 	{
-		m_scene.get().getRootNode().update(assets(), renderer());
+		m_scene.get().getRootNode().update(assets(), _renderer);
 	}
 }
 
@@ -112,7 +112,7 @@ void Editor::onReceive(const app::SceneSwitchEvent& event)
 		camera.fromArchive(component);
 		camera.setBounds(bounds);
 		camera.setNear(0.1f);
-		camera.setFar(bounds.extent().norm());
+		camera.setFar(bounds.extent().norm() * 2.f);
 		scene.setMainCameraNode(m_editorCameraNode);
 	}
 }

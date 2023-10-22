@@ -18,12 +18,12 @@ public:
 	AssetViewerEditorLayer();
 	~AssetViewerEditorLayer();
 
-	void onCreate(aka::gfx::GraphicDevice* _device) override;
-	void onDestroy(aka::gfx::GraphicDevice* _device) override;
+	void onCreate(aka::Renderer* _renderer) override;
+	void onDestroy(aka::Renderer* _renderer) override;
 	void onUpdate(aka::Time deltaTime) override;
-	//void onPreRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override;
-	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame) override;
-	//void onPostRender(aka::gfx::GraphicDevice* _device, aka::gfx::Frame* frame) override;
+	//void onPreRender(aka::Renderer* _renderer, aka::gfx::Frame* frame) override;
+	void onRender(aka::Renderer* _renderer, aka::gfx::FrameHandle frame) override;
+	//void onPostRender(aka::Renderer* _renderer, aka::gfx::Frame* frame) override;
 	void onDrawUI();
 
 	template <typename T>

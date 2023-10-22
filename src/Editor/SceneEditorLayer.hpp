@@ -19,13 +19,13 @@ class SceneEditorLayer : public EditorLayer, aka::EventListener<aka::ResourceLoa
 public:
 	SceneEditorLayer();
 
-	void onCreate(aka::gfx::GraphicDevice* _device) override;
-	void onDestroy(aka::gfx::GraphicDevice* _device) override;
+	void onCreate(aka::Renderer* _renderer) override;
+	void onDestroy(aka::Renderer* _renderer) override;
 
 	void onUpdate(aka::Time deltaTime) override;
 	void onPreRender() override;
-	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame) override;
-	void onDrawUI() override;
+	void onRender(aka::Renderer* _renderer, aka::gfx::FrameHandle frame) override;
+	void onDrawUI(aka::DebugDrawList& debugDrawList) override;
 	void onPostRender() override;
 	void onResize(uint32_t width, uint32_t height) override;
 	void onReceive(const aka::ResourceLoadedEvent& event);

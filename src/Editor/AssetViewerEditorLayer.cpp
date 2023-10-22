@@ -22,19 +22,19 @@ AssetViewerEditorLayer::~AssetViewerEditorLayer()
 	AKA_ASSERT(m_assetViewersToCreate.size() == 0, "");
 	AKA_ASSERT(m_assetViewersToDestroy.size() == 0, "");
 }
-void AssetViewerEditorLayer::onCreate(aka::gfx::GraphicDevice* _device)
+void AssetViewerEditorLayer::onCreate(aka::Renderer* _renderer)
 {
 	for (AssetViewerBase*& viewer : m_assetViewers)
 	{
-		viewer->create(_device);
+		viewer->create(_renderer->getDevice());
 	}
 }
 
-void AssetViewerEditorLayer::onDestroy(aka::gfx::GraphicDevice* _device)
+void AssetViewerEditorLayer::onDestroy(aka::Renderer* _renderer)
 {
 	for (AssetViewerBase*& viewer : m_assetViewers)
 	{
-		viewer->destroy(_device);
+		viewer->destroy(_renderer->getDevice());
 	}
 }
 
@@ -46,25 +46,25 @@ void AssetViewerEditorLayer::onUpdate(aka::Time deltaTime)
 	}
 }
 
-void AssetViewerEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame)
+void AssetViewerEditorLayer::onRender(aka::Renderer* _renderer, aka::gfx::FrameHandle frame)
 {
 	// Destroy viewer that where removed recently.
 	for (AssetViewerBase*& viewer : m_assetViewersToDestroy)
 	{
-		viewer->destroy(_device);
+		viewer->destroy(_renderer->getDevice());
 		delete viewer;
 	}
 	m_assetViewersToDestroy.clear();
 	// Create viewer that where added recently.
 	for (AssetViewerBase*& viewer : m_assetViewersToCreate)
 	{
-		viewer->create(_device);
+		viewer->create(_renderer->getDevice());
 	}
 	m_assetViewers.append(m_assetViewersToCreate.begin(), m_assetViewersToCreate.end());
 	m_assetViewersToCreate.clear();
 	for (AssetViewerBase*& viewer : m_assetViewers)
 	{
-		viewer->render(_device, frame);
+		viewer->render(_renderer->getDevice(), frame);
 	}
 }
 

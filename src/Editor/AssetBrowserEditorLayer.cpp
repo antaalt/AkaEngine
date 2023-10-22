@@ -258,11 +258,11 @@ AssetBrowserEditorLayer::~AssetBrowserEditorLayer()
 	delete m_rootNode;
 }
 
-void AssetBrowserEditorLayer::onCreate(gfx::GraphicDevice* _device)
+void AssetBrowserEditorLayer::onCreate(Renderer* _renderer)
 {
 }
 
-void AssetBrowserEditorLayer::onDestroy(gfx::GraphicDevice* _device)
+void AssetBrowserEditorLayer::onDestroy(Renderer* _renderer)
 {
 }
 
@@ -274,11 +274,11 @@ void AssetBrowserEditorLayer::onPreRender()
 {
 }
 
-void AssetBrowserEditorLayer::onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame)
+void AssetBrowserEditorLayer::onRender(aka::Renderer* _renderer, aka::gfx::FrameHandle frame)
 {
 }
 
-void AssetBrowserEditorLayer::onDrawUI()
+void AssetBrowserEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 {
 	AssetType assetTypeToImport = AssetType::Unknown;
 	if (ImGui::BeginMenuBar())

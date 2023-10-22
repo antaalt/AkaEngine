@@ -7,14 +7,14 @@ namespace app {
 using namespace aka;
 
 
-void EditorLayer::onLayerCreate(gfx::GraphicDevice* _device)
+void EditorLayer::onLayerCreate(Renderer* _renderer)
 {
-	onCreate(_device);
+	onCreate(_renderer);
 }
 
-void EditorLayer::onLayerDestroy(gfx::GraphicDevice* _device)
+void EditorLayer::onLayerDestroy(Renderer* _renderer)
 {
-	onDestroy(_device);
+	onDestroy(_renderer);
 }
 
 void EditorLayer::onLayerUpdate(Time deltaTime)
@@ -32,15 +32,15 @@ void EditorLayer::onLayerPreRender()
 	onPreRender();
 }
 
-void EditorLayer::onLayerRender(aka::gfx::GraphicDevice* _device, gfx::FrameHandle frame)
+void EditorLayer::onLayerRender(aka::Renderer* _renderer, gfx::FrameHandle frame)
 {
-	onRender(_device, frame);
+	onRender(_renderer, frame);
 	if (isVisible() && isEnabled())
 	{
 		bool open = true;
 		if (ImGui::Begin(getName(), &open, ImGuiWindowFlags_MenuBar))
 		{
-			onDrawUI();
+			onDrawUI(_renderer->getDebugDrawList());
 		}
 		setVisible(open);
 		ImGui::End();

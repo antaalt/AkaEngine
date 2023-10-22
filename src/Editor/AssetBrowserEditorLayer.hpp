@@ -27,16 +27,16 @@ public:
 	AssetBrowserEditorLayer();
 	~AssetBrowserEditorLayer();
 
-	void onCreate(aka::gfx::GraphicDevice* _device) override;
-	void onDestroy(aka::gfx::GraphicDevice* _device) override;
+	void onCreate(aka::Renderer* _renderer) override;
+	void onDestroy(aka::Renderer* _renderer) override;
 
 	void onUpdate(aka::Time deltaTime) override;
 	void onPreRender() override;
-	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame) override;
+	void onRender(aka::Renderer* _renderer, aka::gfx::FrameHandle frame) override;
 	void onPostRender() override;
 	void onResize(uint32_t width, uint32_t height) override;
 	void onReceive(const aka::AssetAddedEvent& event) override;
-	void onDrawUI() override;
+	void onDrawUI(aka::DebugDrawList& debugDrawList) override;
 public:
 	void setLibrary(aka::AssetLibrary* _library);
 	void setAssetViewer(AssetViewerEditorLayer* _viewer);

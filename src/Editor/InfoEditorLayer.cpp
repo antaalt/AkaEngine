@@ -11,12 +11,12 @@ InfoEditorLayer::InfoEditorLayer()
 {
 }
 
-void InfoEditorLayer::onLayerCreate(gfx::GraphicDevice* _device)
+void InfoEditorLayer::onLayerCreate(Renderer* _renderer)
 {
-	_device->getBackbufferSize(m_width, m_height);
+	_renderer->getDevice()->getBackbufferSize(m_width, m_height);
 }
 
-void InfoEditorLayer::onLayerDestroy(gfx::GraphicDevice* _device)
+void InfoEditorLayer::onLayerDestroy(Renderer* _renderer)
 {
 }
 
@@ -24,7 +24,7 @@ void InfoEditorLayer::onLayerPreRender()
 {
 }
 
-void InfoEditorLayer::onLayerRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame)
+void InfoEditorLayer::onLayerRender(aka::Renderer* _renderer, aka::gfx::FrameHandle frame)
 {
 	aka::Application* app = aka::Application::app();
 	aka::gfx::GraphicDevice* graphic = app->graphic();
