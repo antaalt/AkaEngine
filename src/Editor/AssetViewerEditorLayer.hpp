@@ -24,7 +24,7 @@ public:
 	//void onPreRender(aka::Renderer* _renderer, aka::gfx::Frame* frame) override;
 	void onRender(aka::Renderer* _renderer, aka::gfx::FrameHandle frame) override;
 	//void onPostRender(aka::Renderer* _renderer, aka::gfx::Frame* frame) override;
-	void onDrawUI();
+	void onDrawUI(aka::DebugDrawList& debugDrawList) override;
 
 	template <typename T>
 	void open(aka::AssetID _assetID, aka::ResourceHandle<T>& _resourceHandle);

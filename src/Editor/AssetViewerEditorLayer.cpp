@@ -68,7 +68,7 @@ void AssetViewerEditorLayer::onRender(aka::Renderer* _renderer, aka::gfx::FrameH
 	}
 }
 
-void AssetViewerEditorLayer::onDrawUI()
+void AssetViewerEditorLayer::onDrawUI(aka::DebugDrawList& debugDrawList)
 {
 	if (ImGui::BeginMenuBar())
 	{
