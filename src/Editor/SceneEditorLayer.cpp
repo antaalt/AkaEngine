@@ -5,6 +5,7 @@
 #include <Aka/Scene/Component/ArcballComponent.hpp>
 #include <Aka/Scene/Component/SkeletalMeshComponent.hpp>
 #include <Aka/Scene/Component/StaticMeshComponent.hpp>
+#include <Aka/Scene/Component/RigidBodyComponent.hpp>
 #include <Aka/Renderer/DebugDraw/DebugDrawList.hpp>
 #include <Aka/Resource/AssetLibrary.hpp>
 #include <Aka/Resource/Archive/ArchiveBatch.hpp>
@@ -377,6 +378,13 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library,
 	return false;
 }
 
+template <> const char* ComponentNode<RigidBodyComponent>::name() { return "RigidBodyComponent"; }
+template <> bool ComponentNode<RigidBodyComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, RigidBodyComponent& rigidBody)
+{
+	const vec3f& velocity = rigidBody.getVelocity();
+	ImGui::Text("Velocity(%f, %f, %f)", velocity.x, velocity.y, velocity.z);
+	return false;
+}
 
 template <> const char* ComponentNode<SkeletalMeshComponent>::name() { return "SkeletalMeshComponent"; }
 template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, SkeletalMeshComponent& meshComp)
@@ -821,6 +829,8 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 						}
 						ImGui::EndMenu();
 					}
+					if (ImGui::MenuItem("RigidBodyComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<RigidBodyComponent>()))
+						m_currentNode->attach<RigidBodyComponent>();
 					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CameraComponent>()))
 					{
 						ArchiveCameraComponent archive;
@@ -944,6 +954,7 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 					// Draw every component.
 					component<StaticMeshComponent>(m_library, debugDrawList, m_currentNode);
 					component<SkeletalMeshComponent>(m_library, debugDrawList, m_currentNode);
+					component<RigidBodyComponent>(m_library, debugDrawList, m_currentNode);
 					component<CameraComponent>(m_library, debugDrawList, m_currentNode);
 					component<ArcballComponent>(m_library, debugDrawList, m_currentNode);
 					component<CustomComponent>(m_library, debugDrawList, m_currentNode);
