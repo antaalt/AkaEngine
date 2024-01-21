@@ -3,13 +3,8 @@
 namespace aka {
 
 CustomComponent::CustomComponent(Node* node) :
-	Component(node, generateComponentID<CustomComponent>()), 
+	Component(node),
 	m_customData("Yoyoyo")
-{
-}
-
-ArchiveCustomComponent::ArchiveCustomComponent() :
-	ArchiveComponent(generateComponentID<CustomComponent>(), 0)
 {
 }
 

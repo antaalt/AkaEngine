@@ -8,7 +8,7 @@ namespace aka {
 
 struct ArchiveRotatorComponent : ArchiveComponent
 {
-	ArchiveRotatorComponent();
+	using ArchiveComponent::ArchiveComponent;
 
 	float speed;
 	vec3f axis;
@@ -16,7 +16,7 @@ struct ArchiveRotatorComponent : ArchiveComponent
 	void parse(BinaryArchive& archive) override;
 };
 
-class RotatorComponent : public Component
+class RotatorComponent : public Component<RotatorComponent, ArchiveRotatorComponent>
 {
 public:
 	RotatorComponent(Node* node);

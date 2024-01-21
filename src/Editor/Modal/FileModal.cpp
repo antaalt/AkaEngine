@@ -90,7 +90,7 @@ void ImGuiFileModal::Render()
 			}
 		}
 		ImGui::EndChild();
-		if (ImGui::BeginPopupContextItem())
+		if (ImGui::BeginPopupContextItem("##FolderCreation"))
 		{
 			if (ImGui::MenuItem("Create folder"))
 			{

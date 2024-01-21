@@ -36,14 +36,10 @@ Editor::Editor(const Config& cfg) :
 	infoEditor->setEditorLayer(app::EditorLayerType::AssetBrowser, assetBrowserEditor);
 	infoEditor->setEditorLayer(app::EditorLayerType::AssetViewer, assetViewerEditor);
 	infoEditor->setEditorLayer(app::EditorLayerType::SceneEditor, sceneEditor);
-	AKA_REGISTER_COMPONENT(CustomComponent);
-	AKA_REGISTER_COMPONENT(RotatorComponent);
 }
 
 Editor::~Editor()
 {
-	AKA_UNREGISTER_COMPONENT(CustomComponent);
-	AKA_UNREGISTER_COMPONENT(RotatorComponent);
 }
 
 void Editor::onCreate(int argc, char* argv[])
@@ -105,21 +101,23 @@ void Editor::onReceive(const app::SceneSwitchEvent& event)
 		// Setup editor camera.
 		m_editorCameraNode = scene.createChild(nullptr, "EditorCamera");
 		{
-			ArchiveCameraComponent component{};
-			component.projectionType = CameraProjectionType::Perpective;
 			CameraComponent& camera = m_editorCameraNode->attach<CameraComponent>();
+			ArchiveCameraComponent* component = reinterpret_cast<ArchiveCameraComponent*>(camera.createArchive());
+			component->projectionType = CameraProjectionType::Perpective;
 			const aabbox<>& bounds = scene.getBounds();
-			camera.fromArchive(component);
+			camera.fromArchive(*component);
 			camera.setNear(0.1f);
 			camera.setFar(bounds.extent().norm() * 2.f);
 			scene.setMainCameraNode(m_editorCameraNode);
+			camera.destroyArchive(component);
 		}
 		{
-			ArchiveArcballComponent component{};
 			ArcballComponent& controller = m_editorCameraNode->attach<ArcballComponent>();
+			ArchiveArcballComponent* component = reinterpret_cast<ArchiveArcballComponent*>(controller.createArchive());
 			const aabbox<>& bounds = scene.getBounds();
-			controller.fromArchive(component);
+			controller.fromArchive(*component);
 			controller.setBounds(bounds);
+			controller.destroyArchive(component);
 		}
 	}
 }

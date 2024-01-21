@@ -211,14 +211,14 @@ void AssimpImporterImpl::processNode(ArchiveSceneID _parent, aiNode* _node)
 		ArchiveSceneComponent component;
 		if (m_isSkeletal[i])
 		{
-			ArchiveSkeletalMeshComponent meshComponentArchive;
+			ArchiveSkeletalMeshComponent meshComponentArchive(Component<SkeletalMeshComponent, ArchiveSkeletalMeshComponent>::getComponentID(), 0);
 			meshComponentArchive.assetID = m_meshes[_node->mMeshes[i]];
 			component.id = meshComponentArchive.getComponentID();
 			meshComponentArchive.save(component.archive);
 		}
 		else
 		{
-			ArchiveStaticMeshComponent meshComponentArchive;
+			ArchiveStaticMeshComponent meshComponentArchive(Component<StaticMeshComponent, ArchiveStaticMeshComponent>::getComponentID(), 0);
 			meshComponentArchive.assetID = m_meshes[_node->mMeshes[i]];
 			component.id = meshComponentArchive.getComponentID();
 			meshComponentArchive.save(component.archive);

@@ -8,14 +8,14 @@ namespace aka {
 
 struct ArchiveCustomComponent : ArchiveComponent
 {
-	ArchiveCustomComponent();
+	using ArchiveComponent::ArchiveComponent;
 
 	aka::String customData;
 
 	void parse(BinaryArchive& archive) override;
 };
 
-class CustomComponent : public Component
+class CustomComponent : public Component<CustomComponent, ArchiveCustomComponent>
 {
 public:
 	CustomComponent(Node* node);

@@ -2,11 +2,6 @@
 
 namespace aka {
 
-ArchiveRotatorComponent::ArchiveRotatorComponent() :
-	ArchiveComponent(generateComponentID<RotatorComponent>(), 0)
-{
-}
-
 void ArchiveRotatorComponent::parse(BinaryArchive& archive)
 {
 	archive.parse<float>(speed);
@@ -16,7 +11,7 @@ void ArchiveRotatorComponent::parse(BinaryArchive& archive)
 }
 
 RotatorComponent::RotatorComponent(Node* node) :
-	Component(node, generateComponentID<RotatorComponent>()),
+	Component(node),
 	m_axis(vec3f(0, 0, 1)),
 	m_speed(45.f)
 {
