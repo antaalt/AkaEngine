@@ -26,8 +26,8 @@ public:
 
 	void onUpdate(Time deltaTime) override;
 
-	void fromArchive(const ArchiveComponent& archive) override;
-	void toArchive(ArchiveComponent& archive) override;
+	void fromArchive(const ArchiveRotatorComponent& archive) override;
+	void toArchive(ArchiveRotatorComponent& archive) override;
 private:
 	vec3f m_axis;
 	float m_speed;

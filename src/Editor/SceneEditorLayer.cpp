@@ -742,7 +742,7 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 						if (ImGui::MenuItem("Cube", nullptr, nullptr, isLoaded && isValid))
 						{
 							StaticMeshComponent& component = m_currentNode->attach<StaticMeshComponent>();
-							ArchiveStaticMeshComponent* archive = reinterpret_cast<ArchiveStaticMeshComponent*>(component.createArchive());
+							ArchiveStaticMeshComponent* archive = component.createArchive();
 							archive->assetID = createCubeMesh(m_library, Application::app()->renderer());
 							m_currentNode = m_scene.get().createChild(m_currentNode, "Sphere node");
 							m_currentNode->attach<StaticMeshComponent>().fromArchive(*archive);
@@ -751,7 +751,7 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 						if (ImGui::MenuItem("UV Sphere", nullptr, nullptr, isLoaded && isValid))
 						{
 							StaticMeshComponent& component = m_currentNode->attach<StaticMeshComponent>();
-							ArchiveStaticMeshComponent* archive = reinterpret_cast<ArchiveStaticMeshComponent*>(component.createArchive());
+							ArchiveStaticMeshComponent* archive = component.createArchive();
 							archive->assetID = createSphereMesh(m_library, Application::app()->renderer());
 							m_currentNode = m_scene.get().createChild(m_currentNode, "Sphere node");
 							m_currentNode->attach<StaticMeshComponent>().fromArchive(*archive);
@@ -809,7 +809,7 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 							if (ImGui::MenuItem(name.cstr(), nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<StaticMeshComponent>()))
 							{
 								StaticMeshComponent& component = m_currentNode->attach<StaticMeshComponent>();
-								ArchiveStaticMeshComponent* archive = reinterpret_cast<ArchiveStaticMeshComponent*>(component.createArchive());
+								ArchiveStaticMeshComponent* archive = component.createArchive();
 								archive->assetID = asset.first;
 								m_currentNode->attach<StaticMeshComponent>().fromArchive(*archive);
 								component.destroyArchive(archive);
@@ -831,7 +831,7 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 							if (ImGui::MenuItem(name.cstr(), nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<SkeletalMeshComponent>()))
 							{
 								SkeletalMeshComponent& component = m_currentNode->attach<SkeletalMeshComponent>();
-								ArchiveSkeletalMeshComponent* archive = reinterpret_cast<ArchiveSkeletalMeshComponent*>(component.createArchive());
+								ArchiveSkeletalMeshComponent* archive = component.createArchive();
 								archive->assetID = asset.first;
 								m_currentNode->attach<SkeletalMeshComponent>().fromArchive(*archive);
 								component.destroyArchive(archive);

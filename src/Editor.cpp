@@ -102,7 +102,7 @@ void Editor::onReceive(const app::SceneSwitchEvent& event)
 		m_editorCameraNode = scene.createChild(nullptr, "EditorCamera");
 		{
 			CameraComponent& camera = m_editorCameraNode->attach<CameraComponent>();
-			ArchiveCameraComponent* component = reinterpret_cast<ArchiveCameraComponent*>(camera.createArchive());
+			ArchiveCameraComponent* component = camera.createArchive();
 			component->projectionType = CameraProjectionType::Perpective;
 			const aabbox<>& bounds = scene.getBounds();
 			camera.fromArchive(*component);
@@ -113,7 +113,7 @@ void Editor::onReceive(const app::SceneSwitchEvent& event)
 		}
 		{
 			ArcballComponent& controller = m_editorCameraNode->attach<ArcballComponent>();
-			ArchiveArcballComponent* component = reinterpret_cast<ArchiveArcballComponent*>(controller.createArchive());
+			ArchiveArcballComponent* component = controller.createArchive();
 			const aabbox<>& bounds = scene.getBounds();
 			controller.fromArchive(*component);
 			controller.setBounds(bounds);
