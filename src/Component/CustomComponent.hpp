@@ -8,7 +8,7 @@ namespace aka {
 
 struct ArchiveCustomComponent : ArchiveComponent
 {
-	using ArchiveComponent::ArchiveComponent;
+	ArchiveCustomComponent(ArchiveComponentVersionType _version);
 
 	aka::String customData;
 

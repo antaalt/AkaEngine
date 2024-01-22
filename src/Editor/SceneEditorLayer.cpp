@@ -742,20 +742,18 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 						if (ImGui::MenuItem("Cube", nullptr, nullptr, isLoaded && isValid))
 						{
 							StaticMeshComponent& component = m_currentNode->attach<StaticMeshComponent>();
-							ArchiveStaticMeshComponent* archive = component.createArchive();
-							archive->assetID = createCubeMesh(m_library, Application::app()->renderer());
+							ArchiveStaticMeshComponent archive(0);
+							archive.assetID = createCubeMesh(m_library, Application::app()->renderer());
 							m_currentNode = m_scene.get().createChild(m_currentNode, "Sphere node");
-							m_currentNode->attach<StaticMeshComponent>().fromArchive(*archive);
-							component.destroyArchive(archive);
+							m_currentNode->attach<StaticMeshComponent>().fromArchive(archive);
 						}
 						if (ImGui::MenuItem("UV Sphere", nullptr, nullptr, isLoaded && isValid))
 						{
 							StaticMeshComponent& component = m_currentNode->attach<StaticMeshComponent>();
-							ArchiveStaticMeshComponent* archive = component.createArchive();
-							archive->assetID = createSphereMesh(m_library, Application::app()->renderer());
+							ArchiveStaticMeshComponent archive(0);
+							archive.assetID = createSphereMesh(m_library, Application::app()->renderer());
 							m_currentNode = m_scene.get().createChild(m_currentNode, "Sphere node");
-							m_currentNode->attach<StaticMeshComponent>().fromArchive(*archive);
-							component.destroyArchive(archive);
+							m_currentNode->attach<StaticMeshComponent>().fromArchive(archive);
 						}
 						ImGui::EndMenu();
 					}
@@ -775,11 +773,10 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid))
 					{
 						CameraComponent& component = m_currentNode->attach<CameraComponent>();
-						ArchiveCameraComponent* archive = reinterpret_cast<ArchiveCameraComponent*>(component.createArchive());
-						archive->projectionType = CameraProjectionType::Perpective;
+						ArchiveCameraComponent archive(0);
+						archive.projectionType = CameraProjectionType::Perpective;
 						m_currentNode = m_scene.get().createChild(m_currentNode, "Camera");
-						m_currentNode->attach<CameraComponent>().fromArchive(*archive);
-						component.destroyArchive(archive);
+						m_currentNode->attach<CameraComponent>().fromArchive(archive);
 					}
 					if (ImGui::MenuItem("Empty", nullptr, nullptr, isLoaded && isValid))
 					{
@@ -809,10 +806,9 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 							if (ImGui::MenuItem(name.cstr(), nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<StaticMeshComponent>()))
 							{
 								StaticMeshComponent& component = m_currentNode->attach<StaticMeshComponent>();
-								ArchiveStaticMeshComponent* archive = component.createArchive();
-								archive->assetID = asset.first;
-								m_currentNode->attach<StaticMeshComponent>().fromArchive(*archive);
-								component.destroyArchive(archive);
+								ArchiveStaticMeshComponent archive(0);
+								archive.assetID = asset.first;
+								m_currentNode->attach<StaticMeshComponent>().fromArchive(archive);
 							}
 						}
 						ImGui::EndMenu();
@@ -831,10 +827,9 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 							if (ImGui::MenuItem(name.cstr(), nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<SkeletalMeshComponent>()))
 							{
 								SkeletalMeshComponent& component = m_currentNode->attach<SkeletalMeshComponent>();
-								ArchiveSkeletalMeshComponent* archive = component.createArchive();
-								archive->assetID = asset.first;
-								m_currentNode->attach<SkeletalMeshComponent>().fromArchive(*archive);
-								component.destroyArchive(archive);
+								ArchiveSkeletalMeshComponent archive(0);
+								archive.assetID = asset.first;
+								m_currentNode->attach<SkeletalMeshComponent>().fromArchive(archive);
 							}
 						}
 						ImGui::EndMenu();
@@ -844,11 +839,10 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CameraComponent>()))
 					{
 						CameraComponent& component = m_currentNode->attach<CameraComponent>();
-						ArchiveCameraComponent* archive = reinterpret_cast<ArchiveCameraComponent*>(component.createArchive());
-						archive->projectionType = CameraProjectionType::Perpective;
+						ArchiveCameraComponent archive(0);
+						archive.projectionType = CameraProjectionType::Perpective;
 						m_currentNode = m_scene.get().createChild(m_currentNode, "Camera");
-						m_currentNode->attach<CameraComponent>().fromArchive(*archive);
-						component.destroyArchive(archive);
+						m_currentNode->attach<CameraComponent>().fromArchive(archive);
 					}
 					if (ImGui::MenuItem("CustomComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CustomComponent>()))
 						m_currentNode->attach<CustomComponent>();

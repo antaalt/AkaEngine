@@ -2,6 +2,11 @@
 
 namespace aka {
 
+ArchiveRotatorComponent::ArchiveRotatorComponent(ArchiveComponentVersionType _version) :
+	ArchiveComponent(Component<RotatorComponent, ArchiveRotatorComponent>::getComponentID(), _version)
+{
+}
+
 void ArchiveRotatorComponent::parse(BinaryArchive& archive)
 {
 	archive.parse<float>(speed);

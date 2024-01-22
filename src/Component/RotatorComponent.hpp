@@ -8,7 +8,7 @@ namespace aka {
 
 struct ArchiveRotatorComponent : ArchiveComponent
 {
-	using ArchiveComponent::ArchiveComponent;
+	ArchiveRotatorComponent(ArchiveComponentVersionType _version);
 
 	float speed;
 	vec3f axis;
