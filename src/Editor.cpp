@@ -55,7 +55,7 @@ void Editor::onFixedUpdate(aka::Time time)
 {
 	if (m_scene.isLoaded())
 	{
-		m_scene.get().getRootNode().fixedUpdate(time);
+		m_scene.get().fixedUpdate(time);
 	}
 }
 
@@ -74,7 +74,7 @@ void Editor::onUpdate(aka::Time time)
 		camera.setUpdateEnabled(!io.WantCaptureMouse && !io.WantCaptureKeyboard);
 
 		// Update scene
-		m_scene.get().getRootNode().update(time);
+		m_scene.get().update(time);
 	}
 }
 
@@ -83,7 +83,7 @@ void Editor::onRender(Renderer* _renderer, gfx::FrameHandle _frame)
 {
 	if (m_scene.isLoaded())
 	{
-		m_scene.get().getRootNode().update(assets(), _renderer);
+		m_scene.get().update(assets(), _renderer);
 	}
 }
 

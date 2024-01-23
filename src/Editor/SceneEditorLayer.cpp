@@ -6,6 +6,7 @@
 #include <Aka/Scene/Component/SkeletalMeshComponent.hpp>
 #include <Aka/Scene/Component/StaticMeshComponent.hpp>
 #include <Aka/Scene/Component/RigidBodyComponent.hpp>
+#include <Aka/Scene/Component/ColliderComponent.hpp>
 #include <Aka/Renderer/DebugDraw/DebugDrawList.hpp>
 #include <Aka/Resource/AssetLibrary.hpp>
 #include <Aka/Resource/Archive/ArchiveBatch.hpp>
@@ -274,6 +275,86 @@ AssetID createCubeMesh(AssetLibrary* _library, Renderer* _renderer)
 	return meshID;
 }
 
+
+AssetID createPlaneMesh(AssetLibrary* _library, Renderer* _renderer)
+{
+	AssetPath meshPath = AssetPath("shapes/plane/plane.smesh");
+	AssetPath batchPath = AssetPath("shapes/plane/plane.batch");
+	AssetPath geoPath = AssetPath("shapes/plane/plane.geo");
+	AssetPath materialPath = AssetPath("shapes/plane/plane.mat");
+	AssetPath imageAlbedoPath = AssetPath("shapes/plane/albedo.img");
+	AssetPath imageNormalPath = AssetPath("shapes/plane/normal.img");
+	OS::Directory::create(AssetPath("shapes/plane/").getAbsolutePath());
+
+	// Add to library & load it.
+	AssetID meshID = _library->registerAsset(meshPath, AssetType::StaticMesh);
+	AssetID batchID = _library->registerAsset(batchPath, AssetType::Batch);
+	AssetID geometryID = _library->registerAsset(geoPath, AssetType::Geometry);
+	AssetID materialID = _library->registerAsset(materialPath, AssetType::Material);
+	AssetID imageAlbedoID = _library->registerAsset(imageAlbedoPath, AssetType::Image);
+	AssetID imageNormalID = _library->registerAsset(imageNormalPath, AssetType::Image);
+
+	ArchiveGeometry geometry(geometryID);
+	// indices
+	geometry.indices.append(0);
+	geometry.indices.append(1);
+	geometry.indices.append(3);
+	geometry.indices.append(3);
+	geometry.indices.append(1);
+	geometry.indices.append(2);
+	// Vertices
+	static const StaticVertex s_planeVertices[4] = {
+		StaticVertex{point3f(-1.0f, -1.0f, 0.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{point3f(-1.0f,  1.0f, 0.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{point3f( 1.0f,  1.0f, 0.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{point3f( 1.0f, -1.0f, 0.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+	};
+	geometry.staticVertices.resize(4);
+	Memory::copy(geometry.staticVertices.data(), s_planeVertices, sizeof(s_planeVertices));
+	geometry.bounds = aabbox(point3f(-1.f), point3f(1.f));
+
+	ArchiveBatch batch(batchID);
+	batch.geometry = geometryID;
+	batch.material = materialID;
+
+	// Material
+	ArchiveMaterial material(materialID);
+	material.color = color4f(0.0, 0.0, 1.0, 1.0);
+	material.albedo = imageAlbedoID;
+	material.normal = imageNormalID;
+
+	ArchiveImage albedo(imageAlbedoID);
+	Image img = ImageDecoder::fromDisk("../../../asset/textures/skyscraper.jpg");
+	albedo = ArchiveImage(imageAlbedoID);
+	albedo.width = img.width;
+	albedo.height = img.height;
+	albedo.channels = img.getComponents();
+	albedo.data = std::move(img.bytes);
+
+	ArchiveImage normal(imageNormalID);
+	Image imgNormal = ImageDecoder::fromDisk("../../../asset/textures/skyscraper-normal.jpg");
+	normal = ArchiveImage(imageNormalID);
+	normal.width = imgNormal.width;
+	normal.height = imgNormal.height;
+	normal.channels = imgNormal.getComponents();
+	normal.data = std::move(imgNormal.bytes);
+
+	ArchiveStaticMesh cubeMesh(meshID);
+	cubeMesh.batches.append(batchID);
+	ArchiveSaveContext ctx(cubeMesh, _library);
+	ArchiveParseResult res = cubeMesh.save(ctx);
+	res = batch.save(ctx);
+	res = geometry.save(ctx);
+	res = material.save(ctx);
+	res = albedo.save(ctx);
+	res = normal.save(ctx);
+
+	ArchiveLoadContext loadCtx(cubeMesh, _library);
+	cubeMesh.load(loadCtx);
+	_library->load<StaticMesh>(meshID, loadCtx, _renderer);
+	return meshID;
+}
+
 SceneEditorLayer::SceneEditorLayer() :
 	EditorLayer("Scene Editor")
 {
@@ -383,6 +464,12 @@ template <> bool ComponentNode<RigidBodyComponent>::draw(AssetLibrary* library, 
 {
 	const vec3f& velocity = rigidBody.getVelocity();
 	ImGui::Text("Velocity(%f, %f, %f)", velocity.x, velocity.y, velocity.z);
+	return false;
+}
+
+template <> const char* ComponentNode<ColliderComponent>::name() { return "ColliderComponent"; }
+template <> bool ComponentNode<ColliderComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, ColliderComponent& collider)
+{
 	return false;
 }
 
@@ -701,7 +788,6 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 	const bool isLoaded = m_scene.isLoaded();
 	{
 		// --- Menu
-		Node* rootNode = isLoaded ? &m_scene.get().getRootNode() : nullptr;
 		const bool isValid = m_currentNode != nullptr;
 		if (ImGui::BeginMenuBar())
 		{
@@ -741,7 +827,6 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 					{
 						if (ImGui::MenuItem("Cube", nullptr, nullptr, isLoaded && isValid))
 						{
-							StaticMeshComponent& component = m_currentNode->attach<StaticMeshComponent>();
 							ArchiveStaticMeshComponent archive(0);
 							archive.assetID = createCubeMesh(m_library, Application::app()->renderer());
 							m_currentNode = m_scene.get().createChild(m_currentNode, "Sphere node");
@@ -749,10 +834,16 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 						}
 						if (ImGui::MenuItem("UV Sphere", nullptr, nullptr, isLoaded && isValid))
 						{
-							StaticMeshComponent& component = m_currentNode->attach<StaticMeshComponent>();
 							ArchiveStaticMeshComponent archive(0);
 							archive.assetID = createSphereMesh(m_library, Application::app()->renderer());
 							m_currentNode = m_scene.get().createChild(m_currentNode, "Sphere node");
+							m_currentNode->attach<StaticMeshComponent>().fromArchive(archive);
+						}
+						if (ImGui::MenuItem("Plane", nullptr, nullptr, isLoaded && isValid))
+						{
+							ArchiveStaticMeshComponent archive(0);
+							archive.assetID = createPlaneMesh(m_library, Application::app()->renderer());
+							m_currentNode = m_scene.get().createChild(m_currentNode, "Plane node");
 							m_currentNode->attach<StaticMeshComponent>().fromArchive(archive);
 						}
 						ImGui::EndMenu();
@@ -772,7 +863,6 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 
 					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid))
 					{
-						CameraComponent& component = m_currentNode->attach<CameraComponent>();
 						ArchiveCameraComponent archive(0);
 						archive.projectionType = CameraProjectionType::Perpective;
 						m_currentNode = m_scene.get().createChild(m_currentNode, "Camera");
@@ -805,7 +895,6 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 								continue;
 							if (ImGui::MenuItem(name.cstr(), nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<StaticMeshComponent>()))
 							{
-								StaticMeshComponent& component = m_currentNode->attach<StaticMeshComponent>();
 								ArchiveStaticMeshComponent archive(0);
 								archive.assetID = asset.first;
 								m_currentNode->attach<StaticMeshComponent>().fromArchive(archive);
@@ -826,7 +915,6 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 								continue;
 							if (ImGui::MenuItem(name.cstr(), nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<SkeletalMeshComponent>()))
 							{
-								SkeletalMeshComponent& component = m_currentNode->attach<SkeletalMeshComponent>();
 								ArchiveSkeletalMeshComponent archive(0);
 								archive.assetID = asset.first;
 								m_currentNode->attach<SkeletalMeshComponent>().fromArchive(archive);
@@ -835,13 +923,19 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 						ImGui::EndMenu();
 					}
 					if (ImGui::MenuItem("RigidBodyComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<RigidBodyComponent>()))
-						m_currentNode->attach<RigidBodyComponent>();
-					if (ImGui::MenuItem("Camera", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CameraComponent>()))
 					{
-						CameraComponent& component = m_currentNode->attach<CameraComponent>();
+						ArchiveRigidBodyComponent archive(0);
+						m_currentNode->attach<RigidBodyComponent>().fromArchive(archive);
+					}
+					if (ImGui::MenuItem("ColliderComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<ColliderComponent>()))
+					{
+						ArchiveColliderComponent archive(0);
+						m_currentNode->attach<ColliderComponent>().fromArchive(archive);
+					}
+					if (ImGui::MenuItem("CameraComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CameraComponent>()))
+					{
 						ArchiveCameraComponent archive(0);
 						archive.projectionType = CameraProjectionType::Perpective;
-						m_currentNode = m_scene.get().createChild(m_currentNode, "Camera");
 						m_currentNode->attach<CameraComponent>().fromArchive(archive);
 					}
 					if (ImGui::MenuItem("CustomComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CustomComponent>()))
@@ -890,10 +984,9 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 		{
 			if (isLoaded)
 			{
-				for (uint32_t iChild = 0; iChild < rootNode->getChildCount(); iChild++)
-				{
-					recurse(rootNode->getChild(iChild), m_currentNode);
-				}
+				m_scene.get().visitChildrens([&](Node* children) {
+					recurse(children, m_currentNode);
+				});
 			}
 		}
 		ImGui::EndChild();
@@ -904,8 +997,7 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 		ImGui::SameLine();
 		if (ImGui::Button("Create entity") && isLoaded)
 		{
-			Node* parentNode = m_currentNode ? m_currentNode : rootNode;
-			m_currentNode = m_scene.get().createChild(parentNode, m_newEntityName);
+			m_currentNode = m_scene.get().createChild(m_currentNode, m_newEntityName);
 		}
 		ImGui::Separator();
 
@@ -962,6 +1054,7 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 					component<StaticMeshComponent>(m_library, debugDrawList, m_currentNode);
 					component<SkeletalMeshComponent>(m_library, debugDrawList, m_currentNode);
 					component<RigidBodyComponent>(m_library, debugDrawList, m_currentNode);
+					component<ColliderComponent>(m_library, debugDrawList, m_currentNode);
 					component<CameraComponent>(m_library, debugDrawList, m_currentNode);
 					component<ArcballComponent>(m_library, debugDrawList, m_currentNode);
 					component<CustomComponent>(m_library, debugDrawList, m_currentNode);
