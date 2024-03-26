@@ -2,8 +2,8 @@
 
 namespace aka {
 
-ArchiveRotatorComponent::ArchiveRotatorComponent() :
-	ArchiveComponent(generateComponentID<RotatorComponent>(), 0)
+ArchiveRotatorComponent::ArchiveRotatorComponent(ArchiveComponentVersionType _version) :
+	ArchiveComponent(Component<RotatorComponent, ArchiveRotatorComponent>::getComponentID(), _version)
 {
 }
 
@@ -16,7 +16,7 @@ void ArchiveRotatorComponent::parse(BinaryArchive& archive)
 }
 
 RotatorComponent::RotatorComponent(Node* node) :
-	Component(node, generateComponentID<RotatorComponent>()),
+	Component(node),
 	m_axis(vec3f(0, 0, 1)),
 	m_speed(45.f)
 {
@@ -28,18 +28,16 @@ void RotatorComponent::onUpdate(Time deltaTime)
 	getNode()->setLocalTransform(getNode()->getLocalTransform() * mat4f::rotate(m_axis, rotation));
 }
 
-void RotatorComponent::fromArchive(const ArchiveComponent& archive)
+void RotatorComponent::fromArchive(const ArchiveRotatorComponent& archive)
 {
-	const ArchiveRotatorComponent& a = reinterpret_cast<const ArchiveRotatorComponent&>(archive);
-	m_speed = a.speed;
-	m_axis = a.axis;
+	m_speed = archive.speed;
+	m_axis = archive.axis;
 }
 
-void RotatorComponent::toArchive(ArchiveComponent& archive)
+void RotatorComponent::toArchive(ArchiveRotatorComponent& archive)
 {
-	ArchiveRotatorComponent& a = reinterpret_cast<ArchiveRotatorComponent&>(archive);
-	a.speed = m_speed;
-	a.axis = m_axis;
+	archive.speed = m_speed;
+	archive.axis = m_axis;
 }
 
 }

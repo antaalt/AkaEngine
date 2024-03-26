@@ -16,6 +16,6 @@ int main(int argc, char* argv[])
 
 	Editor editor(cfg);
 
-	aka::Application::run(&editor, cfg);
+	aka::Application::run(&editor);
 	return 0;
 }

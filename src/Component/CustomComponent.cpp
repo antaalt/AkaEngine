@@ -2,14 +2,14 @@
 
 namespace aka {
 
-CustomComponent::CustomComponent(Node* node) :
-	Component(node, generateComponentID<CustomComponent>()), 
-	m_customData("Yoyoyo")
+ArchiveCustomComponent::ArchiveCustomComponent(ArchiveComponentVersionType _version) :
+	ArchiveComponent(Component<CustomComponent, ArchiveCustomComponent>::getComponentID(), _version)
 {
 }
 
-ArchiveCustomComponent::ArchiveCustomComponent() :
-	ArchiveComponent(generateComponentID<CustomComponent>(), 0)
+CustomComponent::CustomComponent(Node* node) :
+	Component(node),
+	m_customData("Yoyoyo")
 {
 }
 

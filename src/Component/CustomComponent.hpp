@@ -8,22 +8,22 @@ namespace aka {
 
 struct ArchiveCustomComponent : ArchiveComponent
 {
-	ArchiveCustomComponent();
+	ArchiveCustomComponent(ArchiveComponentVersionType _version);
 
 	aka::String customData;
 
 	void parse(BinaryArchive& archive) override;
 };
 
-class CustomComponent : public Component
+class CustomComponent : public Component<CustomComponent, ArchiveCustomComponent>
 {
 public:
 	CustomComponent(Node* node);
 
 	const String& getCustomData() const { return m_customData; }
 
-	void fromArchive(const ArchiveComponent& archive) override {}
-	void toArchive(ArchiveComponent& archive) override {}
+	void fromArchive(const ArchiveCustomComponent& archive) override {}
+	void toArchive(ArchiveCustomComponent& archive) override {}
 private:
 	String m_customData;
 };
