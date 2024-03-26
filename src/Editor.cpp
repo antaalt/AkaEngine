@@ -64,8 +64,6 @@ void Editor::onUpdate(aka::Time time)
 	if (platform()->keyboard().down(KeyboardKey::Escape))
 		EventDispatcher<QuitEvent>::emit();
 
-	program()->reloadIfChanged(graphic());
-
 	if (m_scene.isLoaded())
 	{
 		// Disable camera inputs if ImGui uses them.
