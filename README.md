@@ -1,17 +1,23 @@
 # AkaEngine
 
-## Next steps
+Didactic 3D engine based on [Aka framework](https://github.com/antaalt/Aka). This is an upgrade from a previous project with improved foundation.
 
-- Solid hot reload of both assets & shaders
-    - Use multithread jobs for asset loading.
-    - asset indexer check whole asset folder & potentially import into library
-        Check all assets, ask for import, if one was updated & is already imported, import it in background & reload it in engine.
-    - asset indexer can also spot shaders & generate shader database.
-        - shader db store entry points & potentially macros ?
-        We can retrieve them using ShaderPath
+## Features
+- Asset manager
+- Shader hot reload
 
-Once asset management is solid, can work on required tools for game, 
--   aseprite importer
--   Ogmo ? or custom level editor with quad tree.
--   blender ? custom loading of blend file ? assimp ?
--   Test gameplay & level creation.
+## Roadmap
+- Some multithreading (via worker for asset loading & co)
+- Asset indexer
+  - Asset hot reloading
+  - Shader indexation
+- Rendering improvements
+  - SSAO
+  - Shadow mapping (CSM)
+  - Directional lights / point lights / spot lights
+  - Ray tracing shadows / lightings
+  - Transparent rendering
+  - FXAA
+  - Skybox
+- Blender renderer via python API ?
+- A Game ???
