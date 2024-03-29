@@ -182,14 +182,21 @@ void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 	const ShaderKey ShaderVertex = ShaderKey().setPath(app::AssetPath("../shaders/editor/basic.vert").getAbsolutePath()).setType(aka::ShaderType::Vertex);
 	const ShaderKey ShaderFragment = ShaderKey().setPath(app::AssetPath("../shaders/editor/basic.frag").getAbsolutePath()).setType(aka::ShaderType::Fragment);
 
+	gfx::ShaderBindingState set;
+	set.add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::VertexFragment, gfx::ShaderBindingFlag::None, 1);
+	gfx::ShaderPipelineLayout layout{};
+	layout.addSet(set);
+
 	const ProgramKey ProgramGraphic = ProgramKey().add(ShaderVertex).add(ShaderFragment);
 	ShaderRegistry* program = Application::app()->program();
 	program->add(ProgramGraphic, _device);
 	gfx::ProgramHandle p = program->get(ProgramGraphic);
+
 	m_pipeline = _device->createGraphicPipeline(
 		"StaticMeshViewerPipeline",
 		p,
 		gfx::PrimitiveType::Triangles,
+		layout,
 		rpState,
 		gfx::VertexState{}.add(StaticVertex::getState()),
 		gfx::ViewportState{}.size(m_width, m_height),
@@ -199,9 +206,9 @@ void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 		gfx::BlendStateDefault,
 		gfx::FillStateLine
 	);
-	m_descriptorPool = _device->createDescriptorPool("StaticMeshViewerDescriptorPool", _device->get(p)->sets[0], gfx::MaxFrameInFlight);
+	m_descriptorPool = _device->createDescriptorPool("StaticMeshViewerDescriptorPool", layout.sets[0], gfx::MaxFrameInFlight);
 	for (uint32_t iFrame = 0; iFrame < gfx::MaxFrameInFlight; iFrame++)
-		m_descriptorSet[iFrame] = _device->allocateDescriptorSet("StaticMeshViewerDescriptorSet", _device->get(p)->sets[0], m_descriptorPool);
+		m_descriptorSet[iFrame] = _device->allocateDescriptorSet("StaticMeshViewerDescriptorSet", layout.sets[0], m_descriptorPool);
 	{
 		m_arcball.set(aabbox<>(point3f(-20.f), point3f(20.f)));
 		m_projection.nearZ = 0.1f;
@@ -227,7 +234,7 @@ void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 	{
 		gfx::ShaderBindingState state{};
 		state.add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment);
-		m_imguiDescriptorPool = _device->createDescriptorPool("StaticMeshViewerDescriptorPool", _device->get(p)->sets[0], 1);
+		m_imguiDescriptorPool = _device->createDescriptorPool("StaticMeshViewerDescriptorPool", layout.sets[0], 1);
 		m_imguiDescriptorSet = _device->allocateDescriptorSet("ImGuiStaticMeshViewerDescriptorSet", state, m_imguiDescriptorPool);
 		m_imguiSampler = _device->createSampler("ImGuiTextureViewerSampler",
 			gfx::Filter::Nearest, gfx::Filter::Nearest,
