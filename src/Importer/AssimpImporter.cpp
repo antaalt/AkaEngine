@@ -21,6 +21,7 @@
 #include <Aka/Resource/Resource/SkeletalMesh.hpp>
 #include <Aka/Scene/Component/StaticMeshComponent.hpp>
 #include <Aka/Scene/Component/SkeletalMeshComponent.hpp>
+#include <Aka/Core/Bitfield.h>
 
 namespace app {
 
@@ -693,6 +694,7 @@ Assimp::Logger* createAssimpLogger()
 	Assimp::Logger::LogSeverity severity = Assimp::Logger::LogSeverity::NORMAL;
 #endif
 	Assimp::Logger* logger = Assimp::DefaultLogger::create("", severity, 0);
+	// Stream ownership passed to assimp.
 	logger->attachStream(new DebugLogStream(), Assimp::Logger::Debugging);
 	logger->attachStream(new InfoLogStream(), Assimp::Logger::Info);
 	logger->attachStream(new WarnLogStream(), Assimp::Logger::Warn);

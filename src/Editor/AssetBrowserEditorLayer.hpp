@@ -42,7 +42,7 @@ public:
 	void setAssetViewer(AssetViewerEditorLayer* _viewer);
 private:
 	ImGuiImportModal m_importer;
-	AssetNode* m_rootNode;
+	std::unique_ptr<AssetNode> m_rootNode;
 	const AssetNode* m_currentNode = nullptr;
 	bool m_assetUpdated = false;
 	AssetViewerEditorLayer* m_viewerEditor;

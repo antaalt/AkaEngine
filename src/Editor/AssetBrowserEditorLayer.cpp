@@ -250,12 +250,11 @@ AssetBrowserEditorLayer::AssetBrowserEditorLayer() :
 	EditorLayer("Asset browser"),
 	m_importer("Import##Popup")
 {
-	m_rootNode = new AssetNode();
+	m_rootNode = std::make_unique<AssetNode>();
 }
 
 AssetBrowserEditorLayer::~AssetBrowserEditorLayer()
 {
-	delete m_rootNode;
 }
 
 void AssetBrowserEditorLayer::onCreate(Renderer* _renderer)
