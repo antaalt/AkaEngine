@@ -11,7 +11,7 @@ ImGuiImportModal::ImGuiImportModal(const char* windowName) :
 	m_windowName(windowName),
 	m_assetType(AssetType::Unknown),
 	m_name("New scene"),
-	m_inputModal("Source", OS::normalize(aka::OS::cwd() + AssetPath::getAssetPath().up()), false),
+	m_inputModal("Source", OS::normalize(AssetPath("../", AssetPathType::Custom).getAbsolutePath()), false),
 	m_outputModal("Destination", "/", true)
 {
 	m_name.resize(256);
@@ -90,8 +90,8 @@ bool ImGuiImportModal::Import(AssetLibrary* library)
 {
 	if (!m_importRequested)
 		return false;
-	AssetPath assetPath;
-	assetPath.fromRawPath(m_outputPath);
+	// TODO:
+	AssetPath assetPath = AssetPath(m_outputPath.cstr(), AssetPathType::Custom);// AssetPath::fromRawPath(m_outputPath);
 	m_importRequested = false;
 	switch (m_assetType)
 	{

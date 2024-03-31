@@ -141,13 +141,13 @@ Vector<uint32_t> getSphereIndices(float radius, uint32_t segmentCount, uint32_t 
 
 AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer)
 {
-	AssetPath meshPath = AssetPath("shapes/sphere/sphere.smesh");
-	AssetPath batchPath = AssetPath("shapes/sphere/sphere.batch");
-	AssetPath geoPath = AssetPath("shapes/sphere/sphere.geo");
-	AssetPath materialPath = AssetPath("shapes/sphere/sphere.mat");
-	AssetPath imageAlbedoPath = AssetPath("shapes/sphere/albedo.img");
-	AssetPath imageNormalPath = AssetPath("shapes/sphere/normal.img");
-	OS::Directory::create(AssetPath("shapes/sphere/").getAbsolutePath());
+	AssetPath meshPath = AssetPath("shapes/sphere/sphere.smesh", AssetPathType::Custom);
+	AssetPath batchPath = AssetPath("shapes/sphere/sphere.batch", AssetPathType::Custom);
+	AssetPath geoPath = AssetPath("shapes/sphere/sphere.geo", AssetPathType::Custom);
+	AssetPath materialPath = AssetPath("shapes/sphere/sphere.mat", AssetPathType::Custom);
+	AssetPath imageAlbedoPath = AssetPath("shapes/sphere/albedo.img", AssetPathType::Custom);
+	AssetPath imageNormalPath = AssetPath("shapes/sphere/normal.img", AssetPathType::Custom);
+	OS::Directory::create(AssetPath("shapes/sphere/", AssetPathType::Custom).getAbsolutePath());
 
 	// Add to library & load it.
 	AssetID meshID = _library->registerAsset(meshPath, AssetType::StaticMesh);
@@ -207,13 +207,13 @@ AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer)
 
 AssetID createCubeMesh(AssetLibrary* _library, Renderer* _renderer)
 {
-	AssetPath meshPath = AssetPath("shapes/cube/cube.smesh");
-	AssetPath batchPath = AssetPath("shapes/cube/cube.batch");
-	AssetPath geoPath = AssetPath("shapes/cube/cube.geo");
-	AssetPath materialPath = AssetPath("shapes/cube/cube.mat");
-	AssetPath imageAlbedoPath = AssetPath("shapes/cube/albedo.img");
-	AssetPath imageNormalPath = AssetPath("shapes/cube/normal.img");
-	OS::Directory::create(AssetPath("shapes/cube/").getAbsolutePath());
+	AssetPath meshPath = AssetPath("shapes/cube/cube.smesh", AssetPathType::Custom);
+	AssetPath batchPath = AssetPath("shapes/cube/cube.batch", AssetPathType::Custom);
+	AssetPath geoPath = AssetPath("shapes/cube/cube.geo", AssetPathType::Custom);
+	AssetPath materialPath = AssetPath("shapes/cube/cube.mat", AssetPathType::Custom);
+	AssetPath imageAlbedoPath = AssetPath("shapes/cube/albedo.img", AssetPathType::Custom);
+	AssetPath imageNormalPath = AssetPath("shapes/cube/normal.img", AssetPathType::Custom);
+	OS::Directory::create(AssetPath("shapes/cube/", AssetPathType::Custom).getAbsolutePath());
 
 	// Add to library & load it.
 	AssetID meshID = _library->registerAsset(meshPath, AssetType::StaticMesh);
@@ -278,13 +278,13 @@ AssetID createCubeMesh(AssetLibrary* _library, Renderer* _renderer)
 
 AssetID createPlaneMesh(AssetLibrary* _library, Renderer* _renderer)
 {
-	AssetPath meshPath = AssetPath("shapes/plane/plane.smesh");
-	AssetPath batchPath = AssetPath("shapes/plane/plane.batch");
-	AssetPath geoPath = AssetPath("shapes/plane/plane.geo");
-	AssetPath materialPath = AssetPath("shapes/plane/plane.mat");
-	AssetPath imageAlbedoPath = AssetPath("shapes/plane/albedo.img");
-	AssetPath imageNormalPath = AssetPath("shapes/plane/normal.img");
-	OS::Directory::create(AssetPath("shapes/plane/").getAbsolutePath());
+	AssetPath meshPath = AssetPath("shapes/plane/plane.smesh", AssetPathType::Custom);
+	AssetPath batchPath = AssetPath("shapes/plane/plane.batch", AssetPathType::Custom);
+	AssetPath geoPath = AssetPath("shapes/plane/plane.geo", AssetPathType::Custom);
+	AssetPath materialPath = AssetPath("shapes/plane/plane.mat", AssetPathType::Custom);
+	AssetPath imageAlbedoPath = AssetPath("shapes/plane/albedo.img", AssetPathType::Custom);
+	AssetPath imageNormalPath = AssetPath("shapes/plane/normal.img", AssetPathType::Custom);
+	OS::Directory::create(AssetPath("shapes/plane/", AssetPathType::Custom).getAbsolutePath());
 
 	// Add to library & load it.
 	AssetID meshID = _library->registerAsset(meshPath, AssetType::StaticMesh);

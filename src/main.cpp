@@ -12,7 +12,6 @@ int main(int argc, char* argv[])
 	cfg.platform.height = 720;
 	cfg.argc = argc;
 	cfg.argv = argv;
-	cfg.directory = "./";
 
 	Editor editor(cfg);
 

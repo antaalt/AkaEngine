@@ -66,7 +66,7 @@ struct AssetNode
 {
 	AssetID id = AssetID::Invalid;
 	String name = "";
-	AssetPath path = "";
+	AssetPath path = AssetPath("", AssetPathType::Custom);
 	AssetType type = AssetType::Unknown;
 	size_t size = 0;
 
@@ -230,7 +230,7 @@ struct AssetNode
 		const bool isFolder = (count > 1);
 		AssetNode newNode;
 		newNode.type = AssetType::Unknown;
-		newNode.path = "";
+		newNode.path = AssetPath();
 		newNode.size = 0;
 		newNode.name = directories[0];
 		newNode.id = AssetID::Invalid;
