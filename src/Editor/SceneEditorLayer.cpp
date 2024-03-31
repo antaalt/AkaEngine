@@ -173,7 +173,8 @@ AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer)
 	material.normal = imageNormalID;
 
 	ArchiveImage albedo(imageAlbedoID);
-	Image img = ImageDecoder::fromDisk("../../../asset/textures/skyscraper.jpg");
+	Image img = ImageDecoder::fromDisk("./asset/textures/skyscraper.jpg");
+	AKA_ASSERT(img.width > 0 && img.height > 0, "Invalid image");
 	albedo = ArchiveImage(imageAlbedoID);
 	albedo.width = img.width;
 	albedo.height = img.height;
@@ -181,7 +182,8 @@ AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer)
 	albedo.data = std::move(img.bytes);
 
 	ArchiveImage normal(imageNormalID);
-	Image imgNormal = ImageDecoder::fromDisk("../../../asset/textures/skyscraper-normal.jpg");
+	Image imgNormal = ImageDecoder::fromDisk("./asset/textures/skyscraper-normal.jpg");
+	AKA_ASSERT(imgNormal.width > 0 && imgNormal.height > 0, "Invalid image");
 	normal = ArchiveImage(imageNormalID);
 	normal.width = imgNormal.width;
 	normal.height = imgNormal.height;
@@ -244,7 +246,8 @@ AssetID createCubeMesh(AssetLibrary* _library, Renderer* _renderer)
 	material.normal = imageNormalID;
 
 	ArchiveImage albedo(imageAlbedoID);
-	Image img = ImageDecoder::fromDisk("../../../asset/textures/skyscraper.jpg");
+	Image img = ImageDecoder::fromDisk("./asset/textures/skyscraper.jpg");
+	AKA_ASSERT(img.width > 0 && img.height > 0, "Invalid image");
 	albedo = ArchiveImage(imageAlbedoID);
 	albedo.width = img.width;
 	albedo.height = img.height;
@@ -252,7 +255,8 @@ AssetID createCubeMesh(AssetLibrary* _library, Renderer* _renderer)
 	albedo.data = std::move(img.bytes);
 
 	ArchiveImage normal(imageNormalID);
-	Image imgNormal = ImageDecoder::fromDisk("../../../asset/textures/skyscraper-normal.jpg");
+	Image imgNormal = ImageDecoder::fromDisk("./asset/textures/skyscraper-normal.jpg");
+	AKA_ASSERT(imgNormal.width > 0 && imgNormal.height > 0, "Invalid image");
 	normal = ArchiveImage(imageNormalID);
 	normal.width = imgNormal.width;
 	normal.height = imgNormal.height;
@@ -324,7 +328,8 @@ AssetID createPlaneMesh(AssetLibrary* _library, Renderer* _renderer)
 	material.normal = imageNormalID;
 
 	ArchiveImage albedo(imageAlbedoID);
-	Image img = ImageDecoder::fromDisk("../../../asset/textures/skyscraper.jpg");
+	Image img = ImageDecoder::fromDisk("./asset/textures/skyscraper.jpg");
+	AKA_ASSERT(img.width > 0 && img.height > 0, "Invalid image");
 	albedo = ArchiveImage(imageAlbedoID);
 	albedo.width = img.width;
 	albedo.height = img.height;
@@ -332,7 +337,8 @@ AssetID createPlaneMesh(AssetLibrary* _library, Renderer* _renderer)
 	albedo.data = std::move(img.bytes);
 
 	ArchiveImage normal(imageNormalID);
-	Image imgNormal = ImageDecoder::fromDisk("../../../asset/textures/skyscraper-normal.jpg");
+	Image imgNormal = ImageDecoder::fromDisk("./asset/textures/skyscraper-normal.jpg");
+	AKA_ASSERT(imgNormal.width > 0 && imgNormal.height > 0, "Invalid image");
 	normal = ArchiveImage(imageNormalID);
 	normal.width = imgNormal.width;
 	normal.height = imgNormal.height;
