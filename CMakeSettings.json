@@ -9,14 +9,7 @@
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
-      "ctestCommandArgs": "",
-      "variables": [
-        {
-          "name": "ENABLE_OPT",
-          "value": "False",
-          "type": "BOOL"
-        }
-      ]
+      "ctestCommandArgs": ""
     },
     {
       "name": "VulkanRelDeb",
