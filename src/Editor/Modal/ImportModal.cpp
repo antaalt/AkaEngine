@@ -90,12 +90,13 @@ bool ImGuiImportModal::Import(AssetLibrary* library)
 {
 	if (!m_importRequested)
 		return false;
-	// TODO:
-	AssetPath assetPath = AssetPath(m_outputPath.cstr(), AssetPathType::Custom);// AssetPath::fromRawPath(m_outputPath);
+	// Path should be formatted as cooked path already.
+	AssetPath assetPath = AssetPath(m_outputPath.cstr(), AssetPathType::Cooked);// AssetPath::fromRawPath(m_outputPath);
 	m_importRequested = false;
 	switch (m_assetType)
 	{
 	case aka::AssetType::Sprite: {
+		AKA_NOT_IMPLEMENTED;
 		//SpriteImporter;
 		return false;
 	}
@@ -118,9 +119,9 @@ bool ImGuiImportModal::Import(AssetLibrary* library)
 		return res == ImportResult::Succeed;
 	}
 	default:
+		AKA_NOT_IMPLEMENTED;
 		return false;
 	}
-	return false;
 }
 
 };

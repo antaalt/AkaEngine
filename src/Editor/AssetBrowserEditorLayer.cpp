@@ -66,7 +66,7 @@ struct AssetNode
 {
 	AssetID id = AssetID::Invalid;
 	String name = "";
-	AssetPath path = AssetPath("", AssetPathType::Custom);
+	AssetPath path = AssetPath("", AssetPathType::Cooked);
 	AssetType type = AssetType::Unknown;
 	size_t size = 0;
 

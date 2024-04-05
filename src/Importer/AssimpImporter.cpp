@@ -114,10 +114,7 @@ AssimpImporterImpl::AssimpImporterImpl(AssimpImporter* _importer, const Path& di
 		const char* folder = Importer::getAssetTypeName(type);
 		if (folder == nullptr)
 			continue; // Do not need this folder.
-		Path copyPath = path;
-		copyPath.append(folder);
-		copyPath.append("/");
-		bool created = OS::Directory::create(copyPath);
+		bool created = OS::Directory::create(path / folder + "/");
 	}
 	m_missingColorTexture = ArchiveImage(m_importer->registerAsset(AssetType::Image, "missingColorTexture"));
 	m_blankColorTexture = ArchiveImage(m_importer->registerAsset(AssetType::Image, "blankColorTexture"));

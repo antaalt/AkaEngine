@@ -12,7 +12,7 @@ ImGuiFileModal::ImGuiFileModal(const char* name, const Path& path, bool assetPat
 	m_currentPath(path),
 	m_selectedPath(nullptr),
 	m_isAssetPath(assetPath),
-	m_pathHeader(m_isAssetPath ? AssetPath("/", AssetPathType::Custom).getAbsolutePath() : "")
+	m_pathHeader(m_isAssetPath ? AssetPath("/", AssetPathType::Cooked).getAbsolutePath() : "")
 {
 	m_paths = OS::enumerate(m_pathHeader + m_currentPath);
 }

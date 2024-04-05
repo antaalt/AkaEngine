@@ -141,13 +141,13 @@ Vector<uint32_t> getSphereIndices(float radius, uint32_t segmentCount, uint32_t 
 
 AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer)
 {
-	AssetPath meshPath = AssetPath("shapes/sphere/sphere.smesh", AssetPathType::Custom);
-	AssetPath batchPath = AssetPath("shapes/sphere/sphere.batch", AssetPathType::Custom);
-	AssetPath geoPath = AssetPath("shapes/sphere/sphere.geo", AssetPathType::Custom);
-	AssetPath materialPath = AssetPath("shapes/sphere/sphere.mat", AssetPathType::Custom);
-	AssetPath imageAlbedoPath = AssetPath("shapes/sphere/albedo.img", AssetPathType::Custom);
-	AssetPath imageNormalPath = AssetPath("shapes/sphere/normal.img", AssetPathType::Custom);
-	OS::Directory::create(AssetPath("shapes/sphere/", AssetPathType::Custom).getAbsolutePath());
+	AssetPath meshPath = AssetPath("shapes/sphere/sphere.smesh", AssetPathType::Cooked);
+	AssetPath batchPath = AssetPath("shapes/sphere/sphere.batch", AssetPathType::Cooked);
+	AssetPath geoPath = AssetPath("shapes/sphere/sphere.geo", AssetPathType::Cooked);
+	AssetPath materialPath = AssetPath("shapes/sphere/sphere.mat", AssetPathType::Cooked);
+	AssetPath imageAlbedoPath = AssetPath("shapes/sphere/albedo.img", AssetPathType::Cooked);
+	AssetPath imageNormalPath = AssetPath("shapes/sphere/normal.img", AssetPathType::Cooked);
+	OS::Directory::create(AssetPath("shapes/sphere/", AssetPathType::Cooked).getAbsolutePath());
 
 	// Add to library & load it.
 	AssetID meshID = _library->registerAsset(meshPath, AssetType::StaticMesh);
@@ -209,13 +209,13 @@ AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer)
 
 AssetID createCubeMesh(AssetLibrary* _library, Renderer* _renderer)
 {
-	AssetPath meshPath = AssetPath("shapes/cube/cube.smesh", AssetPathType::Custom);
-	AssetPath batchPath = AssetPath("shapes/cube/cube.batch", AssetPathType::Custom);
-	AssetPath geoPath = AssetPath("shapes/cube/cube.geo", AssetPathType::Custom);
-	AssetPath materialPath = AssetPath("shapes/cube/cube.mat", AssetPathType::Custom);
-	AssetPath imageAlbedoPath = AssetPath("shapes/cube/albedo.img", AssetPathType::Custom);
-	AssetPath imageNormalPath = AssetPath("shapes/cube/normal.img", AssetPathType::Custom);
-	OS::Directory::create(AssetPath("shapes/cube/", AssetPathType::Custom).getAbsolutePath());
+	AssetPath meshPath = AssetPath("shapes/cube/cube.smesh", AssetPathType::Cooked);
+	AssetPath batchPath = AssetPath("shapes/cube/cube.batch", AssetPathType::Cooked);
+	AssetPath geoPath = AssetPath("shapes/cube/cube.geo", AssetPathType::Cooked);
+	AssetPath materialPath = AssetPath("shapes/cube/cube.mat", AssetPathType::Cooked);
+	AssetPath imageAlbedoPath = AssetPath("shapes/cube/albedo.img", AssetPathType::Cooked);
+	AssetPath imageNormalPath = AssetPath("shapes/cube/normal.img", AssetPathType::Cooked);
+	OS::Directory::create(AssetPath("shapes/cube/", AssetPathType::Cooked).getAbsolutePath());
 
 	// Add to library & load it.
 	AssetID meshID = _library->registerAsset(meshPath, AssetType::StaticMesh);
@@ -282,13 +282,13 @@ AssetID createCubeMesh(AssetLibrary* _library, Renderer* _renderer)
 
 AssetID createPlaneMesh(AssetLibrary* _library, Renderer* _renderer)
 {
-	AssetPath meshPath = AssetPath("shapes/plane/plane.smesh", AssetPathType::Custom);
-	AssetPath batchPath = AssetPath("shapes/plane/plane.batch", AssetPathType::Custom);
-	AssetPath geoPath = AssetPath("shapes/plane/plane.geo", AssetPathType::Custom);
-	AssetPath materialPath = AssetPath("shapes/plane/plane.mat", AssetPathType::Custom);
-	AssetPath imageAlbedoPath = AssetPath("shapes/plane/albedo.img", AssetPathType::Custom);
-	AssetPath imageNormalPath = AssetPath("shapes/plane/normal.img", AssetPathType::Custom);
-	OS::Directory::create(AssetPath("shapes/plane/", AssetPathType::Custom).getAbsolutePath());
+	AssetPath meshPath = AssetPath("shapes/plane/plane.smesh", AssetPathType::Cooked);
+	AssetPath batchPath = AssetPath("shapes/plane/plane.batch", AssetPathType::Cooked);
+	AssetPath geoPath = AssetPath("shapes/plane/plane.geo", AssetPathType::Cooked);
+	AssetPath materialPath = AssetPath("shapes/plane/plane.mat", AssetPathType::Cooked);
+	AssetPath imageAlbedoPath = AssetPath("shapes/plane/albedo.img", AssetPathType::Cooked);
+	AssetPath imageNormalPath = AssetPath("shapes/plane/normal.img", AssetPathType::Cooked);
+	OS::Directory::create(AssetPath("shapes/plane/", AssetPathType::Cooked).getAbsolutePath());
 
 	// Add to library & load it.
 	AssetID meshID = _library->registerAsset(meshPath, AssetType::StaticMesh);
