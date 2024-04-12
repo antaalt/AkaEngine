@@ -933,10 +933,27 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 						ArchiveRigidBodyComponent archive(0);
 						m_currentNode->attach<RigidBodyComponent>().fromArchive(archive);
 					}
-					if (ImGui::MenuItem("ColliderComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<ColliderComponent>()))
+					if (ImGui::BeginMenu("ColliderComponent", isLoaded && isValid && !m_currentNode->has<ColliderComponent>()))
 					{
-						ArchiveColliderComponent archive(0);
-						m_currentNode->attach<ColliderComponent>().fromArchive(archive);
+						if (ImGui::MenuItem("Plane", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<ColliderComponent>()))
+						{
+							ArchiveColliderComponent archive(0);
+							archive.shape = ShapeType::Plane;
+							m_currentNode->attach<ColliderComponent>().fromArchive(archive);
+						}
+						if (ImGui::MenuItem("Sphere", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<ColliderComponent>()))
+						{
+							ArchiveColliderComponent archive(0);
+							archive.shape = ShapeType::Sphere;
+							m_currentNode->attach<ColliderComponent>().fromArchive(archive);
+						}
+						if (ImGui::MenuItem("Box", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<ColliderComponent>()))
+						{
+							ArchiveColliderComponent archive(0);
+							archive.shape = ShapeType::Box;
+							m_currentNode->attach<ColliderComponent>().fromArchive(archive);
+						}
+						ImGui::EndMenu();
 					}
 					if (ImGui::MenuItem("CameraComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<CameraComponent>()))
 					{
@@ -960,6 +977,10 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 						m_currentNode->detach<CustomComponent>();
 					if (ImGui::MenuItem("RotatorComponent", nullptr, nullptr, isLoaded && isValid && m_currentNode->has<RotatorComponent>()))
 						m_currentNode->detach<RotatorComponent>();
+					if (ImGui::MenuItem("RigidBodyComponent", nullptr, nullptr, isLoaded && isValid && m_currentNode->has<RigidBodyComponent>()))
+						m_currentNode->detach<RigidBodyComponent>();
+					if (ImGui::MenuItem("ColliderComponent", nullptr, nullptr, isLoaded && isValid && m_currentNode->has<ColliderComponent>()))
+						m_currentNode->detach<ColliderComponent>();
 					ImGui::EndMenu();
 				}
 				ImGui::EndMenu();
