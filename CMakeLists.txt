@@ -14,6 +14,7 @@ add_executable(AkaEditor
 	"src/Editor/SceneEditorLayer.cpp" 
 	"src/Editor/AssetBrowserEditorLayer.cpp" 
 	"src/Editor/InfoEditorLayer.cpp" 
+	"src/Editor/PerformanceEditorLayer.cpp"
 	"src/Editor/AssetViewerEditorLayer.cpp"
 	"src/Editor/AssetViewer/AssetViewer.cpp" 
 	"src/Editor/AssetViewer/StaticMeshViewer.cpp" 

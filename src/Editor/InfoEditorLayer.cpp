@@ -73,11 +73,13 @@ void InfoEditorLayer::onLayerRender(aka::Renderer* _renderer, aka::gfx::FrameHan
 		}
 		if (ImGui::BeginMenu("Display"))
 		{
-			static const char* s_name[EnumCount<EditorLayerType>()] = {
+			static const char* s_name[] = {
 				"AssetViewer",
 				"AssetBrowser",
 				"SceneEditor",
+				"Performance"
 			};
+			static_assert(countof(s_name) == EnumCount<EditorLayerType>());
 			for (EditorLayerType type : EnumRange<EditorLayerType>())
 			{
 				uint32_t id = EnumToIndex(type);

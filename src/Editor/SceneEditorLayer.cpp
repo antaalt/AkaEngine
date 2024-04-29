@@ -938,19 +938,19 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 						if (ImGui::MenuItem("Plane", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<ColliderComponent>()))
 						{
 							ArchiveColliderComponent archive(0);
-							archive.shape = ShapeType::Plane;
+							archive.shape = ColliderShapeType::Plane;
 							m_currentNode->attach<ColliderComponent>().fromArchive(archive);
 						}
 						if (ImGui::MenuItem("Sphere", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<ColliderComponent>()))
 						{
 							ArchiveColliderComponent archive(0);
-							archive.shape = ShapeType::Sphere;
+							archive.shape = ColliderShapeType::Sphere;
 							m_currentNode->attach<ColliderComponent>().fromArchive(archive);
 						}
 						if (ImGui::MenuItem("Box", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<ColliderComponent>()))
 						{
 							ArchiveColliderComponent archive(0);
-							archive.shape = ShapeType::Box;
+							archive.shape = ColliderShapeType::Cube;
 							m_currentNode->attach<ColliderComponent>().fromArchive(archive);
 						}
 						ImGui::EndMenu();
