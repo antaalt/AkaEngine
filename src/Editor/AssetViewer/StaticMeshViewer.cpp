@@ -167,7 +167,7 @@ StaticMeshViewer::~StaticMeshViewer()
 void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 {
 	// TODO if no data, bug ?
-	std::vector<uint8_t> data(m_width * m_height * 4, 0xff);
+	Vector<uint8_t> data(m_width * m_height * 4, 0xff);
 	void* dataVoid = data.data();
 	m_renderTarget = _device->createTexture("StaticMeshViewerRT", m_width, m_height, 1, gfx::TextureType::Texture2D, 1, 1, gfx::TextureFormat::RGBA8, gfx::TextureUsage::RenderTarget | gfx::TextureUsage::ShaderResource, &dataVoid);
 	m_depthTarget = _device->createTexture("StaticMeshViewerDepthRT", m_width, m_height, 1, gfx::TextureType::Texture2D, 1, 1, gfx::TextureFormat::Depth, gfx::TextureUsage::RenderTarget);
@@ -179,8 +179,8 @@ void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 	m_renderPass = _device->createRenderPass("StaticMeshViewerRenderPass", rpState);
 	m_target = _device->createFramebuffer("StaticMeshViewerFramebuffer", m_renderPass, &color, 1, &depth);
 
-	const ShaderKey ShaderVertex = ShaderKey().setPath(app::AssetPath("../shaders/editor/basic.vert", AssetPathType::Custom)).setType(aka::ShaderType::Vertex);
-	const ShaderKey ShaderFragment = ShaderKey().setPath(app::AssetPath("../shaders/editor/basic.frag", AssetPathType::Custom)).setType(aka::ShaderType::Fragment);
+	const ShaderKey ShaderVertex = ShaderKey().setPath(app::AssetPath("shaders/editor/basic.vert", AssetPathType::Custom)).setType(aka::ShaderType::Vertex);
+	const ShaderKey ShaderFragment = ShaderKey().setPath(app::AssetPath("shaders/editor/basic.frag", AssetPathType::Custom)).setType(aka::ShaderType::Fragment);
 
 	gfx::ShaderBindingState set;
 	set.add(gfx::ShaderBindingType::UniformBuffer, gfx::ShaderMask::VertexFragment, gfx::ShaderBindingFlag::None, 1);

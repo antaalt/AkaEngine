@@ -49,15 +49,15 @@ private:
 	ArchiveImage m_missingNormalTexture;
 	ArchiveImage m_missingRoughnessTexture;
 	ArchiveMaterial m_dummyMaterial;
-	//std::map<AssetID, ArchiveImage> m_imageCache;
-	//std::map<AssetID, ArchiveMaterial> m_materialCache;
+	//HashMap<AssetID, ArchiveImage> m_imageCache;
+	//HashMap<AssetID, ArchiveMaterial> m_materialCache;
 	Vector<AssetID> m_meshes;
 	BitField m_isSkeletal;
-	std::map<AssetID, ArchiveStaticMesh> m_staticMeshCache;
-	std::map<AssetID, ArchiveSkeletalMesh> m_skeletalMeshCache;
-	std::map<AssetID, ArchiveBatch> m_batchCache;
-	std::map<AssetID, ArchiveGeometry> m_geometryCache;
-	std::map<AssetID, aabbox<>> m_meshAabbox;
+	HashMap<AssetID, ArchiveStaticMesh> m_staticMeshCache;
+	HashMap<AssetID, ArchiveSkeletalMesh> m_skeletalMeshCache;
+	HashMap<AssetID, ArchiveBatch> m_batchCache;
+	HashMap<AssetID, ArchiveGeometry> m_geometryCache;
+	HashMap<AssetID, aabbox<>> m_meshAabbox;
 	ArchiveSaveContext m_saveContext;
 };
 

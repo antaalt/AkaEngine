@@ -23,6 +23,6 @@ private:
 	aka::Path m_currentPath;
 	aka::Path m_pathHeader;
 	aka::Path* m_selectedPath;
-	std::vector<aka::Path> m_paths;
+	aka::Vector<aka::Path> m_paths;
 };
 };

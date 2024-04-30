@@ -52,7 +52,7 @@ void AssetViewerEditorLayer::onRender(aka::Renderer* _renderer, aka::gfx::FrameH
 	for (AssetViewerBase*& viewer : m_assetViewersToDestroy)
 	{
 		viewer->destroy(_renderer->getDevice());
-		delete viewer;
+		mem::akaDelete(viewer);
 	}
 	m_assetViewersToDestroy.clear();
 	// Create viewer that where added recently.
@@ -154,7 +154,7 @@ void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka
 			return;
 		}
 	}
-	m_assetViewersToCreate.append(new SceneViewer(_assetID, _resourceHandle));
+	m_assetViewersToCreate.append(mem::akaNew<SceneViewer>(AllocatorMemoryType::Object, AllocatorCategory::Editor, _assetID, _resourceHandle));
 }
 
 template<>
@@ -169,7 +169,7 @@ void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka
 			return;
 		}
 	}
-	m_assetViewersToCreate.append(new StaticMeshViewer(_assetID, _resourceHandle));
+	m_assetViewersToCreate.append(mem::akaNew<StaticMeshViewer>(AllocatorMemoryType::Object, AllocatorCategory::Editor, _assetID, _resourceHandle));
 }
 
 template<>
@@ -184,7 +184,7 @@ void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka
 			return;
 		}
 	}
-	m_assetViewersToCreate.append(new TextureViewer(_assetID, _resourceHandle));
+	m_assetViewersToCreate.append(mem::akaNew<TextureViewer>(AllocatorMemoryType::Object, AllocatorCategory::Editor, _assetID, _resourceHandle));
 }
 
 };

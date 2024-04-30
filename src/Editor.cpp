@@ -14,6 +14,7 @@
 #include "Editor/AssetBrowserEditorLayer.hpp"
 #include "Editor/SceneEditorLayer.hpp"
 #include "Editor/InfoEditorLayer.hpp"
+#include "Editor/PerformanceEditorLayer.hpp"
 #include "Component/CustomComponent.hpp"
 #include "Component/RotatorComponent.hpp"
 #include <Aka/Scene/Component/RigidBodyComponent.hpp>
@@ -33,6 +34,7 @@ Editor::Editor(const Config& cfg) :
 	app::AssetViewerEditorLayer*	assetViewerEditor	= imgui->addLayer<app::AssetViewerEditorLayer>();
 	app::AssetBrowserEditorLayer*	assetBrowserEditor	= imgui->addLayer<app::AssetBrowserEditorLayer>();
 	app::InfoEditorLayer*			infoEditor			= imgui->addLayer<app::InfoEditorLayer>();
+	app::PerformanceEditorLayer*	perfEditor			= imgui->addLayer<app::PerformanceEditorLayer>();
 	// Set dependencies
 	sceneEditor->setCurrentScene(m_scene);
 	sceneEditor->setLibrary(assets());
@@ -41,6 +43,7 @@ Editor::Editor(const Config& cfg) :
 	infoEditor->setEditorLayer(app::EditorLayerType::AssetBrowser, assetBrowserEditor);
 	infoEditor->setEditorLayer(app::EditorLayerType::AssetViewer, assetViewerEditor);
 	infoEditor->setEditorLayer(app::EditorLayerType::SceneEditor, sceneEditor);
+	infoEditor->setEditorLayer(app::EditorLayerType::PerformanceEditor, perfEditor);
 }
 
 Editor::~Editor()

@@ -13,9 +13,10 @@ enum class EditorLayerType
 	AssetViewer,
 	AssetBrowser,
 	SceneEditor,
+	PerformanceEditor,
 
 	First = AssetViewer,
-	Last = SceneEditor,
+	Last = PerformanceEditor,
 };
 
 class EditorLayer : public aka::Layer
