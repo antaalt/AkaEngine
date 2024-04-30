@@ -154,7 +154,7 @@ void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka
 			return;
 		}
 	}
-	m_assetViewersToCreate.append(mem::akaNew<SceneViewer>(AllocatorMemoryType::Persistent, AllocatorCategory::Editor, _assetID, _resourceHandle));
+	m_assetViewersToCreate.append(mem::akaNew<SceneViewer>(AllocatorMemoryType::Object, AllocatorCategory::Editor, _assetID, _resourceHandle));
 }
 
 template<>
@@ -169,7 +169,7 @@ void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka
 			return;
 		}
 	}
-	m_assetViewersToCreate.append(mem::akaNew<StaticMeshViewer>(AllocatorMemoryType::Persistent, AllocatorCategory::Editor, _assetID, _resourceHandle));
+	m_assetViewersToCreate.append(mem::akaNew<StaticMeshViewer>(AllocatorMemoryType::Object, AllocatorCategory::Editor, _assetID, _resourceHandle));
 }
 
 template<>
@@ -184,7 +184,7 @@ void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka
 			return;
 		}
 	}
-	m_assetViewersToCreate.append(mem::akaNew<TextureViewer>(AllocatorMemoryType::Persistent, AllocatorCategory::Editor, _assetID, _resourceHandle));
+	m_assetViewersToCreate.append(mem::akaNew<TextureViewer>(AllocatorMemoryType::Object, AllocatorCategory::Editor, _assetID, _resourceHandle));
 }
 
 };
