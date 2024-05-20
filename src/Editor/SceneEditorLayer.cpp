@@ -308,10 +308,10 @@ AssetID createPlaneMesh(AssetLibrary* _library, Renderer* _renderer)
 	geometry.indices.append(2);
 	// Vertices
 	static const StaticVertex s_planeVertices[4] = {
-		StaticVertex{point3f(-1.0f, -1.0f, 0.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-		StaticVertex{point3f(-1.0f,  1.0f, 0.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-		StaticVertex{point3f( 1.0f,  1.0f, 0.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-		StaticVertex{point3f( 1.0f, -1.0f, 0.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{point3f(-1.0f, -1.0f, 0.0f),	norm3f(0.f, 1.f, 0.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{point3f(-1.0f,  1.0f, 0.0f),	norm3f(0.f, 1.f, 0.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{point3f( 1.0f,  1.0f, 0.0f),	norm3f(0.f, 1.f, 0.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{point3f( 1.0f, -1.0f, 0.0f),	norm3f(0.f, 1.f, 0.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
 	};
 	geometry.staticVertices.resize(4);
 	Memory::copy(geometry.staticVertices.data(), s_planeVertices, sizeof(s_planeVertices));
@@ -453,7 +453,7 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library,
 		}
 
 		aabbox<> bbox = mesh.getWorldBounds();
-		debugDrawList.draw3DCube(mat4f::TRS(vec3f(bbox.center()), quatf::identity(), bbox.extent() * 0.5f), color4f(1.f, 1.f, 1.f, 1.f));
+		debugDrawList.draw3DCube(mat4f::TRS(point3f(bbox.center()), quatf::identity(), bbox.extent() * 0.5f), color4f(1.f, 1.f, 1.f, 1.f));
 		
 
 		// TODO: button to open viewer somehow.
@@ -468,8 +468,8 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library,
 template <> const char* ComponentNode<RigidBodyComponent>::name() { return "RigidBodyComponent"; }
 template <> bool ComponentNode<RigidBodyComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, RigidBodyComponent& rigidBody)
 {
-	const vec3f& velocity = rigidBody.getVelocity();
-	ImGui::Text("Velocity(%f, %f, %f)", velocity.x, velocity.y, velocity.z);
+	//const vec3f& velocity = rigidBody.getVelocity();
+	//ImGui::Text("Velocity(%f, %f, %f)", velocity.x, velocity.y, velocity.z);
 	return false;
 }
 
@@ -618,7 +618,7 @@ template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* librar
 		}
 
 		aabbox<> bbox = meshComp.getWorldBounds();
-		debugDrawList.draw3DCube(mat4f::TRS(vec3f(bbox.center()), quatf::identity(), bbox.extent() * 0.5f), color4f(1.f, 1.f, 1.f, 1.f));
+		debugDrawList.draw3DCube(mat4f::TRS(point3f(bbox.center()), quatf::identity(), bbox.extent() * 0.5f), color4f(1.f, 1.f, 1.f, 1.f));
 
 		// TODO: button to open viewer somehow.
 		// + combo to switch mesh
@@ -931,6 +931,7 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 					if (ImGui::MenuItem("RigidBodyComponent", nullptr, nullptr, isLoaded && isValid && !m_currentNode->has<RigidBodyComponent>()))
 					{
 						ArchiveRigidBodyComponent archive(0);
+						archive.mass = 1.f;
 						m_currentNode->attach<RigidBodyComponent>().fromArchive(archive);
 					}
 					if (ImGui::BeginMenu("ColliderComponent", isLoaded && isValid && !m_currentNode->has<ColliderComponent>()))
