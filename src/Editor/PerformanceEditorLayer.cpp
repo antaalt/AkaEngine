@@ -66,6 +66,7 @@ void PerformanceEditorLayer::onDrawUI(aka::DebugDrawList& debugDrawList)
 				size_t elementSize;
 				size_t uniqueAllocation;
 			};
+			// This structure should be hold in allocation tracker & updated at allocations instead.
 			HashMap<const std::type_info*, TypeAllocationInfo> memories[EnumCount<AllocatorCategory>()][EnumCount<AllocatorMemoryType>()];
 			for (AllocatorCategory category : EnumRange<AllocatorCategory>())
 			{

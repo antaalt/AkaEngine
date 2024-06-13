@@ -69,6 +69,7 @@ Vector<ArchiveStaticVertex> getSphereVertices(float radius, uint32_t segmentCoun
 {
 	// http://www.songho.ca/opengl/gl_sphere.html
 	Vector<ArchiveStaticVertex> vertices;
+	vertices.reserve((segmentCount + 1) * (ringCount + 1));
 
 	float length = 1.f / radius;
 	anglef sectorStep = 2.f * pi<float> / (float)ringCount;
@@ -86,7 +87,7 @@ Vector<ArchiveStaticVertex> getSphereVertices(float radius, uint32_t segmentCoun
 		// the first and last vertices have same position and normal, but different uv
 		for (uint32_t j = 0; j <= ringCount; ++j)
 		{
-			ArchiveStaticVertex v;
+			ArchiveStaticVertex& v = vertices.emplace();
 			ringAngle = (float)j * sectorStep; // starting from 0 to 2pi
 
 			v.position[0] = xy * cos(ringAngle); // r * cos(u) * cos(v)
@@ -102,8 +103,7 @@ Vector<ArchiveStaticVertex> getSphereVertices(float radius, uint32_t segmentCoun
 			v.color[1] = 1.f;
 			v.color[2] = 1.f;
 			v.color[3] = 1.f;
-			vertices.append(v);
-			bounds.include(point3f(v.position[0], v.position[1], v.position[2]));
+			bounds.include(v.position[0], v.position[1], v.position[2]);
 		}
 	}
 	return vertices;
@@ -161,7 +161,7 @@ AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer)
 	geometry.indices = getSphereIndices(1.0, 32, 16);
 	geometry.staticVertices = getSphereVertices(1.0, 32, 16);
 	for (uint32_t i = 0; i < geometry.staticVertices.size(); i++)
-		geometry.bounds.include(point3f(geometry.staticVertices[i].position[0], geometry.staticVertices[i].position[1], geometry.staticVertices[i].position[2]));
+		geometry.bounds.include(geometry.staticVertices[i].position[0], geometry.staticVertices[i].position[1], geometry.staticVertices[i].position[2]);
 
 	ArchiveBatch batch(batchID);
 	batch.geometry = geometryID;
@@ -453,7 +453,7 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library,
 		}
 
 		aabbox<> bbox = mesh.getWorldBounds();
-		debugDrawList.draw3DCube(mat4f::TRS(point3f(bbox.center()), quatf::identity(), bbox.extent() * 0.5f), color4f(1.f, 1.f, 1.f, 1.f));
+		debugDrawList.draw3DCube(mat4f::TRS(bbox.center(), quatf::identity(), bbox.extent() * 0.5f), color4f(1.f, 1.f, 1.f, 1.f));
 		
 
 		// TODO: button to open viewer somehow.
@@ -468,14 +468,29 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library,
 template <> const char* ComponentNode<RigidBodyComponent>::name() { return "RigidBodyComponent"; }
 template <> bool ComponentNode<RigidBodyComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, RigidBodyComponent& rigidBody)
 {
-	//const vec3f& velocity = rigidBody.getVelocity();
-	//ImGui::Text("Velocity(%f, %f, %f)", velocity.x, velocity.y, velocity.z);
+	float mass = rigidBody.getMass();
+	if (ImGui::SliderFloat("Mass", &mass, 0.f, 100.f))
+	{
+		rigidBody.setMass(mass);
+	}
 	return false;
 }
-
+const char* toString(ColliderShapeType type)
+{
+	switch (type)
+	{
+	default:
+	case ColliderShapeType::Unknown: return "Unknown";
+	case ColliderShapeType::Sphere: return "Sphere";
+	case ColliderShapeType::Plane: return "Plane";
+	case ColliderShapeType::Cube: return "Cube";
+	}
+}
 template <> const char* ComponentNode<ColliderComponent>::name() { return "ColliderComponent"; }
 template <> bool ComponentNode<ColliderComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, ColliderComponent& collider)
 {
+	ColliderShapeType type = collider.getShapeType();
+	ImGui::Text("Shape: %s", toString(type));
 	return false;
 }
 
@@ -618,7 +633,7 @@ template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* librar
 		}
 
 		aabbox<> bbox = meshComp.getWorldBounds();
-		debugDrawList.draw3DCube(mat4f::TRS(point3f(bbox.center()), quatf::identity(), bbox.extent() * 0.5f), color4f(1.f, 1.f, 1.f, 1.f));
+		debugDrawList.draw3DCube(mat4f::TRS(bbox.center(), quatf::identity(), bbox.extent() * 0.5f), color4f(1.f, 1.f, 1.f, 1.f));
 
 		// TODO: button to open viewer somehow.
 		// + combo to switch mesh
