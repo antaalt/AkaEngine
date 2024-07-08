@@ -220,10 +220,10 @@ AssetID createPlaneMesh(AssetLibrary* _library, Renderer* _renderer, mat4f _tran
 	geometry.indices.append(2);
 	// Vertices
 	static const StaticVertex s_planeVertices[4] = {
-		StaticVertex{_transform.multiplyPoint(point3f(-1.0f, 0.0f, -1.0f)),	norm3f(_transform.multiplyVector(vec3f(0.f, 1.f, 0.f))), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-		StaticVertex{_transform.multiplyPoint(point3f(-1.0f, 0.0f,  1.0f)),	norm3f(_transform.multiplyVector(vec3f(0.f, 1.f, 0.f))), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-		StaticVertex{_transform.multiplyPoint(point3f(1.0f,  0.0f,  1.0f)),	norm3f(_transform.multiplyVector(vec3f(0.f, 1.f, 0.f))), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-		StaticVertex{_transform.multiplyPoint(point3f(1.0f,  0.0f, -1.0f)),	norm3f(_transform.multiplyVector(vec3f(0.f, 1.f, 0.f))), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{_transform.multiplyPoint(point3f(-1.0f, -1.0f, 0.0f)),	norm3f(_transform.multiplyVector(vec3f(0.f, 0.f, 1.f))), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{_transform.multiplyPoint(point3f(-1.0f,  1.0f, 0.0f)),	norm3f(_transform.multiplyVector(vec3f(0.f, 0.f, 1.f))), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{_transform.multiplyPoint(point3f(1.0f,   1.0f, 0.0f)),	norm3f(_transform.multiplyVector(vec3f(0.f, 0.f, 1.f))), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{_transform.multiplyPoint(point3f(1.0f,  -1.0f, 0.0f)),	norm3f(_transform.multiplyVector(vec3f(0.f, 0.f, 1.f))), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
 	};
 	geometry.staticVertices.resize(4);
 	Memory::copy(geometry.staticVertices.data(), s_planeVertices, sizeof(s_planeVertices));
@@ -319,10 +319,10 @@ void Editor::onCreate(int argc, char* argv[])
 		}
 		
 		static const point3f s_positions[] = {
-			point3f(0.f, 10.f, 0.f),
-			point3f(0.f, 12.f, 1.f),
-			point3f(1.f, 10.f, 2.f),
-			point3f(1.f, 8.f, 0.f),
+			point3f(0.f, 0.f, 10.f),
+			point3f(0.f, 1.f, 12.f),
+			point3f(1.f, 2.f, 10.f),
+			point3f(1.f, 0.f, 8.f),
 		};
 		AssetID sphereMesh = createSphereMesh(assets(), renderer(), mat4f::identity());
 		for (uint32_t iSphere = 0; iSphere < countof(s_positions); iSphere++)

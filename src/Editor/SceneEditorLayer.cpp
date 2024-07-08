@@ -308,10 +308,10 @@ AssetID createPlaneMesh(AssetLibrary* _library, Renderer* _renderer)
 	geometry.indices.append(2);
 	// Vertices
 	static const StaticVertex s_planeVertices[4] = {
-		StaticVertex{point3f(-1.0f, -1.0f, 0.0f),	norm3f(0.f, 1.f, 0.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
-		StaticVertex{point3f(-1.0f,  1.0f, 0.0f),	norm3f(0.f, 1.f, 0.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-		StaticVertex{point3f( 1.0f,  1.0f, 0.0f),	norm3f(0.f, 1.f, 0.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
-		StaticVertex{point3f( 1.0f, -1.0f, 0.0f),	norm3f(0.f, 1.f, 0.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{point3f(-1.0f, -1.0f, 0.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{point3f(-1.0f,  1.0f, 0.0f),	norm3f(0.f, 0.f, 1.f), uv2f(0.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{point3f( 1.0f,  1.0f, 0.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 1.f), color4f(1.f, 1.f, 1.f, 1.f)},
+		StaticVertex{point3f( 1.0f, -1.0f, 0.0f),	norm3f(0.f, 0.f, 1.f), uv2f(1.f, 0.f), color4f(1.f, 1.f, 1.f, 1.f)},
 	};
 	geometry.staticVertices.resize(4);
 	Memory::copy(geometry.staticVertices.data(), s_planeVertices, sizeof(s_planeVertices));
