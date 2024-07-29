@@ -117,7 +117,7 @@ void AssetViewerEditorLayer::onDrawUI(aka::DebugDrawList& debugDrawList)
 				ICON_FA_IMAGE,// Texture
 				ICON_FA_HEADPHONES,// AudioSource
 			};
-			String tabName = String::format("%s %s", typeLogo[EnumToIndex(viewer->getResourceType())], viewer->getResourceName());
+			String tabName = String::format("%s %s##%p", typeLogo[EnumToIndex(viewer->getResourceType())], viewer->getResourceName(), viewer);
 			if (ImGui::BeginTabItem(tabName.cstr(), &open, ImGuiTabItemFlags_None))
 			{
 					
