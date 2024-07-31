@@ -301,7 +301,7 @@ void StaticMeshViewer::renderMesh(gfx::FrameHandle frame, const StaticMesh& mesh
 	gfx::CommandList* cmd = device->getGraphicCommandList(frame);
 
 	cmd->transition(m_renderTarget, gfx::ResourceAccessType::Resource, gfx::ResourceAccessType::Attachment);
-	cmd->beginRenderPass(m_renderPass, m_target, gfx::ClearState{ gfx::ClearMask::All, { 0.1f, 0.1f, 0.1f, 1.f}, 1.f, 0 });
+	cmd->beginRenderPass(m_renderPass, m_target, gfx::ClearState().setColor(0, 0.1f, 0.1f, 0.1f, 1.f));
 
 
 	cmd->bindPipeline(m_pipeline);
