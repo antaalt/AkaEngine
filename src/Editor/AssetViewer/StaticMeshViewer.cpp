@@ -301,20 +301,21 @@ void StaticMeshViewer::renderMesh(gfx::FrameHandle frame, const StaticMesh& mesh
 	gfx::CommandList* cmd = device->getGraphicCommandList(frame);
 
 	cmd->transition(m_renderTarget, gfx::ResourceAccessType::Resource, gfx::ResourceAccessType::Attachment);
-	cmd->beginRenderPass(m_renderPass, m_target, gfx::ClearState().setColor(0, 0.1f, 0.1f, 0.1f, 1.f));
+	cmd->executeRenderPass(m_renderPass, m_target, gfx::ClearState().setColor(0, 0.1f, 0.1f, 0.1f, 1.f), [=](gfx::RenderPassCommandList& cmd) {
+		cmd.bindPipeline(m_pipeline);
+		cmd.bindIndexBuffer(renderer->getGeometryBuffer(mesh.getIndexBufferHandle()), mesh.getIndexFormat(), renderer->getGeometryBufferOffset(mesh.getIndexBufferHandle()));
+		cmd.bindVertexBuffer(0, renderer->getGeometryBuffer(mesh.getVertexBufferHandle()), renderer->getGeometryBufferOffset(mesh.getVertexBufferHandle()));
+		cmd.bindDescriptorSet(0, m_descriptorSet[device->getFrameIndex(frame).value()]);
+
+		for (uint32_t i = 0; i < mesh.getBatchCount(); i++)
+		{
+			const StaticMeshBatch& batch = mesh.getBatch(i);
+			cmd.drawIndexed(batch.indexCount, batch.indexOffset, batch.vertexOffset, 1);
+		}
+	});
 
 
-	cmd->bindPipeline(m_pipeline);
-	cmd->bindIndexBuffer(renderer->getGeometryBuffer(mesh.getIndexBufferHandle()), mesh.getIndexFormat(), renderer->getGeometryBufferOffset(mesh.getIndexBufferHandle()));
-	cmd->bindVertexBuffer(0, renderer->getGeometryBuffer(mesh.getVertexBufferHandle()), renderer->getGeometryBufferOffset(mesh.getVertexBufferHandle()));
-	cmd->bindDescriptorSet(0, m_descriptorSet[device->getFrameIndex(frame).value()]);
-
-	for (uint32_t i = 0; i < mesh.getBatchCount(); i++)
-	{
-		const StaticMeshBatch& batch = mesh.getBatch(i);
-		cmd->drawIndexed(batch.indexCount, batch.indexOffset, batch.vertexOffset, 1);
-	}
-	cmd->endRenderPass();
+	
 }
 
 void StaticMeshViewer::drawUIResource(const app::StaticMesh& mesh)
