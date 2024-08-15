@@ -60,34 +60,14 @@ void PerformanceEditorLayer::onDrawUI(aka::DebugDrawList& debugDrawList)
 			// Compute sums beforehands
 			uint32_t categorySize[EnumCount<AllocatorCategory>()] = { 0 };
 			uint32_t memoryTypeSize[EnumCount<AllocatorCategory>()][EnumCount<AllocatorMemoryType>()] = { 0 };
-			struct TypeAllocationInfo
-			{
-				size_t count;
-				size_t elementSize;
-				size_t uniqueAllocation;
-			};
-			HashMap<const std::type_info*, TypeAllocationInfo> memories[EnumCount<AllocatorCategory>()][EnumCount<AllocatorMemoryType>()];
 			for (AllocatorCategory category : EnumRange<AllocatorCategory>())
 			{
 				for (AllocatorMemoryType type : EnumRange<AllocatorMemoryType>())
 				{
-					for (auto& allocation : tracker.get(type, category))
+					for (auto& allocation : tracker.get(type, category).getAllocationMap())
 					{
 						// Store sum per category
 						memoryTypeSize[EnumToIndex(category)][EnumToIndex(type)] += static_cast<uint32_t>(allocation.second.elementSize * allocation.second.count);
-						auto& memory = memories[EnumToIndex(category)][EnumToIndex(type)];
-						auto it = memory.find(allocation.second.info);
-						if (it == memory.end())
-						{
-							memory.insert(std::make_pair(allocation.second.info, TypeAllocationInfo{ allocation.second.count, allocation.second.elementSize, 1 }));
-						}
-						else
-						{
-							auto& pair = memory[allocation.second.info];
-							AKA_ASSERT(pair.elementSize == allocation.second.elementSize, "");
-							pair.count += allocation.second.count;
-							pair.uniqueAllocation++;
-						}
 					}
 					categorySize[EnumToIndex(category)] += memoryTypeSize[EnumToIndex(category)][EnumToIndex(type)];
 				}
@@ -134,7 +114,7 @@ void PerformanceEditorLayer::onDrawUI(aka::DebugDrawList& debugDrawList)
 							if (openedCategory)
 							{
 								ImU32 textColor = ImColor(0.8f, 0.8f, 0.8f);
-								for (auto& allocation : memories[EnumToIndex(category)][EnumToIndex(type)])
+								for (auto& allocation : tracker.get(type, category).getTypeAllocationMap())
 								{
 									ImGui::PushStyleColor(ImGuiCol_Text, textColor);
 									ImGui::TableNextRow();

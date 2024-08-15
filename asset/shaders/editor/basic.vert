@@ -21,6 +21,6 @@ void main()
 {
 	gl_Position = camera.proj * camera.view * camera.model * vec4(a_position, 1.0);
 	v_normal = camera.normal * a_normal;
-	v_forward = camera.normal * vec3(0, 1, 0);
+	v_forward = camera.normal * vec3(0, 0, 1);
 	v_color = a_color.xyz;
 }
