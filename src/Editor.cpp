@@ -275,29 +275,26 @@ AssetID createPlaneMesh(AssetLibrary* _library, Renderer* _renderer, mat4f _tran
 	return meshID;
 }
 
-void Editor::onCreate(int argc, char* argv[])
+std::tuple<ResourceHandle<Scene>, AssetID, Node*> createPhysicsDemoScene(Editor* app)
 {
-	assets()->parse();
-
-	AssetID sceneID = assets()->registerAsset(AssetPath("xpbd/scene.sce"), AssetType::Scene);
+	AssetID sceneID = app->assets()->registerAsset(AssetPath("xpbd/scene.sce"), AssetType::Scene);
 
 	ArchiveScene archive(sceneID);
 	archive.bounds = aabbox<>(point3f(-10.f), point3f(20.f));
 
-	ArchiveSaveContext ctx(archive, assets());
+	ArchiveSaveContext ctx(archive, app->assets());
 	archive.save(ctx);
-	ArchiveLoadContext loadCtx(archive, assets());
+	ArchiveLoadContext loadCtx(archive, app->assets());
 	archive.load(loadCtx);
 
-	m_scene = assets()->load<Scene>(sceneID, renderer());
-
+	ResourceHandle<Scene> m_scene = app->assets()->load<Scene>(sceneID, app->renderer());
 
 	if (m_scene.isLoaded())
 	{
 		Scene& scene = m_scene.get();
-		m_sceneID = scene.getID();
+		AssetID m_sceneID = scene.getID();
 		// Setup editor camera.
-		m_editorCameraNode = scene.createChild(nullptr, "EditorCamera");
+		Node* m_editorCameraNode = scene.createChild(nullptr, "EditorCamera");
 		{
 			CameraComponent& camera = m_editorCameraNode->attach<CameraComponent>();
 			ArchiveCameraComponent* component = camera.createArchive();
@@ -317,14 +314,14 @@ void Editor::onCreate(int argc, char* argv[])
 			controller.setBounds(bounds);
 			controller.destroyArchive(component);
 		}
-		
+
 		static const point3f s_positions[] = {
-			point3f(0.f, 0.f, 10.f),
-			point3f(0.f, 1.f, 12.f),
-			point3f(1.f, 2.f, 10.f),
-			point3f(1.f, 0.f, 8.f),
+				point3f(0.f, 0.f, 10.f),
+				point3f(0.f, 1.f, 12.f),
+				point3f(1.f, 2.f, 10.f),
+				point3f(1.f, 0.f, 8.f),
 		};
-		AssetID sphereMesh = createSphereMesh(assets(), renderer(), mat4f::identity());
+		AssetID sphereMesh = createSphereMesh(app->assets(), app->renderer(), mat4f::identity());
 		for (uint32_t iSphere = 0; iSphere < countof(s_positions); iSphere++)
 		{
 			Node* sphereNode = scene.createChild(nullptr, String::format("Sphere%u", iSphere).cstr());
@@ -355,7 +352,7 @@ void Editor::onCreate(int argc, char* argv[])
 			{
 				StaticMeshComponent& mesh = child->attach<StaticMeshComponent>();
 				ArchiveStaticMeshComponent archive(0);
-				archive.assetID = createPlaneMesh(assets(), renderer(), mat4f::identity());
+				archive.assetID = createPlaneMesh(app->assets(), app->renderer(), mat4f::identity());
 				mesh.fromArchive(archive);
 			}
 			{
@@ -364,10 +361,20 @@ void Editor::onCreate(int argc, char* argv[])
 				archive.shape = ColliderShapeType::Plane;
 				collider.fromArchive(archive);
 			}
-
 		}
-
+		return std::make_tuple(m_scene, m_sceneID, m_editorCameraNode);
 	}
+	else
+	{
+		return std::make_tuple(m_scene, sceneID, nullptr);
+	}
+}
+
+void Editor::onCreate(int argc, char* argv[])
+{
+	assets()->parse();
+
+	std::tie(m_scene, m_sceneID, m_editorCameraNode) = createPhysicsDemoScene(this);
 }
 
 void Editor::onDestroy()
