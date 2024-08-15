@@ -1,10 +1,15 @@
 # AkaEngine
 
-Didactic 3D engine based on [Aka framework](https://github.com/antaalt/Aka). This is an upgrade from a previous project with improved foundation.
+Didactic 3D engine based on [Aka framework](https://github.com/antaalt/Aka), which mostly focus on having solid foundation. Rendering is really basic for now.
+
+![preview](asset/doc/aka-engine.png)
 
 ## Features
 - Asset manager
 - Shader hot reload
+- Vulkan based gfx backend
+- Static & skeletal mesh rendering
+- Scene importing via assimp
 
 ## Roadmap
 - Some multithreading (via worker for asset loading & co)

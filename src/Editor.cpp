@@ -316,10 +316,10 @@ std::tuple<ResourceHandle<Scene>, AssetID, Node*> createPhysicsDemoScene(Editor*
 		}
 
 		static const point3f s_positions[] = {
-				point3f(0.f, 0.f, 10.f),
-				point3f(0.f, 1.f, 12.f),
-				point3f(1.f, 2.f, 10.f),
-				point3f(1.f, 0.f, 8.f),
+			point3f(0.f, 0.f, 10.f),
+			point3f(0.f, 1.f, 12.f),
+			point3f(1.f, 2.f, 10.f),
+			point3f(1.f, 0.f, 8.f),
 		};
 		AssetID sphereMesh = createSphereMesh(app->assets(), app->renderer(), mat4f::identity());
 		for (uint32_t iSphere = 0; iSphere < countof(s_positions); iSphere++)
