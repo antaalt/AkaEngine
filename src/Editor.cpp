@@ -158,8 +158,9 @@ AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer, mat4f _tra
 	material.normal = imageNormalID;
 
 	ArchiveImage albedo(imageAlbedoID);
-	Image img = ImageDecoder::fromDisk("./asset/textures/skyscraper.jpg");
-	AKA_ASSERT(img.width > 0 && img.height > 0, "Invalid image");
+	Result<Image> imgRes = ImageDecoder::fromDisk("./asset/textures/skyscraper.jpg");
+	AKA_ASSERT(imgRes.isOk(), "Invalid image");
+	Image img = imgRes.getData();
 	albedo = ArchiveImage(imageAlbedoID);
 	albedo.width = img.width;
 	albedo.height = img.height;
@@ -167,8 +168,9 @@ AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer, mat4f _tra
 	albedo.data = std::move(img.bytes);
 
 	ArchiveImage normal(imageNormalID);
-	Image imgNormal = ImageDecoder::fromDisk("./asset/textures/skyscraper-normal.jpg");
-	AKA_ASSERT(imgNormal.width > 0 && imgNormal.height > 0, "Invalid image");
+	Result<Image> imgNormalRes = ImageDecoder::fromDisk("./asset/textures/skyscraper-normal.jpg");
+	AKA_ASSERT(imgNormalRes.isOk(), "Invalid image");
+	Image imgNormal = imgNormalRes.getData();
 	normal = ArchiveImage(imageNormalID);
 	normal.width = imgNormal.width;
 	normal.height = imgNormal.height;
@@ -314,7 +316,7 @@ std::tuple<ResourceHandle<Scene>, AssetID, Node*> createPhysicsDemoScene(Editor*
 			controller.setBounds(bounds);
 			controller.destroyArchive(component);
 		}
-
+#if 0 // Load physic playground
 		static const point3f s_positions[] = {
 			point3f(0.f, 0.f, 10.f),
 			point3f(0.f, 1.f, 12.f),
@@ -362,6 +364,7 @@ std::tuple<ResourceHandle<Scene>, AssetID, Node*> createPhysicsDemoScene(Editor*
 				collider.fromArchive(archive);
 			}
 		}
+#endif
 		return std::make_tuple(m_scene, m_sceneID, m_editorCameraNode);
 	}
 	else
@@ -391,7 +394,7 @@ void Editor::onFixedUpdate(aka::Time time)
 
 void Editor::onUpdate(aka::Time time)
 {
-	if (platform()->keyboard().down(KeyboardKey::Escape))
+	if (window()->keyboard().down(KeyboardKey::Escape))
 		EventDispatcher<QuitEvent>::emit();
 
 	if (m_scene.isLoaded())

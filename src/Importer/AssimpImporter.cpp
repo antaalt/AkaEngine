@@ -635,7 +635,21 @@ AssetID AssimpImporterImpl::processImage(const Path& path)
 {
 	ArchiveImage image(m_importer->registerAsset(AssetType::Image, OS::File::basename(path)));
 
-	Image img = ImageDecoder::fromDisk(path);
+	Result<Image> imgResult = ImageDecoder::fromDisk(path);
+	Image img{};
+	if (imgResult.isErr()) {
+		// Dummy texture instead.
+		img.bytes.clear();
+		for (uint32_t i = 0; i < 4; i++) {
+			img.bytes.append(255);
+		}
+		img.width = 1;
+		img.height = 1;
+	}
+	else
+	{
+		img = imgResult.getData();
+	}
 	image.channels = getImageComponentCount(img.components);
 	image.width = img.width;
 	image.height = img.height;

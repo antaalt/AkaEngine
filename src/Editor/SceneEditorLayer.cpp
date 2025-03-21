@@ -173,8 +173,9 @@ AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer)
 	material.normal = imageNormalID;
 
 	ArchiveImage albedo(imageAlbedoID);
-	Image img = ImageDecoder::fromDisk("./asset/textures/skyscraper.jpg");
-	AKA_ASSERT(img.width > 0 && img.height > 0, "Invalid image");
+	Result<Image> imgRes = ImageDecoder::fromDisk("./asset/textures/skyscraper.jpg");
+	AKA_ASSERT(imgRes.isOk(), "Invalid image");
+	Image& img = imgRes.getData();
 	albedo = ArchiveImage(imageAlbedoID);
 	albedo.width = img.width;
 	albedo.height = img.height;
@@ -182,8 +183,9 @@ AssetID createSphereMesh(AssetLibrary* _library, Renderer* _renderer)
 	albedo.data = std::move(img.bytes);
 
 	ArchiveImage normal(imageNormalID);
-	Image imgNormal = ImageDecoder::fromDisk("./asset/textures/skyscraper-normal.jpg");
-	AKA_ASSERT(imgNormal.width > 0 && imgNormal.height > 0, "Invalid image");
+	Result<Image> imgNormalRes = ImageDecoder::fromDisk("./asset/textures/skyscraper-normal.jpg");
+	AKA_ASSERT(imgNormalRes.isOk(), "Invalid image");
+	Image& imgNormal = imgNormalRes.getData();
 	normal = ArchiveImage(imageNormalID);
 	normal.width = imgNormal.width;
 	normal.height = imgNormal.height;
@@ -246,8 +248,9 @@ AssetID createCubeMesh(AssetLibrary* _library, Renderer* _renderer)
 	material.normal = imageNormalID;
 
 	ArchiveImage albedo(imageAlbedoID);
-	Image img = ImageDecoder::fromDisk("./asset/textures/skyscraper.jpg");
-	AKA_ASSERT(img.width > 0 && img.height > 0, "Invalid image");
+	Result<Image> imgRes = ImageDecoder::fromDisk("./asset/textures/skyscraper.jpg");
+	AKA_ASSERT(imgRes.isOk(), "Invalid image");
+	Image& img = imgRes.getData();
 	albedo = ArchiveImage(imageAlbedoID);
 	albedo.width = img.width;
 	albedo.height = img.height;
@@ -255,8 +258,9 @@ AssetID createCubeMesh(AssetLibrary* _library, Renderer* _renderer)
 	albedo.data = std::move(img.bytes);
 
 	ArchiveImage normal(imageNormalID);
-	Image imgNormal = ImageDecoder::fromDisk("./asset/textures/skyscraper-normal.jpg");
-	AKA_ASSERT(imgNormal.width > 0 && imgNormal.height > 0, "Invalid image");
+	Result<Image> imgNormalRes = ImageDecoder::fromDisk("./asset/textures/skyscraper-normal.jpg");
+	AKA_ASSERT(imgNormalRes.isOk(), "Invalid image");
+	Image& imgNormal = imgNormalRes.getData();
 	normal = ArchiveImage(imageNormalID);
 	normal.width = imgNormal.width;
 	normal.height = imgNormal.height;
@@ -328,8 +332,9 @@ AssetID createPlaneMesh(AssetLibrary* _library, Renderer* _renderer)
 	material.normal = imageNormalID;
 
 	ArchiveImage albedo(imageAlbedoID);
-	Image img = ImageDecoder::fromDisk("./asset/textures/skyscraper.jpg");
-	AKA_ASSERT(img.width > 0 && img.height > 0, "Invalid image");
+	Result<Image> imgRes = ImageDecoder::fromDisk("./asset/textures/skyscraper.jpg");
+	AKA_ASSERT(imgRes.isOk(), "Invalid image");
+	Image img = imgRes.getData();
 	albedo = ArchiveImage(imageAlbedoID);
 	albedo.width = img.width;
 	albedo.height = img.height;
@@ -337,8 +342,9 @@ AssetID createPlaneMesh(AssetLibrary* _library, Renderer* _renderer)
 	albedo.data = std::move(img.bytes);
 
 	ArchiveImage normal(imageNormalID);
-	Image imgNormal = ImageDecoder::fromDisk("./asset/textures/skyscraper-normal.jpg");
-	AKA_ASSERT(imgNormal.width > 0 && imgNormal.height > 0, "Invalid image");
+	Result<Image> imgNormalRes = ImageDecoder::fromDisk("./asset/textures/skyscraper-normal.jpg");
+	AKA_ASSERT(imgNormalRes.isOk(), "Invalid image");
+	Image imgNormal = imgNormalRes.getData();
 	normal = ArchiveImage(imageNormalID);
 	normal.width = imgNormal.width;
 	normal.height = imgNormal.height;
@@ -376,7 +382,7 @@ void SceneEditorLayer::onDestroy(aka::Renderer* _renderer)
 
 void SceneEditorLayer::onUpdate(aka::Time deltaTime)
 {
-	const Keyboard& keyboard = Application::app()->platform()->keyboard();
+	const Keyboard& keyboard = Application::app()->window()->keyboard();
 	if (keyboard.down(KeyboardKey::T))
 		m_gizmoOperation = ImGuizmo::TRANSLATE;
 	else if (keyboard.down(KeyboardKey::R))

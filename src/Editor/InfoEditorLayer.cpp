@@ -13,7 +13,6 @@ InfoEditorLayer::InfoEditorLayer()
 
 void InfoEditorLayer::onLayerCreate(Renderer* _renderer)
 {
-	_renderer->getDevice()->getBackbufferSize(m_width, m_height);
 }
 
 void InfoEditorLayer::onLayerDestroy(Renderer* _renderer)
@@ -28,6 +27,8 @@ void InfoEditorLayer::onLayerRender(aka::Renderer* _renderer, aka::gfx::FrameHan
 {
 	aka::Application* app = aka::Application::app();
 	aka::gfx::GraphicDevice* graphic = app->graphic();
+	aka::PlatformDevice* platform = app->platform();
+	aka::PlatformWindow* window = app->window();
 
 	if (ImGui::BeginMainMenuBar())
 	{
@@ -109,6 +110,12 @@ void InfoEditorLayer::onLayerRender(aka::Renderer* _renderer, aka::gfx::FrameHan
 		{
 			void* data = nullptr;
 			graphic->screenshot(data);
+		}
+		if (ImGui::SmallButton("Fullscreen"))
+		{
+			static bool fullscreen = false;
+			fullscreen = !fullscreen;
+			window->fullscreen(fullscreen);
 		}
 		ImGui::EndMainMenuBar();
 	}
