@@ -277,10 +277,54 @@ AssetID createPlaneMesh(AssetLibrary* _library, Renderer* _renderer, mat4f _tran
 	return meshID;
 }
 
+//#define LOAD_PHYSIC_PLAYGROUND 1
+
+std::tuple<ResourceHandle<Scene>, AssetID, Node*> createEmptyScene(Editor* app)
+{
+	AssetID sceneID = app->assets()->registerAsset(AssetPath("empty.sce", AssetPathType::Cooked), AssetType::Scene);
+	ArchiveScene archive(sceneID);
+	archive.bounds = aabbox<>(point3f(-10.f), point3f(20.f));
+	ArchiveSaveContext ctx(archive, app->assets());
+	archive.save(ctx);
+	ArchiveLoadContext loadCtx(archive, app->assets());
+	archive.load(loadCtx);
+	ResourceHandle<Scene> m_scene = app->assets()->load<Scene>(sceneID, app->renderer());
+	if (m_scene.isLoaded())
+	{
+		Scene& scene = m_scene.get();
+		AssetID m_sceneID = scene.getID();
+		// Setup editor camera.
+		Node* m_editorCameraNode = scene.createChild(nullptr, "EditorCamera");
+		{
+			CameraComponent& camera = m_editorCameraNode->attach<CameraComponent>();
+			ArchiveCameraComponent* component = camera.createArchive();
+			component->projectionType = CameraProjectionType::Perpective;
+			const aabbox<>& bounds = scene.getBounds();
+			camera.fromArchive(*component);
+			camera.setNear(0.1f);
+			camera.setFar(bounds.extent().norm() * 50.f);
+			scene.setMainCameraNode(m_editorCameraNode);
+			camera.destroyArchive(component);
+		}
+		{
+			ArcballComponent& controller = m_editorCameraNode->attach<ArcballComponent>();
+			ArchiveArcballComponent* component = controller.createArchive();
+			const aabbox<>& bounds = scene.getBounds();
+			controller.fromArchive(*component);
+			controller.setBounds(bounds);
+			controller.destroyArchive(component);
+		}
+		return std::tie(m_scene, sceneID, m_editorCameraNode);
+	}
+	else
+	{
+		Node* none = nullptr;
+		return std::tie(m_scene, sceneID, none);
+	}
+}
 std::tuple<ResourceHandle<Scene>, AssetID, Node*> createPhysicsDemoScene(Editor* app)
 {
 	AssetID sceneID = app->assets()->registerAsset(AssetPath("xpbd/scene.sce"), AssetType::Scene);
-
 	ArchiveScene archive(sceneID);
 	archive.bounds = aabbox<>(point3f(-10.f), point3f(20.f));
 
@@ -316,7 +360,6 @@ std::tuple<ResourceHandle<Scene>, AssetID, Node*> createPhysicsDemoScene(Editor*
 			controller.setBounds(bounds);
 			controller.destroyArchive(component);
 		}
-#if 0 // Load physic playground
 		static const point3f s_positions[] = {
 			point3f(0.f, 0.f, 10.f),
 			point3f(0.f, 1.f, 12.f),
@@ -364,7 +407,6 @@ std::tuple<ResourceHandle<Scene>, AssetID, Node*> createPhysicsDemoScene(Editor*
 				collider.fromArchive(archive);
 			}
 		}
-#endif
 		return std::make_tuple(m_scene, m_sceneID, m_editorCameraNode);
 	}
 	else
@@ -377,7 +419,7 @@ void Editor::onCreate(int argc, char* argv[])
 {
 	assets()->parse();
 
-	std::tie(m_scene, m_sceneID, m_editorCameraNode) = createPhysicsDemoScene(this);
+	std::tie(m_scene, m_sceneID, m_editorCameraNode) = createEmptyScene(this);
 }
 
 void Editor::onDestroy()
