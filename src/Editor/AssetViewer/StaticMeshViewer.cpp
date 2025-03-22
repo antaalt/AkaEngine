@@ -273,16 +273,15 @@ void StaticMeshViewer::onUpdate(aka::Time deltaTime)
 }
 void StaticMeshViewer::onRender(gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame)
 {
-	PlatformWindow* window = Application::app()->window();
 	// This is run one frame late though...
-	if (m_needCameraUpdate[_device->getFrameIndex(window->swapchain(), frame).value()])
+	if (m_needCameraUpdate[_device->getFrameIndex(frame).value()])
 	{
 		StaticMeshViewerUBO ubo{};
 		ubo.model = mat4f::identity();
 		ubo.view = m_arcball.view();
 		ubo.proj = m_projection.projection();
 		ubo.normal = mat4f::transpose(mat4f::inverse(ubo.view * ubo.model));
-		_device->upload(m_uniform[_device->getFrameIndex(window->swapchain(), frame).value()], &ubo, 0, sizeof(StaticMeshViewerUBO));
+		_device->upload(m_uniform[_device->getFrameIndex(frame).value()], &ubo, 0, sizeof(StaticMeshViewerUBO));
 	}
 	if (m_resource.isLoaded())
 	{
@@ -297,17 +296,17 @@ void StaticMeshViewer::onLoad(const StaticMesh& mesh)
 
 void StaticMeshViewer::renderMesh(gfx::FrameHandle frame, const StaticMesh& mesh)
 {
-	PlatformWindow* window = Application::app()->window();
 	gfx::GraphicDevice* device = Application::app()->graphic();
 	Renderer* renderer = Application::app()->renderer();
-	gfx::CommandList* cmd = device->getGraphicCommandList(window->swapchain(), frame);
+	gfx::CommandList* cmd = device->getGraphicCommandList(frame);
 
 	cmd->transition(m_renderTarget, gfx::ResourceAccessType::Resource, gfx::ResourceAccessType::Attachment);
-	cmd->executeRenderPass(m_renderPass, m_target, gfx::ClearState().setColor(0, 0.1f, 0.1f, 0.1f, 1.f), [=](gfx::RenderPassCommandList& cmd) {
+	cmd->executeRenderPass(m_renderPass, m_target, gfx::ClearState().setColor(0, 0.1f, 0.1f, 0.1f, 1.f), [&](gfx::RenderPassCommandList& cmd) {
+		gfx::ScopedCmdMarker marker(cmd, "StaticMeshViewer");
 		cmd.bindPipeline(m_pipeline);
 		cmd.bindIndexBuffer(renderer->getGeometryBuffer(mesh.getIndexBufferHandle()), mesh.getIndexFormat(), renderer->getGeometryBufferOffset(mesh.getIndexBufferHandle()));
 		cmd.bindVertexBuffer(0, renderer->getGeometryBuffer(mesh.getVertexBufferHandle()), renderer->getGeometryBufferOffset(mesh.getVertexBufferHandle()));
-		cmd.bindDescriptorSet(0, m_descriptorSet[device->getFrameIndex(window->swapchain(), frame).value()]);
+		cmd.bindDescriptorSet(0, m_descriptorSet[device->getFrameIndex(frame).value()]);
 
 		for (uint32_t i = 0; i < mesh.getBatchCount(); i++)
 		{
@@ -315,9 +314,6 @@ void StaticMeshViewer::renderMesh(gfx::FrameHandle frame, const StaticMesh& mesh
 			cmd.drawIndexed(batch.indexCount, batch.indexOffset, batch.vertexOffset, 1);
 		}
 	});
-
-
-	
 }
 
 void StaticMeshViewer::drawUIResource(const app::StaticMesh& mesh)

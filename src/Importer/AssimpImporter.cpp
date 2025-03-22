@@ -257,7 +257,7 @@ AssetID AssimpImporterImpl::processMesh(const aiMesh* mesh, bool& isSkeletal)
 {
 	AKA_ASSERT(mesh->HasPositions(), "Mesh need positions");
 	AKA_ASSERT(mesh->HasNormals(), "Mesh needs normals");
-
+	AKA_ASSERT(mesh->mPrimitiveTypes && aiPrimitiveType::aiPrimitiveType_TRIANGLE, "Only triangle primitive types supported yet.");
 	// process vertices
 	isSkeletal = mesh->HasBones();
 	Vector<AssetID> animations;
@@ -392,11 +392,14 @@ AssetID AssimpImporterImpl::processMesh(const aiMesh* mesh, bool& isSkeletal)
 			mesh->mBitangents;
 		}
 	}
+	// All zero sometimes...
+	//aabbox<> bbox = aabbox<>(point3f(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z), point3f(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z));
 	bbox.include(archiveGeometry.bounds);
 	// process indices
+	archiveGeometry.indices.reserve(mesh->mNumFaces * 3);
 	for (unsigned int i = 0; i < mesh->mNumFaces; i++)
 	{
-		aiFace face = mesh->mFaces[i];
+		const aiFace& face = mesh->mFaces[i];
 		for (unsigned int j = 0; j < face.mNumIndices; j++)
 			archiveGeometry.indices.append(face.mIndices[j]);
 	}
