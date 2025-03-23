@@ -1,6 +1,12 @@
-﻿cmake_minimum_required (VERSION 3.13)
+﻿cmake_minimum_required (VERSION 3.28)
 
 project(AkaEditor)
+
+# Enable hot reload on Visual studio
+if (MSVC AND WIN32 AND NOT MSVC_VERSION VERSION_LESS 142)
+    add_link_options($<$<CONFIG:Debug>:/INCREMENTAL>)
+    add_compile_options($<$<CONFIG:Debug>:/ZI>)
+endif()
 
 # Include Aka
 add_subdirectory(lib/Aka)
