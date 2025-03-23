@@ -257,7 +257,7 @@ AssetID AssimpImporterImpl::processMesh(const aiMesh* mesh, bool& isSkeletal)
 {
 	AKA_ASSERT(mesh->HasPositions(), "Mesh need positions");
 	AKA_ASSERT(mesh->HasNormals(), "Mesh needs normals");
-	AKA_ASSERT(mesh->mPrimitiveTypes && aiPrimitiveType::aiPrimitiveType_TRIANGLE, "Only triangle primitive types supported yet.");
+	AKA_ASSERT(mesh->mPrimitiveTypes == aiPrimitiveType::aiPrimitiveType_TRIANGLE, "Only triangle primitive types supported yet.");
 	// process vertices
 	isSkeletal = mesh->HasBones();
 	Vector<AssetID> animations;
@@ -641,6 +641,7 @@ AssetID AssimpImporterImpl::processImage(const Path& path)
 	Result<Image> imgResult = ImageDecoder::fromDisk(path);
 	Image img{};
 	if (imgResult.isErr()) {
+		Logger::error("Failed to process image ", path, ". Replacing by dummy texture.");
 		// Dummy texture instead.
 		img.bytes.clear();
 		for (uint32_t i = 0; i < 4; i++) {
@@ -657,6 +658,20 @@ AssetID AssimpImporterImpl::processImage(const Path& path)
 	image.width = img.width;
 	image.height = img.height;
 	image.data = std::move(img.bytes);
+	auto getCompression = [](ImageCompression compression) {
+		switch (compression) {
+		default:
+			AKA_NOT_IMPLEMENTED;
+			[[fallthrough]];
+		case ImageCompression::None: return ArchiveImageFormat::Uncompressed;
+		case ImageCompression::Bc1: return ArchiveImageFormat::Bc1;
+		case ImageCompression::Bc2: return ArchiveImageFormat::Bc2;
+		case ImageCompression::Bc3: return ArchiveImageFormat::Bc3;
+		case ImageCompression::Bc4: return ArchiveImageFormat::Bc4;
+		case ImageCompression::Bc5: return ArchiveImageFormat::Bc5;
+		}
+	};
+	image.format = getCompression(img.compression);
 
 	image.save(m_saveContext);
 

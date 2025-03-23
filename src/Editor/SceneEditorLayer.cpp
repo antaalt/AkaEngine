@@ -1085,8 +1085,7 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 						if (ImGuizmo::Manipulate(view[0].data, projection[0].data, m_gizmoOperation, m_gizmoMode, worldTransform[0].data))
 						{
 							mat4f inverseParentWorld = mat4f::inverse(m_currentNode->getParentTransform());
-							m_currentNode->setLocalTransform(inverseParentWorld * worldTransform);
-							updatedTransform = true;
+							m_currentNode->setLocalTransform(worldTransform * inverseParentWorld);
 						}
 					}
 
