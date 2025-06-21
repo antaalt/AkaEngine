@@ -14,9 +14,9 @@ void AssetViewerBase::drawUIMissingResource()
 	ImGui::Text("Resource loading...");
 }
 
-void AssetViewerBase::create(aka::gfx::GraphicDevice* _device)
+void AssetViewerBase::create(aka::Renderer* _renderer)
 {
-	onCreate(_device);
+	onCreate(_renderer);
 	if (isLoaded())
 	{
 		onLoad();
@@ -25,10 +25,10 @@ void AssetViewerBase::create(aka::gfx::GraphicDevice* _device)
 	m_created = true;
 }
 
-void AssetViewerBase::destroy(aka::gfx::GraphicDevice* _device)
+void AssetViewerBase::destroy(aka::Renderer* _renderer)
 {
 	if (m_created)
-		onDestroy(_device);
+		onDestroy(_renderer);
 }
 
 void AssetViewerBase::update(aka::Time _deltaTime)

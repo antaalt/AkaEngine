@@ -17,7 +17,7 @@ namespace app {
 class SceneEditorLayer : public EditorLayer, aka::EventListener<aka::ResourceLoadedEvent>
 {
 public:
-	SceneEditorLayer();
+	SceneEditorLayer(aka::PlatformWindow* window);
 
 	void onCreate(aka::Renderer* _renderer) override;
 	void onDestroy(aka::Renderer* _renderer) override;

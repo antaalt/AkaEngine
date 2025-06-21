@@ -15,7 +15,7 @@ namespace app {
 class AssetViewerEditorLayer : public EditorLayer
 {
 public:
-	AssetViewerEditorLayer();
+	AssetViewerEditorLayer(aka::PlatformWindow* window);
 	~AssetViewerEditorLayer();
 
 	void onCreate(aka::Renderer* _renderer) override;

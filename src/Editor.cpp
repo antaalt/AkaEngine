@@ -28,13 +28,13 @@ using namespace aka;
 Editor::Editor(const Config& cfg) :
 	Application(cfg)
 {
-	ImGuiLayer* imgui = getRoot().addLayer<ImGuiLayer>();
+	ImGuiLayer* imgui = getRoot().addLayer<ImGuiLayer>(window());
 	// Editor are child of imgui to support frame
-	app::SceneEditorLayer*			sceneEditor			= imgui->addLayer<app::SceneEditorLayer>();
-	app::AssetViewerEditorLayer*	assetViewerEditor	= imgui->addLayer<app::AssetViewerEditorLayer>();
-	app::AssetBrowserEditorLayer*	assetBrowserEditor	= imgui->addLayer<app::AssetBrowserEditorLayer>();
-	app::InfoEditorLayer*			infoEditor			= imgui->addLayer<app::InfoEditorLayer>();
-	app::PerformanceEditorLayer*	perfEditor			= imgui->addLayer<app::PerformanceEditorLayer>();
+	app::SceneEditorLayer*			sceneEditor			= imgui->addLayer<app::SceneEditorLayer>(window());
+	app::AssetViewerEditorLayer*	assetViewerEditor	= imgui->addLayer<app::AssetViewerEditorLayer>(window());
+	app::AssetBrowserEditorLayer*	assetBrowserEditor	= imgui->addLayer<app::AssetBrowserEditorLayer>(window());
+	app::InfoEditorLayer*			infoEditor			= imgui->addLayer<app::InfoEditorLayer>(window());
+	app::PerformanceEditorLayer*	perfEditor			= imgui->addLayer<app::PerformanceEditorLayer>(window());
 	// Set dependencies
 	sceneEditor->setCurrentScene(m_scene);
 	sceneEditor->setLibrary(assets());

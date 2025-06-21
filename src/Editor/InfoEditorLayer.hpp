@@ -11,7 +11,7 @@ class AssetLibrary;
 
 class InfoEditorLayer : public aka::Layer {
 public:
-	InfoEditorLayer();
+	InfoEditorLayer(aka::PlatformWindow* window);
 
 	void onLayerCreate(aka::Renderer* _renderer) override;
 	void onLayerDestroy(aka::Renderer* _renderer) override;

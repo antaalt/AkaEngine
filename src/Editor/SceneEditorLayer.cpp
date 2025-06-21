@@ -367,8 +367,8 @@ AssetID createPlaneMesh(AssetLibrary* _library, Renderer* _renderer)
 	return meshID;
 }
 
-SceneEditorLayer::SceneEditorLayer() :
-	EditorLayer("Scene Editor")
+SceneEditorLayer::SceneEditorLayer(aka::PlatformWindow* window) :
+	EditorLayer("Scene Editor", window)
 {
 }
 
@@ -382,7 +382,7 @@ void SceneEditorLayer::onDestroy(aka::Renderer* _renderer)
 
 void SceneEditorLayer::onUpdate(aka::Time deltaTime)
 {
-	const Keyboard& keyboard = Application::app()->window()->keyboard();
+	const Keyboard& keyboard = getWindow()->keyboard();
 	if (keyboard.down(KeyboardKey::T))
 		m_gizmoOperation = ImGuizmo::TRANSLATE;
 	else if (keyboard.down(KeyboardKey::R))

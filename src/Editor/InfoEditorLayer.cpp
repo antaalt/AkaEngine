@@ -7,7 +7,8 @@ namespace app {
 
 using namespace aka;
 
-InfoEditorLayer::InfoEditorLayer()
+InfoEditorLayer::InfoEditorLayer(PlatformWindow* window) : 
+	Layer(window)
 {
 }
 
@@ -25,11 +26,6 @@ void InfoEditorLayer::onLayerPreRender()
 
 void InfoEditorLayer::onLayerRender(aka::Renderer* _renderer, aka::gfx::FrameHandle frame)
 {
-	aka::Application* app = aka::Application::app();
-	aka::gfx::GraphicDevice* graphic = app->graphic();
-	aka::PlatformDevice* platform = app->platform();
-	aka::PlatformWindow* window = app->window();
-
 	if (ImGui::BeginMainMenuBar())
 	{
 		bool enableUI = false;
@@ -104,18 +100,18 @@ void InfoEditorLayer::onLayerRender(aka::Renderer* _renderer, aka::gfx::FrameHan
 		ImGui::Separator();
 		if (ImGui::SmallButton("Capture"))
 		{
-			graphic->capture();
+			_renderer->getDevice()->capture();
 		}
 		if (ImGui::SmallButton("Screenshot"))
 		{
 			void* data = nullptr;
-			graphic->screenshot(data);
+			_renderer->getDevice()->screenshot(data);
 		}
 		if (ImGui::SmallButton("Fullscreen"))
 		{
 			static bool fullscreen = false;
 			fullscreen = !fullscreen;
-			window->fullscreen(fullscreen);
+			getWindow()->fullscreen(fullscreen);
 		}
 		ImGui::EndMainMenuBar();
 	}

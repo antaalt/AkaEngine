@@ -24,7 +24,7 @@ class AssetBrowserEditorLayer :
 	aka::EventListener<aka::AssetAddedEvent>
 {
 public:
-	AssetBrowserEditorLayer();
+	AssetBrowserEditorLayer(aka::PlatformWindow* window);
 	~AssetBrowserEditorLayer();
 
 	void onCreate(aka::Renderer* _renderer) override;

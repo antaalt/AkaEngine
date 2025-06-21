@@ -8,8 +8,8 @@ namespace app {
 
 using namespace aka;
 
-AssetViewerEditorLayer::AssetViewerEditorLayer() :
-	EditorLayer("Asset viewer")
+AssetViewerEditorLayer::AssetViewerEditorLayer(PlatformWindow* window) :
+	EditorLayer("Asset viewer", window)
 {
 }
 
@@ -26,7 +26,7 @@ void AssetViewerEditorLayer::onCreate(aka::Renderer* _renderer)
 {
 	for (AssetViewerBase*& viewer : m_assetViewers)
 	{
-		viewer->create(_renderer->getDevice());
+		viewer->create(_renderer);
 	}
 }
 
@@ -34,7 +34,7 @@ void AssetViewerEditorLayer::onDestroy(aka::Renderer* _renderer)
 {
 	for (AssetViewerBase*& viewer : m_assetViewers)
 	{
-		viewer->destroy(_renderer->getDevice());
+		viewer->destroy(_renderer);
 	}
 }
 
@@ -51,14 +51,14 @@ void AssetViewerEditorLayer::onRender(aka::Renderer* _renderer, aka::gfx::FrameH
 	// Destroy viewer that where removed recently.
 	for (AssetViewerBase*& viewer : m_assetViewersToDestroy)
 	{
-		viewer->destroy(_renderer->getDevice());
+		viewer->destroy(_renderer);
 		mem::akaDelete(viewer);
 	}
 	m_assetViewersToDestroy.clear();
 	// Create viewer that where added recently.
 	for (AssetViewerBase*& viewer : m_assetViewersToCreate)
 	{
-		viewer->create(_renderer->getDevice());
+		viewer->create(_renderer);
 	}
 	m_assetViewers.append(m_assetViewersToCreate.begin(), m_assetViewersToCreate.end());
 	m_assetViewersToCreate.clear();

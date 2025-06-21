@@ -156,7 +156,8 @@ struct StaticMeshViewerUBO {
 
 StaticMeshViewer::StaticMeshViewer(AssetID _assetID, ResourceHandle<app::StaticMesh> _resourceHandle) :
 	AssetViewer(ResourceType::StaticMesh, _assetID, _resourceHandle),
-	m_needCameraUpdate{}
+	m_needCameraUpdate{},
+	m_arcball(nullptr)
 {
 }
 
@@ -164,8 +165,10 @@ StaticMeshViewer::~StaticMeshViewer()
 {
 }
 
-void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
+void StaticMeshViewer::onCreate(aka::Renderer* _renderer)
 {
+	gfx::GraphicDevice* _device = _renderer->getDevice();
+	ShaderRegistry* _shaders = _renderer->getShaderRegistry();
 	// TODO if no data, bug ?
 	Vector<uint8_t> data(m_width * m_height * 4, 0xff);
 	void* dataVoid = data.data();
@@ -188,9 +191,8 @@ void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 	layout.addSet(set);
 
 	const ProgramKey ProgramGraphic = ProgramKey().add(ShaderVertex).add(ShaderFragment);
-	ShaderRegistry* program = Application::app()->program();
-	program->add(ProgramGraphic, _device);
-	gfx::ProgramHandle p = program->get(ProgramGraphic);
+	_shaders->add(ProgramGraphic, _device);
+	gfx::ProgramHandle p = _shaders->get(ProgramGraphic);
 
 	m_pipeline = _device->createGraphicPipeline(
 		"StaticMeshViewerPipeline",
@@ -246,8 +248,9 @@ void StaticMeshViewer::onCreate(gfx::GraphicDevice* _device)
 		_device->update(m_imguiDescriptorSet, desc.data(), desc.size());
 	}
 }
-void StaticMeshViewer::onDestroy(gfx::GraphicDevice* _device)
+void StaticMeshViewer::onDestroy(aka::Renderer* _renderer)
 {
+	gfx::GraphicDevice* _device = _renderer->getDevice();
 	_device->destroy(m_pipeline);
 	_device->destroy(m_imguiSampler);
 	_device->free(m_imguiDescriptorSet);

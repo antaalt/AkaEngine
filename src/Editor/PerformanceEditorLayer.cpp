@@ -8,8 +8,8 @@ namespace app {
 using namespace aka;
 
 
-PerformanceEditorLayer::PerformanceEditorLayer() :
-	EditorLayer("Performances")
+PerformanceEditorLayer::PerformanceEditorLayer(PlatformWindow* window) :
+	EditorLayer("Performances", window)
 {
 }
 

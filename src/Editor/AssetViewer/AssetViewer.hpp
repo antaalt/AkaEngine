@@ -14,14 +14,14 @@ public:
 	AssetViewerBase() {}
 	virtual ~AssetViewerBase() {}
 
-	void create(aka::gfx::GraphicDevice* _device);
-	void destroy(aka::gfx::GraphicDevice* _device);
+	void create(aka::Renderer* _renderer);
+	void destroy(aka::Renderer* _renderer);
 	void update(aka::Time _deltaTime);
 	void render(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle _frame);
 	void onReceive(const aka::ResourceLoadedEvent& event);
 protected:
-	virtual void onCreate(aka::gfx::GraphicDevice * _device) {}
-	virtual void onDestroy(aka::gfx::GraphicDevice* _device) {}
+	virtual void onCreate(aka::Renderer* _renderer) {}
+	virtual void onDestroy(aka::Renderer* _renderer) {}
 	virtual void onUpdate(aka::Time deltaTime) {}
 	virtual void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame) {}
 	virtual void onLoad() = 0;

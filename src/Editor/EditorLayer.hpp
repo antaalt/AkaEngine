@@ -22,7 +22,7 @@ enum class EditorLayerType
 class EditorLayer : public aka::Layer
 {
 public:
-	EditorLayer(const char* name) : m_name(name), m_visible(true), m_enabled(true) {}
+	EditorLayer(const char* name, aka::PlatformWindow* window) : Layer(window), m_name(name), m_visible(true), m_enabled(true) {}
 	virtual ~EditorLayer() {}
 
 	void setVisible(bool visible) { m_visible = visible; }

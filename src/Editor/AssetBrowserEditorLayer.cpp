@@ -246,8 +246,8 @@ struct AssetNode
 	}
 };
 
-AssetBrowserEditorLayer::AssetBrowserEditorLayer() :
-	EditorLayer("Asset browser"),
+AssetBrowserEditorLayer::AssetBrowserEditorLayer(PlatformWindow* window) :
+	EditorLayer("Asset browser", window),
 	m_importer("Import##Popup")
 {
 	m_rootNode = std::make_unique<AssetNode>();

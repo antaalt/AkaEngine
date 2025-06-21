@@ -11,8 +11,8 @@ public:
 	StaticMeshViewer(aka::AssetID _assetID, aka::ResourceHandle<aka::StaticMesh> _resourceHandle);
 	~StaticMeshViewer();
 
-	void onCreate(aka::gfx::GraphicDevice* _device) override;
-	void onDestroy(aka::gfx::GraphicDevice* _device) override;
+	void onCreate(aka::Renderer* _renderer) override;
+	void onDestroy(aka::Renderer* _renderer) override;
 	void onUpdate(aka::Time deltaTime) override;
 	void onRender(aka::gfx::GraphicDevice* _device, aka::gfx::FrameHandle frame) override;
 	void onLoad(const aka::StaticMesh& mesh) override;

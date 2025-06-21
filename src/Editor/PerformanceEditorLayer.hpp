@@ -11,7 +11,7 @@ namespace app {
 class PerformanceEditorLayer : public EditorLayer
 {
 public:
-	PerformanceEditorLayer();
+	PerformanceEditorLayer(aka::PlatformWindow* window);
 
 	void onCreate(aka::Renderer* _renderer) override;
 	void onDestroy(aka::Renderer* _renderer) override;

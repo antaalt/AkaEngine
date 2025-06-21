@@ -110,8 +110,10 @@ TextureViewer::~TextureViewer()
 {
 }
 
-void TextureViewer::onCreate(gfx::GraphicDevice* _device)
+void TextureViewer::onCreate(aka::Renderer* _renderer)
 {
+	gfx::GraphicDevice* _device = _renderer->getDevice();
+
 	gfx::ShaderBindingState state{};
 	state.add(gfx::ShaderBindingType::SampledImage, gfx::ShaderMask::Fragment);
 
@@ -136,8 +138,9 @@ void TextureViewer::onCreate(gfx::GraphicDevice* _device)
 	}
 }
 
-void TextureViewer::onDestroy(gfx::GraphicDevice* _device)
+void TextureViewer::onDestroy(aka::Renderer* _renderer)
 {
+	gfx::GraphicDevice* _device = _renderer->getDevice();
 	_device->free(m_descriptorSet);
 	_device->destroy(m_descriptorPool);
 	_device->destroy(m_sampler);
