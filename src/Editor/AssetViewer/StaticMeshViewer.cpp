@@ -269,7 +269,7 @@ void StaticMeshViewer::onDestroy(aka::Renderer* _renderer)
 void StaticMeshViewer::onUpdate(aka::Time deltaTime)
 {
 	// This is run one frame late though...
-	if (m_needCameraUpdate)
+	if (m_needCameraUpdate[0]) // TODO:VCPKG: fix this indexing issue...
 	{
 		m_arcball.update(deltaTime);
 	}

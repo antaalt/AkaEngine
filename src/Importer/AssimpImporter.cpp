@@ -21,7 +21,7 @@
 #include <Aka/Resource/Resource/SkeletalMesh.hpp>
 #include <Aka/Scene/Component/StaticMeshComponent.hpp>
 #include <Aka/Scene/Component/SkeletalMeshComponent.hpp>
-#include <Aka/Core/Bitfield.h>
+#include <Aka/Core/BitField.h>
 
 namespace app {
 
@@ -67,14 +67,14 @@ ArchiveSceneNode createNode(const char* name)
 	node.name = name;
 	node.transform = mat4f::identity();
 	node.parentID = ArchiveSceneID::Invalid;
-	node.components;
+	//node.components;
 	return node;
 }
 void addComponent(ArchiveSceneNode& node, ComponentID _component)
 {
 	ArchiveSceneComponent component{};
 	component.id = _component;
-	component.archive; 
+	//component.archive; 
 	node.components.append(component);
 }
 ArchiveSceneID addNode(ArchiveScene& scene, ArchiveSceneNode node)
@@ -300,8 +300,8 @@ AssetID AssimpImporterImpl::processMesh(const aiMesh* mesh, bool& isSkeletal)
 				vertex.boneIndex[iInfluence] = SkeletalVertex::InvalidBoneIndex;
 				vertex.weights[iInfluence] = 0.f;
 			}
-			mesh->mTangents; // TODO:
-			mesh->mBitangents;
+			//mesh->mTangents; // TODO:
+			//mesh->mBitangents;
 		}
 		bbox.include(archiveGeometry.bounds);
 		// Bones
@@ -388,8 +388,8 @@ AssetID AssimpImporterImpl::processMesh(const aiMesh* mesh, bool& isSkeletal)
 				vertex.color[2] = 1.f;
 				vertex.color[3] = 1.f;
 			}
-			mesh->mTangents; // TODO:
-			mesh->mBitangents;
+			//mesh->mTangents; // TODO:
+			//mesh->mBitangents;
 		}
 	}
 	// All zero sometimes...
@@ -463,8 +463,8 @@ AssetID AssimpImporterImpl::processAnimation(const aiAnimation* sceneAnimation, 
 	archive.tickPerSeconds = static_cast<float>(sceneAnimation->mTicksPerSecond);
 	archive.skeleton = skeletonID;
 
-	sceneAnimation->mNumMeshChannels; // TODO mesh anim
-	sceneAnimation->mNumMorphMeshChannels; // TODO mesh morphing
+	//sceneAnimation->mNumMeshChannels; // TODO mesh anim
+	//sceneAnimation->mNumMorphMeshChannels; // TODO mesh morphing
 	// https://github.com/ccxvii/asstools/blob/master/assview.c#L247
 	for (uint32_t iChannel = 0; iChannel < sceneAnimation->mNumChannels; iChannel++)
 	{
@@ -511,8 +511,8 @@ AssetID AssimpImporterImpl::processAnimation(const aiAnimation* sceneAnimation, 
 
 		// TODO constant or linear
 		bone.behaviour = ArchiveSkeletalMeshBehaviour(0);
-		channel->mPreState;
-		channel->mPostState;
+		//channel->mPreState;
+		//channel->mPostState;
 		archive.bones.append(bone);
 	}
 	archive.save(m_saveContext);
