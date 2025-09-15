@@ -35,6 +35,7 @@ void EditorLayer::onLayerPreRender()
 void EditorLayer::onLayerRender(aka::Renderer* _renderer, gfx::FrameHandle frame)
 {
 	onRender(_renderer, frame);
+#if defined(AKA_USE_IMGUI_LAYER)
 	if (isVisible() && isEnabled())
 	{
 		bool open = true;
@@ -45,6 +46,7 @@ void EditorLayer::onLayerRender(aka::Renderer* _renderer, gfx::FrameHandle frame
 		setVisible(open);
 		ImGui::End();
 	}
+#endif
 }
 
 void EditorLayer::onLayerPostRender()

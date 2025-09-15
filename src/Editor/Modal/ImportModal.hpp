@@ -9,6 +9,7 @@
 
 namespace app {
 
+#if defined(AKA_USE_IMGUI_LAYER)
 struct ImGuiImportModal
 {
 	ImGuiImportModal(const char* windowName);
@@ -27,5 +28,6 @@ private:
 	ImGuiFileModal m_inputModal;
 	ImGuiFileModal m_outputModal;
 };
+#endif
 
 };

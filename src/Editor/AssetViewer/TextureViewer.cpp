@@ -166,6 +166,7 @@ void TextureViewer::onUpdate(aka::Time deltaTime)
 
 void TextureViewer::drawUIResource(const app::Texture& texture)
 {
+#if defined(AKA_USE_IMGUI_LAYER)
 	if (m_needUpdate)
 	{
 		ImGui::Text("Texture need update");
@@ -258,6 +259,7 @@ void TextureViewer::drawUIResource(const app::Texture& texture)
 	}
 	ImGui::EndChild();
 	ImGui::PopStyleVar();
+#endif
 }
 
 

@@ -7,6 +7,7 @@ namespace app {
 
 using namespace aka;
 
+#if defined(AKA_USE_IMGUI_LAYER)
 ImGuiFileModal::ImGuiFileModal(const char* name, const Path& path, bool assetPath) :
 	m_name(name),
 	m_currentPath(path),
@@ -126,5 +127,5 @@ void ImGuiFileModal::Render()
 		ImGui::EndPopup();
 	}
 }
-
+#endif
 };

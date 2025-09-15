@@ -321,6 +321,7 @@ void StaticMeshViewer::renderMesh(gfx::FrameHandle frame, const StaticMesh& mesh
 
 void StaticMeshViewer::drawUIResource(const app::StaticMesh& mesh)
 {
+#if defined(AKA_USE_IMGUI_LAYER)
 	m_resource.get();
 	ImGui::TextColored(aka::ImGuiLayer::Color::red, mesh.getName().cstr());
 	ImGui::Text("Vertices");
@@ -363,6 +364,7 @@ void StaticMeshViewer::drawUIResource(const app::StaticMesh& mesh)
 	}
 	ImGui::EndChild();
 	ImGui::PopStyleVar();
+#endif
 }
 
 

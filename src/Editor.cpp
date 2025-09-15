@@ -28,6 +28,7 @@ using namespace aka;
 Editor::Editor(const Config& cfg) :
 	Application(cfg)
 {
+#if defined(AKA_USE_IMGUI_LAYER)
 	ImGuiLayer* imgui = getRoot().addLayer<ImGuiLayer>(window());
 	// Editor are child of imgui to support frame
 	app::SceneEditorLayer*			sceneEditor			= imgui->addLayer<app::SceneEditorLayer>(window());
@@ -44,6 +45,7 @@ Editor::Editor(const Config& cfg) :
 	infoEditor->setEditorLayer(app::EditorLayerType::AssetViewer, assetViewerEditor);
 	infoEditor->setEditorLayer(app::EditorLayerType::SceneEditor, sceneEditor);
 	infoEditor->setEditorLayer(app::EditorLayerType::PerformanceEditor, perfEditor);
+#endif
 }
 
 Editor::~Editor()

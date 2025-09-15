@@ -41,8 +41,10 @@ public:
 	void setLibrary(aka::AssetLibrary* _library);
 	void setAssetViewer(AssetViewerEditorLayer* _viewer);
 private:
+#if defined(AKA_USE_IMGUI_LAYER)
 	ImGuiImportModal m_importer;
 	std::unique_ptr<AssetNode> m_rootNode;
+#endif
 	const AssetNode* m_currentNode = nullptr;
 	bool m_assetUpdated = false;
 	AssetViewerEditorLayer* m_viewerEditor;

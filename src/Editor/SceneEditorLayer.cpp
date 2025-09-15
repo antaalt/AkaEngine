@@ -382,6 +382,7 @@ void SceneEditorLayer::onDestroy(aka::Renderer* _renderer)
 
 void SceneEditorLayer::onUpdate(aka::Time deltaTime)
 {
+#if defined(AKA_USE_IMGUI_LAYER)
 	const Keyboard& keyboard = getWindow()->keyboard();
 	if (keyboard.down(KeyboardKey::T))
 		m_gizmoOperation = ImGuizmo::TRANSLATE;
@@ -389,6 +390,7 @@ void SceneEditorLayer::onUpdate(aka::Time deltaTime)
 		m_gizmoOperation = ImGuizmo::ROTATE;
 	else if (keyboard.down(KeyboardKey::S))
 		m_gizmoOperation = ImGuizmo::SCALE;
+#endif
 }
 
 void SceneEditorLayer::onPreRender()
@@ -409,6 +411,7 @@ void SceneEditorLayer::onPreRender()
 	}
 }
 
+#if defined(AKA_USE_IMGUI_LAYER)
 template <typename T>
 struct ComponentNode 
 {
@@ -762,6 +765,7 @@ void component(AssetLibrary* library, DebugDrawList& debugDrawList, Node* curren
 		}
 	}
 }
+#endif
 
 void SceneEditorLayer::onRender(aka::Renderer* _renderer, aka::gfx::FrameHandle frame)
 {
@@ -769,6 +773,7 @@ void SceneEditorLayer::onRender(aka::Renderer* _renderer, aka::gfx::FrameHandle 
 
 void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 {
+#if defined(AKA_USE_IMGUI_LAYER)
 	std::function<void(Node* parent, Node*& current)> recurse;
 	recurse = [&recurse, this](Node* parent, Node*& current)
 		{
@@ -1128,6 +1133,7 @@ void SceneEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 		// Asset ID based on path, so...
 		// Should have an asset ID based on something else
 	}
+#endif
 }
 
 void SceneEditorLayer::onPostRender()

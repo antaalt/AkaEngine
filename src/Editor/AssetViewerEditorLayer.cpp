@@ -2,7 +2,8 @@
 
 #include <Aka/Core/Application.h>
 #include <Aka/Layer/ImGuiLayer.h>
-#include <IconsFontAwesome6.h>
+// TODO:VCPKG: restore
+//#include <IconsFontAwesome6.h>
 
 namespace app {
 
@@ -70,6 +71,7 @@ void AssetViewerEditorLayer::onRender(aka::Renderer* _renderer, aka::gfx::FrameH
 
 void AssetViewerEditorLayer::onDrawUI(aka::DebugDrawList& debugDrawList)
 {
+#if defined(AKA_USE_IMGUI_LAYER)
 	if (ImGui::BeginMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
@@ -110,12 +112,13 @@ void AssetViewerEditorLayer::onDrawUI(aka::DebugDrawList& debugDrawList)
 			bool open = true;
 			ResourceType type = viewer->getResourceType();
 			// TODO use custom font 
+			// TODO:VCPKG: restore
 			const char* typeLogo[EnumCount<ResourceType>()] = {
-				ICON_FA_FILM, // Scene
-				ICON_FA_TREE_CITY, // StaticMesh
-				ICON_FA_IMAGES,// Material
-				ICON_FA_IMAGE,// Texture
-				ICON_FA_HEADPHONES,// AudioSource
+				"sce", //ICON_FA_FILM, // Scene
+				"stm", //ICON_FA_TREE_CITY, // StaticMesh
+				"mat", //ICON_FA_IMAGES,// Material
+				"img", //ICON_FA_IMAGE,// Texture
+				"aud", //ICON_FA_HEADPHONES,// AudioSource
 			};
 			String tabName = String::format("%s %s##%p", typeLogo[EnumToIndex(viewer->getResourceType())], viewer->getResourceName(), viewer);
 			if (ImGui::BeginTabItem(tabName.cstr(), &open, ImGuiTabItemFlags_None))
@@ -140,6 +143,7 @@ void AssetViewerEditorLayer::onDrawUI(aka::DebugDrawList& debugDrawList)
 		}
 		ImGui::EndTabBar();
 	}
+#endif
 }
 
 template<> 

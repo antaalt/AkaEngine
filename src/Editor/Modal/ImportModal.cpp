@@ -7,6 +7,7 @@ namespace app {
 
 using namespace aka;
 
+#if defined(AKA_USE_IMGUI_LAYER)
 ImGuiImportModal::ImGuiImportModal(const char* windowName) :
 	m_windowName(windowName),
 	m_assetType(AssetType::Unknown),
@@ -123,5 +124,6 @@ bool ImGuiImportModal::Import(AssetLibrary* library)
 		return false;
 	}
 }
+#endif
 
 };

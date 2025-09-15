@@ -28,14 +28,16 @@ public:
 	void onDrawUI(aka::DebugDrawList& debugDrawList) override;
 	void onPostRender() override;
 	void onResize(uint32_t width, uint32_t height) override;
-	void onReceive(const aka::ResourceLoadedEvent& event);
+	void onReceive(const aka::ResourceLoadedEvent& event) override;
 public:
 	void setLibrary(aka::AssetLibrary* library);
 	void setCurrentScene(aka::ResourceHandle<aka::Scene> _scene);
 private:
 	aka::AssetLibrary* m_library;
+#if defined(AKA_USE_IMGUI_LAYER)
 	ImGuizmo::MODE m_gizmoMode = ImGuizmo::WORLD;
 	ImGuizmo::OPERATION m_gizmoOperation = ImGuizmo::TRANSLATE;
+#endif
 	aka::Node* m_nodeToDestroy = nullptr;
 	aka::Node* m_currentNode = nullptr;
 	aka::AssetID m_assetToUnload = aka::AssetID::Invalid;

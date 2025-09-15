@@ -8,6 +8,9 @@ if (MSVC AND WIN32 AND NOT MSVC_VERSION VERSION_LESS 142)
     add_compile_options($<$<CONFIG:Debug>:/ZI>)
 endif()
 
+# Include Aka
+add_subdirectory(lib/Aka)
+
 add_executable(AkaEditor
 	"src/main.cpp"
 	"src/Editor.cpp"
@@ -31,19 +34,14 @@ add_executable(AkaEditor
 	"src/Component/RotatorComponent.cpp"
 )
 
-# Aka
-find_package(aka REQUIRED PATHS lib/Aka/install NO_DEFAULT_PATH)
-target_link_libraries(AkaEditor PUBLIC aka::Aka)
-
-# ASSIMP
-set(ZLIB_LIBRARIES zlibstatic)
-set(ENABLE_BOOST_WORKAROUND ON)
-set(BUILD_STATIC_LIB ON)
-set(BUILD_ASSIMP_TOOLS OFF)
-set(BUILD_ASSIMP_VIEW OFF)
-set(ASSIMP_BUILD_STATIC_LIB ON)
-set(ASSIMP_BUILD_TESTS OFF)
-set(ASSIMP_BUILD_ZLIB ON)
-add_subdirectory(lib/assimp)
-target_include_directories(AkaEditor PUBLIC lib/assimp lib/IconCppHeaders)
-target_link_libraries(AkaEditor PRIVATE assimp)
+# Assimp
+find_package(assimp CONFIG REQUIRED)
+target_link_libraries(AkaEditor 
+	PRIVATE assimp::assimp
+	PUBLIC Aka
+)
+add_custom_command(TARGET AkaEditor POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+	$<TARGET_FILE:assimp::assimp>
+	$<TARGET_FILE_DIR:AkaEditor>
+)

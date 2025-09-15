@@ -1,0 +1,20 @@
+{
+  "dependencies": [
+    "glfw3",
+    "imgui",
+    "imguizmo",
+    {
+      "name": "rtaudio",
+      "features": ["asio"]
+    },
+    "glslang",
+    "spirv-cross",
+    "freetype",
+    "miniz",
+    "minimp3",
+    "nlohmann-json",
+    "utfcpp",
+    "stb",
+    "assimp"
+  ]
+}

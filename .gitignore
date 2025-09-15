@@ -6,6 +6,9 @@ out/
 asset/.cooked/
 asset/local/
 build/
+lib/build/
+lib/install/
+.build/
 
 ### CMake ###
 CMakeLists.txt.user

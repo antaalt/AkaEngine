@@ -22,7 +22,7 @@ void PerformanceEditorLayer::onDestroy(aka::Renderer* _renderer)
 }
 String formatBytes(uint64_t bytes)
 {
-	char* suffix[] = { "B", "KB", "MB", "GB", "TB" };
+	const char* suffix[] = { "B", "KB", "MB", "GB", "TB" };
 	size_t length = sizeof(suffix) / sizeof(suffix[0]);
 
 	size_t i = 0;
@@ -36,6 +36,7 @@ String formatBytes(uint64_t bytes)
 }
 void PerformanceEditorLayer::onDrawUI(aka::DebugDrawList& debugDrawList)
 {
+#if defined(AKA_USE_IMGUI_LAYER)
 	//ImGui::ShowDemoWindow()
 	if (ImGui::BeginMenuBar())
 	{
@@ -156,6 +157,7 @@ void PerformanceEditorLayer::onDrawUI(aka::DebugDrawList& debugDrawList)
 		}
 		ImGui::EndTabBar();
 	}
+#endif
 }
 
 };

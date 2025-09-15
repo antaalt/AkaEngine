@@ -62,6 +62,7 @@ void load(AssetID id, AssetType type, AssetLibrary* library)
 	}
 }
 
+#if defined(AKA_USE_IMGUI_LAYER)
 struct AssetNode
 {
 	AssetID id = AssetID::Invalid;
@@ -245,12 +246,17 @@ struct AssetNode
 		return addNodeToTree(node.childrens.last(), assetInfo, &directories[1], --count);
 	}
 };
+#endif
 
 AssetBrowserEditorLayer::AssetBrowserEditorLayer(PlatformWindow* window) :
-	EditorLayer("Asset browser", window),
-	m_importer("Import##Popup")
+	EditorLayer("Asset browser", window)
+#if defined(AKA_USE_IMGUI_LAYER)
+	, m_importer("Import##Popup")
+#endif
 {
+#if defined(AKA_USE_IMGUI_LAYER)
 	m_rootNode = std::make_unique<AssetNode>();
+#endif
 }
 
 AssetBrowserEditorLayer::~AssetBrowserEditorLayer()
@@ -279,6 +285,7 @@ void AssetBrowserEditorLayer::onRender(aka::Renderer* _renderer, aka::gfx::Frame
 
 void AssetBrowserEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 {
+#if defined(AKA_USE_IMGUI_LAYER)
 	AssetType assetTypeToImport = AssetType::Unknown;
 	if (ImGui::BeginMenuBar())
 	{
@@ -361,6 +368,7 @@ void AssetBrowserEditorLayer::onDrawUI(DebugDrawList& debugDrawList)
 	m_importer.Render();
 	if (m_importer.Import(m_library))
 		m_importer.Close();
+	#endif
 }
 
 void AssetBrowserEditorLayer::onPostRender()

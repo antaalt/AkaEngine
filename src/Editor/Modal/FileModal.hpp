@@ -8,6 +8,7 @@
 
 namespace app {
 
+#if defined(AKA_USE_IMGUI_LAYER)
 struct ImGuiFileModal
 {
 	ImGuiFileModal(const char* name, const aka::Path& path, bool assetPath);
@@ -25,4 +26,5 @@ private:
 	aka::Path* m_selectedPath;
 	aka::Vector<aka::Path> m_paths;
 };
+#endif
 };

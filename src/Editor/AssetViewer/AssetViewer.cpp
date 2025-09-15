@@ -11,7 +11,9 @@ template class AssetViewer<aka::StaticMesh>;
 
 void AssetViewerBase::drawUIMissingResource()
 {
+#if defined(AKA_USE_IMGUI_LAYER)
 	ImGui::Text("Resource loading...");
+#endif
 }
 
 void AssetViewerBase::create(aka::Renderer* _renderer)
