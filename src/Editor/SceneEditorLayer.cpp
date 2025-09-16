@@ -436,8 +436,8 @@ template <> bool ComponentNode<StaticMeshComponent>::draw(AssetLibrary* library,
 				const StaticMeshBatch& batch = m.getBatches()[iBatch];
 				if (ImGui::TreeNode(&batch, "Batch (%zu/%zu)", iBatch + 1, m.getBatches().size()))
 				{
-					batch.indexOffset;
-					batch.vertexOffset;
+					//batch.indexOffset;
+					//batch.vertexOffset;
 					ImGui::Text("%u indices", batch.indexCount);
 
 					if (ImGui::TreeNode("Material"))
@@ -519,9 +519,9 @@ template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* librar
 				const SkeletalMeshBatch& batch = m.getBatches()[iBatch];
 				if (ImGui::TreeNode(&batch, "Batch (%zu/%zu)", iBatch + 1, m.getBatches().size()))
 				{
-					batch.indexOffset;
-					batch.vertexOffset;
-					batch.boneOffset;
+					//batch.indexOffset;
+					//batch.vertexOffset;
+					//batch.boneOffset;
 					ImGui::Text("%u indices", batch.indexCount);
 
 					if (ImGui::TreeNode("Material"))
@@ -558,7 +558,7 @@ template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* librar
 						const SkeletalMeshBoneAnimation& bone = animation.bones[iBone];
 						if (ImGui::TreeNode(&bone, "%s (%zu/%zu)", meshComp.getBones()[iBone].name.cstr(), iBone + 1, animation.bones.size()))
 						{
-							bone.behaviour;
+							//bone.behaviour;
 							float translation[3];
 							float rotation[3];
 							float scale[3];
@@ -588,7 +588,7 @@ template <> bool ComponentNode<SkeletalMeshComponent>::draw(AssetLibrary* librar
 									const SkeletalMeshKeyRotation& key = bone.rotationKeys[iKey];
 									if (ImGui::TreeNode(&key, "Rotation key (%zu/%zu)", iKey + 1, bone.rotationKeys.size()))
 									{
-										ImGui::Text("Rotation : quat(%f, %f, %f)", key.orientation.x, key.orientation.y, key.orientation.z, key.orientation.w);
+										ImGui::Text("Rotation : quat(%f, %f, %f, %f)", key.orientation.x, key.orientation.y, key.orientation.z, key.orientation.w);
 										ImGui::Text("Timestamp: %f ticks", key.timeStamp);
 										ImGui::TreePop();
 									}
@@ -658,7 +658,7 @@ bool drawPerspective(CameraPerspective* projection)
 {
 	bool updated = false;
 	vec2 range(projection->nearZ, projection->farZ);
-	if (ImGui::DragFloat2("Range", range.data, 0.1f, 0.f, FLT_MAX / INT_MAX))
+	if (ImGui::DragFloat2("Range", range.data, 0.1f, 0.f, FLT_MAX / (float)INT_MAX))
 	{
 		projection->nearZ = min(range.x, range.y);
 		projection->farZ = max(range.x, range.y);
@@ -670,7 +670,7 @@ bool drawPerspective(CameraPerspective* projection)
 		projection->hFov = anglef::radian(hFov);
 		updated = true;
 	}
-	projection->ratio; // Depend on viewport. Should not be editable.
+	//projection->ratio; // Depend on viewport. Should not be editable.
 	return updated;
 }
 bool drawOrthographic(CameraOrthographic* projection)
@@ -683,10 +683,10 @@ bool drawOrthographic(CameraOrthographic* projection)
 		projection->farZ = max(range.x, range.y);
 		updated = true;
 	}
-	projection->left;
-	projection->right;
-	projection->top;
-	projection->bottom;
+	//projection->left;
+	//projection->right;
+	//projection->top;
+	//projection->bottom;
 	return updated;
 }
 
@@ -725,7 +725,7 @@ template <> bool ComponentNode<ArcballComponent>::draw(AssetLibrary* library, De
 template <> const char* ComponentNode<CustomComponent>::name() { return "CustomComponent"; }
 template <> bool ComponentNode<CustomComponent>::draw(AssetLibrary* library, DebugDrawList& debugDrawList, CustomComponent& mesh)
 {
-	ImGui::Text(mesh.getCustomData().cstr());
+	ImGui::Text("%s", mesh.getCustomData().cstr());
 	return false;
 }
 

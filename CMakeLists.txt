@@ -1,4 +1,4 @@
-﻿cmake_minimum_required (VERSION 3.28)
+﻿cmake_minimum_required (VERSION 3.26)
 
 project(AkaEditor)
 
@@ -32,6 +32,11 @@ add_executable(AkaEditor
 	
 	"src/Component/CustomComponent.cpp"
 	"src/Component/RotatorComponent.cpp"
+)
+
+# Set cwd for debug as we need to read asset.
+set_target_properties(AkaEditor PROPERTIES
+	DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
 
 # Assimp

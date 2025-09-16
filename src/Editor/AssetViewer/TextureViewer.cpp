@@ -254,7 +254,7 @@ void TextureViewer::drawUIResource(const app::Texture& texture)
 			ImGui::SetScrollX(scrollPositionX);
 			ImGui::SetScrollY(scrollPositionY);
 		}
-		ImGui::Image(textureID, ImVec2(m_delayedZoom * texture.getWidth(), m_delayedZoom * texture.getHeight()), ImVec2(0, 0), ImVec2(1, 1), mask);
+		ImGui::ImageWithBg(textureID, ImVec2(m_delayedZoom * texture.getWidth(), m_delayedZoom * texture.getHeight()), ImVec2(0, 0), ImVec2(1, 1), ImVec4(0, 0, 0, 0), mask);
 		m_delayedZoom = m_zoom;
 	}
 	ImGui::EndChild();

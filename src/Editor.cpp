@@ -444,9 +444,11 @@ void Editor::onUpdate(aka::Time time)
 	if (m_scene.isLoaded())
 	{
 		// Disable camera inputs if ImGui uses them.
+#if defined(AKA_USE_IMGUI_LAYER)
 		const ImGuiIO& io = ImGui::GetIO();
 		ArcballComponent& camera = m_editorCameraNode->get<ArcballComponent>();
 		camera.setUpdateEnabled(!io.WantCaptureMouse && !io.WantCaptureKeyboard);
+#endif
 
 		renderer()->getDebugDrawList().draw3DCube(mat4f::identity(), color4f(0.f, 0.f, 0.f, 1.f));
 

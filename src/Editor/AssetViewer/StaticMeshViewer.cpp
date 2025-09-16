@@ -212,6 +212,7 @@ void StaticMeshViewer::onCreate(aka::Renderer* _renderer)
 	for (uint32_t iFrame = 0; iFrame < gfx::MaxFrameInFlight; iFrame++)
 		m_descriptorSet[iFrame] = _device->allocateDescriptorSet("StaticMeshViewerDescriptorSet", layout.sets[0], m_descriptorPool);
 	{
+		m_arcball.setWindow(_renderer->getWindow());
 		m_arcball.set(aabbox<>(point3f(-20.f), point3f(20.f)));
 		m_projection.nearZ = 0.1f;
 		m_projection.farZ = 1000.f;
@@ -251,6 +252,7 @@ void StaticMeshViewer::onCreate(aka::Renderer* _renderer)
 void StaticMeshViewer::onDestroy(aka::Renderer* _renderer)
 {
 	gfx::GraphicDevice* _device = _renderer->getDevice();
+	_device->wait();
 	_device->destroy(m_pipeline);
 	_device->destroy(m_imguiSampler);
 	_device->free(m_imguiDescriptorSet);
@@ -323,7 +325,7 @@ void StaticMeshViewer::drawUIResource(const app::StaticMesh& mesh)
 {
 #if defined(AKA_USE_IMGUI_LAYER)
 	m_resource.get();
-	ImGui::TextColored(aka::ImGuiLayer::Color::red, mesh.getName().cstr());
+	ImGui::TextColored(aka::ImGuiLayer::Color::red, "%s", mesh.getName().cstr());
 	ImGui::Text("Vertices");
 	gfx::VertexBufferLayout layout = StaticVertex::getState();
 	for (uint32_t i = 0; i < layout.count; i++)
@@ -346,7 +348,7 @@ void StaticMeshViewer::drawUIResource(const app::StaticMesh& mesh)
 
 	// Mesh viewer
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	if (ImGui::BeginChild("MeshDisplayChild", ImVec2(0.f, (float)m_height + 5.f), false, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize))
+	if (ImGui::BeginChild("MeshDisplayChild", ImVec2(0.f, (float)m_height + 5.f), ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY |ImGuiChildFlags_AlwaysAutoResize, ImGuiWindowFlags_NoMove))
 	{
 		if (ImGui::IsWindowHovered() && (ImGui::IsMouseDragging(0, 0.0f) || ImGui::IsMouseDragging(1, 0.0f) || !ImGui::IsAnyItemActive()))
 		{

@@ -2,8 +2,6 @@
 
 #include <Aka/Core/Application.h>
 #include <Aka/Layer/ImGuiLayer.h>
-// TODO:VCPKG: restore
-//#include <IconsFontAwesome6.h>
 
 namespace app {
 
@@ -111,14 +109,12 @@ void AssetViewerEditorLayer::onDrawUI(aka::DebugDrawList& debugDrawList)
 
 			bool open = true;
 			ResourceType type = viewer->getResourceType();
-			// TODO use custom font 
-			// TODO:VCPKG: restore
 			const char* typeLogo[EnumCount<ResourceType>()] = {
-				"sce", //ICON_FA_FILM, // Scene
-				"stm", //ICON_FA_TREE_CITY, // StaticMesh
-				"mat", //ICON_FA_IMAGES,// Material
-				"img", //ICON_FA_IMAGE,// Texture
-				"aud", //ICON_FA_HEADPHONES,// AudioSource
+				ImGuiLayer::Icon::Film, // Scene
+				ImGuiLayer::Icon::City, // StaticMesh
+				ImGuiLayer::Icon::Images,// Material
+				ImGuiLayer::Icon::Image, // Texture
+				ImGuiLayer::Icon::Headphones,// AudioSource
 			};
 			String tabName = String::format("%s %s##%p", typeLogo[EnumToIndex(viewer->getResourceType())], viewer->getResourceName(), viewer);
 			if (ImGui::BeginTabItem(tabName.cstr(), &open, ImGuiTabItemFlags_None))
@@ -147,7 +143,7 @@ void AssetViewerEditorLayer::onDrawUI(aka::DebugDrawList& debugDrawList)
 }
 
 template<> 
-void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka::Scene>& _resourceHandle)
+void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka::Scene> _resourceHandle)
 {
 	setVisible(true);
 	for (AssetViewerBase*& viewer : m_assetViewers)
@@ -162,7 +158,7 @@ void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka
 }
 
 template<>
-void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka::StaticMesh>& _resourceHandle)
+void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka::StaticMesh> _resourceHandle)
 {
 	setVisible(true);
 	for (AssetViewerBase*& viewer : m_assetViewers)
@@ -177,7 +173,7 @@ void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka
 }
 
 template<>
-void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka::Texture>& _resourceHandle)
+void AssetViewerEditorLayer::open(aka::AssetID _assetID, aka::ResourceHandle<aka::Texture> _resourceHandle)
 {
 	setVisible(true);
 	for (AssetViewerBase*& viewer : m_assetViewers)

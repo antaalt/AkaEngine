@@ -35,14 +35,14 @@ void ImGuiFileModal::Render()
 	if (ImGui::BeginPopupModal(m_name.cstr(), &openFlag, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		bool updated = false;
-		if (ImGui::Button(ICON_FA_ARROW_UP_LONG))
+		if (ImGui::Button(ImGuiLayer::Icon::ArrowUp))
 		{
 			m_currentPath = m_currentPath.up();
 			updated = true;
 		}
 		// Refresh directory
 		ImGui::SameLine();
-		if (ImGui::Button(ICON_FA_ROTATE_RIGHT))
+		if (ImGui::Button(ImGuiLayer::Icon::RotateRight))
 		{
 			updated = true;
 		}
@@ -64,7 +64,7 @@ void ImGuiFileModal::Render()
 				bool isFolder = OS::Directory::exist(m_pathHeader + m_currentPath + path);
 				if (isFolder)
 				{
-					int err = snprintf(buffer, 256, "%s %s", ICON_FA_FOLDER, path.cstr());
+					int err = snprintf(buffer, 256, "%s %s", ImGuiLayer::Icon::Folder, path.cstr());
 					if (ImGui::Selectable(buffer, &selected))
 					{
 						m_selectedPath = &path;
@@ -77,7 +77,7 @@ void ImGuiFileModal::Render()
 				}
 				else
 				{
-					int err = snprintf(buffer, 256, "%s %s", ICON_FA_FILE, path.cstr());
+					int err = snprintf(buffer, 256, "%s %s", ImGuiLayer::Icon::File, path.cstr());
 					if (ImGui::Selectable(buffer, &selected))
 					{
 						m_selectedPath = &path;

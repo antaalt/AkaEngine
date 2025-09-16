@@ -1,13 +1,17 @@
 {
   "dependencies": [
     "glfw3",
-    "imgui",
+    {
+      "name": "imgui",
+      "features": [ "glfw-binding", "vulkan-binding" ]
+    },
     "imguizmo",
     {
       "name": "rtaudio",
-      "features": ["asio"]
+      "features": [ "asio" ]
     },
     "glslang",
+    "vulkan",
     "spirv-cross",
     "freetype",
     "miniz",
